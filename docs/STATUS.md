@@ -117,3 +117,11 @@ bash scripts/build_kernel.sh ksu
 - 最新编译阻塞只集中在 `selinux/rules.c` 和 `selinux/sepolicy.c` 的新版 `struct selinux_policy`、`selinux_state.policy`、`policy_mutex` 机制。
 - 下一阶段必须以原生 `security_read_policy` / `security_load_policy` 设计受控事务，并验证失败回滚、长度增长、SID 转换、AVC 更新、SELinux 并行加载和 backup_sepolicy/selinux_hide 的兼容性。**不得用字段别名、强转或禁用 SELinux 假装完成适配。**
 - P0 发布门禁仍为 `selinux-abi` 与 `manager-handshake`。当前不允许制作可供刷写的 boot.img。
+
+## 2026-10-14：首版 SELinux 4.19 原生事务移植（实验）
+
+- 新增 `patch_selinux_core_419.py`，在旧版 LineageOS 的 `security/selinux/ss/services.c` 引入 `ksu_legacy_policy_transaction`，系统与 KernelSU 的 `security_load_policy` 路径共用互斥锁。
+- 事务先通过内核 `security_read_policy` 读取独立快照，对独立 `policydb` 修改并经过有界 `policydb_write` 序列化后，才调用原生加载流程发布。失败路径保持活动策略不变。
+- `patch_rules_419.py` 为 4.19 添加官方默认规则及批量 `sepolicy` 命令对应的独立事务编辑回调，保留新版 KernelSU 分支行为。
+- 旧内核没有与现代 `backup_sepolicy` 等价的 SID 备份，因此 4.19 的 SELinux Hide 功能暂不注册；将来必须重新设计，而不能创建伪造结构。
+- **尚未通过真实内核编译及设备测试**；默认规则异常处理、系统重载竞争、策略类型扩容、selinuxfs 节点更新与 Manager 连接均需验证。CI 保持 `selinux-abi` 和 `manager-handshake` 为 BLOCK，不可生成可刷写镜像。

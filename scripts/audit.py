@@ -89,6 +89,19 @@ def inspect(kernel: Path, ksu_repo: Path) -> list[dict]:
         add("selinux-policydb-419", "BLOCK",
             "没有找到旧版 avtab、filename_trans 与 type flex_array 兼容实现")
 
+    # The legacy branch is not a modern selinux_policy pointer alias.
+    core = read(kernel, "security/selinux/ss/services.c")
+    rules = read(ksu, "selinux/rules.c")
+    hide = read(ksu, "feature/selinux_hide.c")
+    if ("UMI_KSU_419_SELINUX_TXN" in core and
+            "ksu_legacy_policy_transaction" in rules and
+            "UMI_KSU_419_HIDE_UNSUPPORTED" in hide):
+        add("legacy-policy-txn", "WARN",
+            "4.19 使用原生策略快照/更新事务；尚未验证真机、并发和全部回滚路径")
+        add("legacy-selinux-hide", "WARN",
+            "旧内核缺少独立 policy/SID 备份接口，显式禁止 SELinux Hide 功能")
+    else:
+        add("legacy-policy-txn", "BLOCK", "缺少已审查的 SELinux 4.19 事务适配")
     selinux = read(kernel, "security/selinux/include/security.h")
     krules = read(ksu, "selinux/rules.c")
     if ("struct selinux_ss *ss;" in selinux and "selinux_state.policy" in krules
