@@ -37,7 +37,7 @@ OLD = """static bool add_filename_trans(struct policydb *db, const char *s, cons
     if (trans) {
         trans->otype = def->value;
         return ebitmap_set_bit(&db->filename_trans_ttypes,
-                               src->value - 1, 1) == 0;
+                               tgt->value, 1) == 0;
     }
 
     trans = kzalloc(sizeof(*trans), GFP_KERNEL);
@@ -55,7 +55,7 @@ OLD = """static bool add_filename_trans(struct policydb *db, const char *s, cons
         goto free_name;
     /* Linux 4.19 records all source types in the global ttypes bitmap. */
     return ebitmap_set_bit(&db->filename_trans_ttypes,
-                           src->value - 1, 1) == 0;
+                           tgt->value, 1) == 0;
 
 free_name:
     kfree(new_key->name);

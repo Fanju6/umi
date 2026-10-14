@@ -34,6 +34,8 @@ class TestFilename419(unittest.TestCase):
         self.assertIn("struct filename_trans key",content)
         self.assertIn("hashtab_search(db->filename_trans",content)
         self.assertIn("db->filename_trans_ttypes",content)
+        self.assertIn("tgt->value, 1) == 0",content)
+        self.assertNotIn("src->value - 1, 1) == 0",content)
         self.assertFalse(mod.patch(self.root))
         self.assertEqual(content,self.path.read_text())
     def test_unexpected_source_refused(self):
