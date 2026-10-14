@@ -3,7 +3,7 @@
 本仓库用于研究并移植 **[官方 KernelSU](https://github.com/tiann/KernelSU)** 至小米 10（`umi`）的 LineageOS 23.2 内核（Linux 4.19）。**不使用 KernelSU Next**。
 
 > [!WARNING]
-> **实验阶段。尚未完成真实内核编译、手机启动及功能验证；当前不提供可刷写的 boot.img。**
+> **实验阶段。已通过官方 KernelSU 3.3.0 + umi Linux 4.19 的完整内核编译与链接，但尚未完成真机启动和功能验证；当前不提供可刷写的 boot.img。**
 > 请勿在此基础上生成的未经验证镜像上直接覆盖手机原始 boot 分区。
 
 ## 上游
@@ -27,3 +27,9 @@
 4. 不降级 SELinux 到 Permissive，不隐瞒运行时失败，不合并不安全的结构强转。
 
 后续自动化、源代码改动和检查详见仓库中的 `docs/` 与 `scripts/`。
+
+## 已完成的 CI 与实机只读预检
+
+- [整核链接、Image、umi DTBO 完整验收](https://github.com/Fanju6/umi/actions/runs/38555215723)：成功，但仍是不可刷写的编译产物。
+- [Windows PowerShell / Linux 真机只读预检](docs/DEVICE_PREFLIGHT.md)：仅获取版本、SELinux、槽位和分区名称，不写入设备。
+- SELinux 策略运行时安全、Manager 授权和真机启动验证均未完成。
