@@ -109,3 +109,11 @@ bash scripts/build_kernel.sh ksu
 - 所有新数组分配、复制和新条目初始化成功后才替换旧容器；错误时释放新数组及新条目的 bitmap，避免直接将旧版 flex_array 转成指针数组。
 - 旧版属性取值也改为 `flex_array_get`，并防御空指针；不改变新内核实现分支。
 - **仅解决静态编译兼容，尚需验证 type 更新的并发、role 扩展失败和策略序列化长度。** 保留 P0 阻塞。
+
+## 2026-10-14：Policydb 编译门禁验证结果
+
+- 静态及 Python 回归测试：CI #38540529077 **通过**。
+- Linux 4.19 KernelSU 驱动编译：CI #38540529074 **失败**，但 C 编译已穿过 avtab、filename_trans、type 与 attribute 的适配代码，原先四类编译错误不再出现。
+- 最新编译阻塞只集中在 `selinux/rules.c` 和 `selinux/sepolicy.c` 的新版 `struct selinux_policy`、`selinux_state.policy`、`policy_mutex` 机制。
+- 下一阶段必须以原生 `security_read_policy` / `security_load_policy` 设计受控事务，并验证失败回滚、长度增长、SID 转换、AVC 更新、SELinux 并行加载和 backup_sepolicy/selinux_hide 的兼容性。**不得用字段别名、强转或禁用 SELinux 假装完成适配。**
+- P0 发布门禁仍为 `selinux-abi` 与 `manager-handshake`。当前不允许制作可供刷写的 boot.img。
