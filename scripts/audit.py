@@ -76,6 +76,18 @@ def inspect(kernel: Path, ksu_repo: Path) -> list[dict]:
     else:
         add("mount-compat", "BLOCK", "4.19 缺少新版 path_mount 调用接口")
 
+    # Confirm that legacy policydb representation is used, not pointer casts.
+    ksepolicy = read(ksu, "selinux/sepolicy.c")
+    if ("UMI_KSU_419_AVTAB_FLEX_ARRAY" in ksepolicy and
+            "UMI_KSU_419_FILENAME_TRANS" in ksepolicy and
+            "flex_array_get_ptr(db->te_avtab.htable" in ksepolicy and
+            "hashtab_search(db->filename_trans" in ksepolicy):
+        add("selinux-policydb-419", "WARN",
+            "avtab 和 filename_trans 已添加独立 4.19 分支；规则发布与 type 数组仍然阻塞")
+    else:
+        add("selinux-policydb-419", "BLOCK",
+            "没有找到旧版 avtab flex_array / filename_trans 的真实适配")
+
     selinux = read(kernel, "security/selinux/include/security.h")
     krules = read(ksu, "selinux/rules.c")
     if ("struct selinux_ss *ss;" in selinux and "selinux_state.policy" in krules

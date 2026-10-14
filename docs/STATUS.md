@@ -93,3 +93,11 @@ bash scripts/build_kernel.sh ksu
 
 - CI #38537057082 在 SELinux 报错之外，还暴露 supercall/dispatch.c 的 tasklist_lock、init_task、task_pgrp、task_session 未声明。
 - Linux 4.19 的声明分别由 sched/task.h 与 sched/signal.h 提供；新增带严格源码匹配与单元测试的补丁，不触碰权限判断逻辑。
+
+## 2026-10-14：旧版 SELinux policydb 具体移植第一步
+
+- CI #38537745526：Supercall 任务管理错误已消失；失败点集中在 SELinux 的 `avtab`、`filename_trans`、`type_attr_map` 和 `rules.c`。
+- 增加严格上游匹配的 `patch_avtab_419.py`：旧内核 avtab 的桶头属于 `flex_array`，通过 `flex_array_get_ptr` / `flex_array_put_ptr` 操作；删除节点使用旧内核 `avtab_destroy` 维护私有 slab 对象生命周期，而非 `kfree`。
+- 增加 `patch_filename_419.py`：在 Linux 4.19 分支使用包含 `stype` 的 `struct filename_trans`，配合旧版 `struct hashtab *` 和 `filename_trans_ttypes` 进行增改。
+- 两个补丁均保持新内核分支的官方实现不变，均提供幂等性和上游版本变化拒绝测试。
+- 当前仍未解决 `add_type` 的 `flex_array` 扩容、SELinux 安全策略发布和旧版 SID 转换，`selinux-abi` 与 `manager-handshake` BLOCK 不得取消。CI 成功不等于真机可用。
