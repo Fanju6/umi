@@ -1,0 +1,58 @@
+name: 官方 umi boot.img 只读结构审计
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/stock-boot-audit.yml'
+      - 'scripts/inspect_stock_boot.py'
+      - 'tests/test_stock_boot.py'
+      - 'docs/BOOT_REFERENCE_TRIGGER.md'
+
+permissions:
+  contents: read
+
+jobs:
+  stock-boot-audit:
+    name: 下载并解析 20261004 原版 boot.img（不刷写）
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: 解析器离线回归测试
+        run: python3 -m unittest discover -s tests -p test_stock_boot.py -v
+      - name: 通过官方镜像地址下载与当前系统匹配的 boot.img
+        run: |
+          set -Eeuo pipefail
+          mkdir -p .work/stock_boot
+          curl --fail --location --show-error --silent \
+            --connect-timeout 30 --max-time 1200 --retry 3 --retry-delay 8 \
+            'https://mirrorbits.lineageos.org/full/umi/20261004/boot.img' \
+            --output .work/stock_boot/boot.img
+          test "$(wc -c < .work/stock_boot/boot.img)" -ge 1048576
+          test "$(wc -c < .work/stock_boot/boot.img)" -le 134217728
+          sha256sum .work/stock_boot/boot.img | tee stock-boot.sha256
+      - name: 核实 Android 原版启动镜像头和分区数据
+        run: |
+          python3 scripts/inspect_stock_boot.py .work/stock_boot/boot.img \
+            --output stock-boot-layout.json | tee stock-boot-layout.log
+          python3 - <<'PY'
+          import json
+          r=json.load(open('stock-boot-layout.json'))
+          assert r['safe_to_flash'] is False
+          assert r['boot_header_version'] == 2
+          assert r['layout_plausible_for_umi']
+          assert r['sections']['kernel']['size'] > 0
+          assert r['sections']['ramdisk']['size'] > 0
+          print('Read-only boot layout validation complete. NO FLASHABLE IMAGE generated.')
+          PY
+      - name: 留存只读镜像结构报告（不上传原始 boot.img）
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: umi-20261004-stock-boot-audit
+          path: |
+            stock-boot.sha256
+            stock-boot-layout.json
+            stock-boot-layout.log
+          if-no-files-found: ignore
