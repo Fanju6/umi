@@ -54,6 +54,16 @@ def inspect(kernel: Path, ksu_repo: Path) -> list[dict]:
     else:
         add("seccomp", "WARN", "需检查原生 seccomp 机制")
 
+    # Linux 4.19 exposes clone and dedupe file callbacks separately.
+    vfs = read(ksu, "infra/file_wrapper.c")
+    if ("int (*clone_file_range)" in read(kernel, "include/linux/fs.h") and
+            "UMI_KSU_419_VFS_COMPAT" in vfs and
+            "p->ops.dedupe_file_range" in vfs and
+            "p->ops.clone_file_range" in vfs):
+        add("vfs-compat", "WARN", "4.19 克隆/去重回调已有代码适配；仍需编译和运行验证")
+    else:
+        add("vfs-compat", "BLOCK", "未确认 Linux 4.19 的 VFS file_operations 兼容分支")
+
     selinux = read(kernel, "security/selinux/include/security.h")
     krules = read(ksu, "selinux/rules.c")
     if ("struct selinux_ss *ss;" in selinux and "selinux_state.policy" in krules

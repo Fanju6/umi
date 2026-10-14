@@ -12,6 +12,12 @@ out="$workdir/output-$mode"
 mkdir -p "$out"
 out="$(cd "$out" && pwd)"
 [[ -d "$kernel" ]] || { echo "请先执行 scripts/prepare_sources.sh" >&2; exit 1; }
+# Linux 4.19's LLVM build internally calls unversioned llvm-* tools.
+export PATH="/usr/lib/llvm-18/bin:$PATH"
+for tool in clang-18 ld.lld-18 llvm-ar llvm-nm llvm-objcopy llvm-strip; do
+  command -v "$tool" >/dev/null || { echo "缺少 LLVM 工具: $tool" >&2; exit 1; }
+done
+
 
 # Clang 18 is an exploratory baseline; the final build must pin the actual
 # toolchain of the installed LineageOS release.
@@ -42,6 +48,10 @@ fi
 make -C "$kernel" "${build_args[@]}" olddefconfig
 echo "KernelSU config: $(grep -E '^CONFIG_KSU=|^# CONFIG_KSU is not set' "$out/.config" || true)"
 echo "CLANG: $(clang-18 --version | head -1)"
-make -C "$kernel" "${build_args[@]}" -j2 Image dtbs
+if [[ "$mode" == "ksu" ]]; then
+  # Fast single-object compile to surface the first KernelSU ABI error.
+  make -C "$kernel" "${build_args[@]}" -j2 drivers/kernelsu/infra/file_wrapper.o
+fi
+make -C "$kernel" "${build_args[@]}" -j4 Image dtbs
 echo "诊断编译完成：$out/arch/arm64/boot/Image"
 echo "注意：还未生成 boot.img，也没有经过真机验证。"

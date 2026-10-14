@@ -50,3 +50,11 @@ bash scripts/build_kernel.sh ksu
 `audit.py` 当前因 SELinux 风险返回退出码 2，这是预期安全阻塞。GitHub Actions 的绿色检查不等于真机已验证。
 
 **新增门禁：** 即使 SELinux 适配完成，Manager 握手仍列为独立 `manager-handshake` BLOCK，不能仅因 Seccomp 未越界就认为 Root 授权功能可用。
+
+## 2026-10-14：首轮内核诊断编译修复
+
+- CI #38529605474：原版基线失败于 `llvm-ar: not found`，两路编译出现 `llvm-nm: not found`。构建脚本现在把 Ubuntu LLVM 18 二进制目录加进 PATH，并预检查实际可执行文件。
+- 同轮 KernelSU 编译暴露了 `file_wrapper.c` 在 Linux 4.19 不支持的 `iopoll`、`remap_file_range` 和 `REMAP_FILE_DEDUP`。
+- 新增 `scripts/patch_vfs_419.py`，原生采用 `clone_file_range` / `dedupe_file_range`，在不修改新版分支语义的前提下修复旧 VFS 接口。
+- 新增 VFS 适配检查、单元测试及单对象编译步骤；还没有验证全量构建成功。
+- SELinux 和 Manager/Seccomp 的 P0 安全阻塞仍在，绝不发布未经验证的 boot.img。

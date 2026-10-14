@@ -28,6 +28,8 @@ jobs:
         run: bash scripts/prepare_sources.sh
       - name: 应用无内存布局风险的兼容补丁
         run: python3 scripts/apply_compat.py .work/KernelSU
+      - name: 将官方 KernelSU 的 VFS 包装器适配到 4.19
+        run: python3 scripts/patch_vfs_419.py .work/KernelSU
       - name: 对照已知 SELinux 阻塞，禁止误判可刷机
         run: |
           python3 scripts/audit.py .work/kernel .work/KernelSU --expect-blocked selinux-abi manager-handshake --json | tee audit.json
