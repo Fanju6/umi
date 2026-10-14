@@ -87,5 +87,7 @@ jobs:
         if: always()
         with:
           name: kernelsu-compile-diagnostics
-          path: ksu-build.log
+          path: |
+            ksu-build.log
+            .work/build-manifest-ksu.json
           if-no-files-found: ignore

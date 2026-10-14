@@ -48,11 +48,16 @@ static int ksu_legacy_sepol_edit(struct policydb *db, void *opaque)
                 return ret;
         }
         ret = apply_one_sepolicy_cmd(db, &header, args);
-        if (!ret)
-            data->success_count++;
-        else
-            pr_warn("ksu: sepolicy command %u failed (%d)\n",
+        if (ret) {
+            /*
+             * Never publish a partially updated candidate on rule failure.
+             * The transaction owner destroys it without replacing policydb.
+             */
+            pr_warn("ksu: sepolicy command %u failed (%d); aborting transaction\n",
                     cmd_index, ret);
+            return ret;
+        }
+        data->success_count++;
         cmd_index++;
     }
     return 0;

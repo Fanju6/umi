@@ -141,3 +141,10 @@ bash scripts/build_kernel.sh ksu
 - 同时让 KernelSU 的旧版分支引用此辅助函数，其他内核路径不变。加入源码精确匹配单测与静态链接风险审查。
 - 自动完整构建改为仅验证 KernelSU，原版对照编译保留在手动 workflow_dispatch 中以避免每次重复耗费 CI 时间。
 - **链接仍需新 CI 验证，SELinux Enforcing、Manager 和真机 root 功能仍有 P0 阻塞，禁止刷机。**
+
+## 2026-10-14：整核通过后的安全回归
+
+- #38552038273 完成官方 KernelSU 3.3.0 与 umi Linux 4.19 的完整 vmlinux/ Image 链接，原生产物检查为 passed=true。
+- 旧版批量 SELinux 命令改为**任意命令失败均取消整批事务**，不得发布已部分修改的 policydb。
+- 增强产物检查：必须包含 umi-sm8250-overlay.dtbo；记录 Image 与 umi DTBO 的 SHA-256 清单。
+- 尚未进行真机 SELinux Enforcing、Root/Manager 握手、boot.img 封装；安全阻塞继续保留。

@@ -43,6 +43,11 @@ class TestRules419(unittest.TestCase):
         self.assertIn(mod.MARKER,content)
         self.assertIn("ksu_legacy_policy_transaction",content)
         self.assertIn("ksu_legacy_sepol_edit",content)
+        # Failed rules must cancel the entire policydb candidate, not commit.
+        failed_branch=mod.LEGACY_BATCH.split("ret = apply_one_sepolicy_cmd(db, &header, args);")[1].split("data->success_count++")[0]
+        self.assertIn("if (ret)",failed_branch)
+        self.assertIn("return ret;",failed_branch)
+        self.assertIn("aborting transaction",failed_branch)
         self.assertIn(mod.MARKER_HIDE,self.hide.read_text())
         self.assertIn(mod.MARKER_SEPOL,self.pol.read_text())
         self.assertFalse(mod.patch(self.root))

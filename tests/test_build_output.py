@@ -15,9 +15,11 @@ class BuildOutputGateTests(unittest.TestCase):
         self.image=self.out/"arch/arm64/boot/Image"
         self.image.parent.mkdir(parents=True)
         self.elf=self.out/"vmlinux"
-        self.dtb=self.out/"arch/arm64/boot/dts/qcom/umi.dtb"
+        self.dtb=self.out/"arch/arm64/boot/dts/vendor/qcom/umi-sm8250-overlay.dtbo"
         self.dtb.parent.mkdir(parents=True)
         self.dtb.write_bytes(b"fixture")
+        other=self.out/"arch/arm64/boot/dts/vendor/qcom/kona.dtb"
+        other.write_bytes(b"fixture DTB")
         self.image.write_bytes(b"Z"*(1024*1024+1))
         self.elf.write_bytes(b"Y"*(1024*1024+1))
     def test_baseline_must_disable_ksu(self):
@@ -38,5 +40,9 @@ class BuildOutputGateTests(unittest.TestCase):
         archive.parent.mkdir(parents=True)
         archive.write_bytes(b"archive")
         self.assertTrue(mod.check_output("ksu",self.out)["passed"])
+        self.assertEqual(len(mod.check_output("ksu",self.out)["image_sha256"]),64)
         self.image.unlink()
+        self.assertFalse(mod.check_output("ksu",self.out)["passed"])
+        self.image.write_bytes(b"Z"*(1024*1024+1))
+        self.dtb.unlink()
         self.assertFalse(mod.check_output("ksu",self.out)["passed"])
