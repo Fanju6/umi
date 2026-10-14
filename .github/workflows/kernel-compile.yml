@@ -2,6 +2,9 @@ name: 内核诊断编译（非刷机包）
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - 'docs/CI_FULL_BUILD_TRIGGER.md'
 
 permissions:
   contents: read
@@ -34,7 +37,7 @@ jobs:
     name: 官方 KernelSU 4.19 兼容编译诊断（允许失败）
     runs-on: ubuntu-24.04
     timeout-minutes: 90
-    continue-on-error: true
+    continue-on-error: false
     steps:
       - uses: actions/checkout@v4
       - name: 安装交叉编译工具链（暂为探索版本）
