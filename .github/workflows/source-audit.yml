@@ -48,6 +48,8 @@ jobs:
         run: python3 scripts/patch_selinux_core_419.py .work/kernel
       - name: 将 KernelSU 规则编辑接入旧版策略事务
         run: python3 scripts/patch_rules_419.py .work/KernelSU
+      - name: 修复 4.19 缺失的 path_umount 链接符号
+        run: python3 scripts/patch_umount_419.py .work/kernel .work/KernelSU
       - name: 校验旧内核原生 SELinux 快照及策略发布机制
         run: python3 scripts/inspect_selinux_419.py .work/kernel .work/KernelSU --require-native | tee selinux-api.json
       - name: 验证 4.19 Seccomp 早于 syscall Tracepoint 的 Manager 风险

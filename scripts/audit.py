@@ -89,6 +89,19 @@ def inspect(kernel: Path, ksu_repo: Path) -> list[dict]:
         add("selinux-policydb-419", "BLOCK",
             "没有找到旧版 avtab、filename_trans 与 type flex_array 兼容实现")
 
+    # path_umount is not in 4.19; a native fs/namespace.c helper must own
+    # and release the looked-up mount reference using mntput_no_expire.
+    namespace = read(kernel, "fs/namespace.c")
+    ksu_umount = read(ksu, "feature/kernel_umount.c")
+    if ("UMI_KSU_419_PATH_UMOUNT" in namespace and
+            "ksu_legacy_path_umount" in ksu_umount and
+            "mntput_no_expire(mnt);" in namespace):
+        add("legacy-umount-link", "WARN",
+            "4.19 缺失的 path_umount 已由原生 namespace 辅助函数替代；真机卸载仍待验证")
+    else:
+        add("legacy-umount-link", "BLOCK",
+            "4.19 没有 path_umount，整核链接会遇到未定义符号")
+
     # The legacy branch is not a modern selinux_policy pointer alias.
     core = read(kernel, "security/selinux/ss/services.c")
     rules = read(ksu, "selinux/rules.c")

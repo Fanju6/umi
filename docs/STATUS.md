@@ -132,3 +132,12 @@ bash scripts/build_kernel.sh ksu
 - `check_build_output.py` 会在正常整核构建结束后核实最终 CONFIG_KSU/KPROBES/SELINUX/EXT4 配置、vmlinux、Image、设备树与驱动归档；此检查**不生产或发布 boot.img**。
 - `inspect_manager_419.py` 基于锁定内核源码确认 `secure_computing()` 发生在 `trace_sys_enter()` 之前；旧 4.19 Seccomp 无 action_cache，因此 Manager reboot 通道未解决。虽存在由 `setresuid` 注入匿名 FD 的另一实现，但必须验证 Android 16 Manager 实际进程生命周期。
 - 完整链接成功仍不得解除 `selinux-abi`、`manager-handshake` 两个发布阻塞；SELinux/AVC 更新与 Root 授权需要 Enforcing 真机测试。
+
+## 2026-10-14：整核链接首次失败及修复
+
+- 真实完整 KernelSU 内核链接 CI #38549614526：驱动与其它子系统已完成 LTO vmlinux.o、MODPOST，最终链接只遇到一处 `ld.lld-18: undefined symbol: path_umount`，引用来自 `feature/kernel_umount.c:71`。
+- Linux 4.19 的 `do_umount` 是 `fs/namespace.c` 私有函数，不能简单声明 `extern path_umount` 或用不安全的符号强转修复。
+- 新增 `patch_umount_419.py`：在内核自己的 `fs/namespace.c` 中增加条件编译的 `ksu_legacy_path_umount`，复用 `ksys_umount` 的原生参数校验、mount capability、命名空间与 MNT_LOCKED 检查，并用 `dput`/`mntput_no_expire` 按 4.19 语义消费传入的路径引用。
+- 同时让 KernelSU 的旧版分支引用此辅助函数，其他内核路径不变。加入源码精确匹配单测与静态链接风险审查。
+- 自动完整构建改为仅验证 KernelSU，原版对照编译保留在手动 workflow_dispatch 中以避免每次重复耗费 CI 时间。
+- **链接仍需新 CI 验证，SELinux Enforcing、Manager 和真机 root 功能仍有 P0 阻塞，禁止刷机。**
