@@ -50,6 +50,8 @@ jobs:
         run: python3 scripts/patch_rules_419.py .work/KernelSU
       - name: 校验旧内核原生 SELinux 快照及策略发布机制
         run: python3 scripts/inspect_selinux_419.py .work/kernel .work/KernelSU --require-native | tee selinux-api.json
+      - name: 验证 4.19 Seccomp 早于 syscall Tracepoint 的 Manager 风险
+        run: python3 scripts/inspect_manager_419.py .work/kernel .work/KernelSU --require-source | tee manager-audit.json
       - name: 对照已知 SELinux 阻塞，禁止误判可刷机
         run: |
           python3 scripts/audit.py .work/kernel .work/KernelSU --expect-blocked selinux-abi manager-handshake --json | tee audit.json
@@ -61,4 +63,5 @@ jobs:
           path: |
             audit.json
             selinux-api.json
+            manager-audit.json
           if-no-files-found: ignore

@@ -64,5 +64,6 @@ if [[ "$mode" == "ksu" ]]; then
   fi
 fi
 make -C "$kernel" "${build_args[@]}" -j4 Image dtbs
+python3 "$repo_root/scripts/check_build_output.py" "$mode" "$out"
 echo "诊断编译完成：$out/arch/arm64/boot/Image"
 echo "注意：还未生成 boot.img，也没有经过真机验证。"

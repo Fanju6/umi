@@ -34,7 +34,7 @@ jobs:
           if-no-files-found: ignore
 
   ksu-diagnostic:
-    name: 官方 KernelSU 4.19 兼容编译诊断（允许失败）
+    name: 官方 KernelSU 4.19 完整编译及链接验收
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     continue-on-error: false

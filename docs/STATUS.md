@@ -125,3 +125,10 @@ bash scripts/build_kernel.sh ksu
 - `patch_rules_419.py` 为 4.19 添加官方默认规则及批量 `sepolicy` 命令对应的独立事务编辑回调，保留新版 KernelSU 分支行为。
 - 旧内核没有与现代 `backup_sepolicy` 等价的 SID 备份，因此 4.19 的 SELinux Hide 功能暂不注册；将来必须重新设计，而不能创建伪造结构。
 - **尚未通过真实内核编译及设备测试**；默认规则异常处理、系统重载竞争、策略类型扩容、selinuxfs 节点更新与 Manager 连接均需验证。CI 保持 `selinux-abi` 和 `manager-handshake` 为 BLOCK，不可生成可刷写镜像。
+
+## 2026-10-14：完整内核产物验收与 Manager 源码风险检查
+
+- 官方 KernelSU 3.3.0 的完整驱动目录构建已在 #38549163434 与 #38549614511 成功；完整内核 Image/DTB 链接尚以独立任务验证，成功以前不作结论。
+- `check_build_output.py` 会在正常整核构建结束后核实最终 CONFIG_KSU/KPROBES/SELINUX/EXT4 配置、vmlinux、Image、设备树与驱动归档；此检查**不生产或发布 boot.img**。
+- `inspect_manager_419.py` 基于锁定内核源码确认 `secure_computing()` 发生在 `trace_sys_enter()` 之前；旧 4.19 Seccomp 无 action_cache，因此 Manager reboot 通道未解决。虽存在由 `setresuid` 注入匿名 FD 的另一实现，但必须验证 Android 16 Manager 实际进程生命周期。
+- 完整链接成功仍不得解除 `selinux-abi`、`manager-handshake` 两个发布阻塞；SELinux/AVC 更新与 Root 授权需要 Enforcing 真机测试。
