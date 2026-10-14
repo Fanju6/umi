@@ -75,6 +75,32 @@ jobs:
               assert a['sections'][section]['sha256'] == b['sections'][section]['sha256'], section
           print('Stock mkbootimg roundtrip passed (no AVB footer appended yet)')
           PY
+      - name: 原版内核回环封装后重建 AVB Footer，并校验元数据
+        run: |
+          set -Eeuo pipefail
+          kernel_salt="$(sha256sum .work/stock_boot/unpacked/kernel | cut -d' ' -f1)"
+          python3 .work/avb/avbtool.py add_hash_footer \
+            --image .work/stock_boot/roundtrip-boot.img \
+            --partition_size 134217728 --partition_name boot \
+            --algorithm NONE --hash_algorithm sha256 --salt "$kernel_salt" \
+            --prop 'com.android.build.boot.os_version:16' \
+            --prop 'com.android.build.boot.fingerprint:Xiaomi/lineage_umi/umi:16/BP4A.251205.006/94c0e3448d:userdebug/release-keys'
+          python3 .work/avb/avbtool.py info_image \
+            --image .work/stock_boot/roundtrip-boot.img | tee roundtrip-boot-avb.txt
+          python3 scripts/inspect_stock_boot.py .work/stock_boot/roundtrip-boot.img \
+            --output roundtrip-boot-with-avb.json
+          grep -F 'Algorithm:                NONE' roundtrip-boot-avb.txt
+          grep -F 'Partition Name:        boot' roundtrip-boot-avb.txt
+          grep -F "Prop: com.android.build.boot.os_version -> '16'" roundtrip-boot-avb.txt
+          grep -F "Prop: com.android.build.boot.fingerprint -> 'Xiaomi/lineage_umi/umi:16/BP4A.251205.006/94c0e3448d:userdebug/release-keys'" roundtrip-boot-avb.txt
+          python3 - <<'PY'
+          import json
+          original=json.load(open('stock-boot-layout.json'))
+          repacked=json.load(open('roundtrip-boot-with-avb.json'))
+          assert original['image_size_bytes'] == repacked['image_size_bytes'] == 134217728
+          assert repacked['avb_footer_magic_at_file_end']
+          print('Roundtrip AVB hash footer has expected format and size')
+          PY
       - name: 留存只读镜像结构报告（不上传原始 boot.img）
         if: always()
         uses: actions/upload-artifact@v4
@@ -86,4 +112,6 @@ jobs:
             stock-boot-layout.log
             stock-boot-avb.txt
             roundtrip-boot-layout.json
+            roundtrip-boot-avb.txt
+            roundtrip-boot-with-avb.json
           if-no-files-found: ignore
