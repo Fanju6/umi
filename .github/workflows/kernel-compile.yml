@@ -1,7 +1,6 @@
 name: 内核诊断编译（非刷机包）
 
 on:
-  push:
   workflow_dispatch:
 
 permissions:
@@ -47,7 +46,7 @@ jobs:
       - name: 应用已审查的安全兼容改动
         run: python3 scripts/apply_compat.py .work/KernelSU
       - name: 静态风险清单（已知阻塞不退出）
-        run: python3 scripts/audit.py .work/kernel .work/KernelSU --expect-blocked selinux-abi
+        run: python3 scripts/audit.py .work/kernel .work/KernelSU --expect-blocked selinux-abi manager-handshake
       - name: 尝试编译以收集实际错误（禁止发布 Image）
         run: |
           set -o pipefail

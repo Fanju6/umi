@@ -48,6 +48,7 @@ def inspect(kernel: Path, ksu_repo: Path) -> list[dict]:
             "UMI_KSU_419_NO_ACTION_CACHE" in ksec and
             "LINUX_VERSION_CODE < KERNEL_VERSION(5, 9, 0)" in ksec):
         add("seccomp", "WARN", "已防止直接访问不存在的 action_cache；管理器通信仍需真机验证")
+        add("manager-handshake", "BLOCK", "Linux 4.19 缺少 action_cache，未验证在 Seccomp 下获取 Manager FD 的可靠方法；禁止发布")
     elif "struct action_cache cache;" not in sec and "filter->cache.allow_native" in ksec:
         add("seccomp", "BLOCK", "旧版 seccomp_filter 缺少 action_cache；直接访问不安全")
     else:

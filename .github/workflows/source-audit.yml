@@ -30,7 +30,7 @@ jobs:
         run: python3 scripts/apply_compat.py .work/KernelSU
       - name: 对照已知 SELinux 阻塞，禁止误判可刷机
         run: |
-          python3 scripts/audit.py .work/kernel .work/KernelSU --expect-blocked selinux-abi --json | tee audit.json
+          python3 scripts/audit.py .work/kernel .work/KernelSU --expect-blocked selinux-abi manager-handshake --json | tee audit.json
           python3 -c 'import json; d=json.load(open("audit.json")); assert d["status"]=="BLOCKED"'
       - uses: actions/upload-artifact@v4
         if: always()
