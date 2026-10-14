@@ -88,3 +88,8 @@ bash scripts/build_kernel.sh ksu
 - `security_load_policy()` 对完整策略执行 SID 转换、在写锁下发布，以及 AVC 清空、状态通知。
 - 优先使用旧内核自己的事务原语而不是仿造新版 `selinux_state.policy` 指针替换。
 - 引入源码能力检查 `inspect_selinux_419.py` 和单元测试；它不解除 `selinux-abi` 阻塞，详情见 `docs/SELINUX_419_PORT.md`。
+
+## 2026-10-14：Supercall Task API 补丁
+
+- CI #38537057082 在 SELinux 报错之外，还暴露 supercall/dispatch.c 的 tasklist_lock、init_task、task_pgrp、task_session 未声明。
+- Linux 4.19 的声明分别由 sched/task.h 与 sched/signal.h 提供；新增带严格源码匹配与单元测试的补丁，不触碰权限判断逻辑。
