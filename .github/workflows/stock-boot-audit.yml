@@ -51,6 +51,30 @@ jobs:
           set -Eeuo pipefail
           git clone --depth 1 --branch lineage-23.0 https://github.com/LineageOS/android_external_avb.git .work/avb
           python3 .work/avb/avbtool.py info_image --image .work/stock_boot/boot.img | tee stock-boot-avb.txt
+      - name: 使用官方 mkbootimg 完整回环重封装并验证（仍为原版内核）
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git clone --depth 1 --branch lineage-23.0 https://github.com/LineageOS/android_system_tools_mkbootimg.git .work/mkbootimg
+          python3 .work/mkbootimg/unpack_bootimg.py \
+            --boot_img .work/stock_boot/boot.img --out .work/stock_boot/unpacked \
+            --format mkbootimg --null > .work/stock_boot/args.bin
+          declare -a args=()
+          while IFS= read -r -d '' arg; do args+=("$arg"); done < .work/stock_boot/args.bin
+          python3 .work/mkbootimg/mkbootimg.py "${args[@]}" \
+            --output .work/stock_boot/roundtrip-boot.img
+          python3 scripts/inspect_stock_boot.py .work/stock_boot/roundtrip-boot.img \
+            --output roundtrip-boot-layout.json
+          python3 - <<'PY'
+          import json
+          a=json.load(open('stock-boot-layout.json'))
+          b=json.load(open('roundtrip-boot-layout.json'))
+          for key in ('page_size','boot_header_version','header_size','board_name','cmdline','os_version_packed','kernel_addr','ramdisk_addr','tags_addr','dtb_addr'):
+              assert a[key] == b[key], (key,a[key],b[key])
+          for section in ('kernel','ramdisk','dtb'):
+              assert a['sections'][section]['sha256'] == b['sections'][section]['sha256'], section
+          print('Stock mkbootimg roundtrip passed (no AVB footer appended yet)')
+          PY
       - name: 留存只读镜像结构报告（不上传原始 boot.img）
         if: always()
         uses: actions/upload-artifact@v4
@@ -61,4 +85,5 @@ jobs:
             stock-boot-layout.json
             stock-boot-layout.log
             stock-boot-avb.txt
+            roundtrip-boot-layout.json
           if-no-files-found: ignore
