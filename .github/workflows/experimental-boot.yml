@@ -111,6 +111,7 @@ jobs:
             experimental-WARNING.txt
           retention-days: 7
           compression-level: 1
+          include-hidden-files: true
           if-no-files-found: error
       - name: 记录失败证据
         if: failure()
