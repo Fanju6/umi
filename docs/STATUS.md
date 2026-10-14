@@ -66,3 +66,9 @@ bash scripts/build_kernel.sh ksu
 - 新增 `patch_legacy_apis.py`，为 4.19 提供保持旧回调原型的 fsnotify 桥接；使用 `do_mount()`（旧版 API）替代不存在的 `path_mount()`。
 - 旧内核 `do_mount` 读取用户地址，本补丁仅在该调用期间将当前任务地址限制临时切换到 KERNEL_DS，并明确无条件恢复。此方案仅限 4.19 实验使用，仍需真机安全验证。
 - SELinux 策略布局、Manager/Seccomp 与内核 Hook 的 P0 不变，**禁止发布 boot.img**。
+
+## 2026-10-14：第三轮 KernelSU 快速编译诊断
+
+- CI #38534591389：SELinux 生成头文件、VFS、Mount、fsnotify 已进入正常编译；随后遇到 `struct seccomp.filter_count` 不存在、`TWA_RESUME` 新版枚举不兼容，以及 `put_task_struct` 头文件缺失。
+- `patch_policy_419.py` 只对 Linux 4.19 使用 `put_seccomp_filter(fake)` 和旧版 `task_work_add(..., true)`，避免访问不存在的 seccomp 成员；额外包含旧版 `sched/task.h`。
+- 这是兼容性编译修复，**不等于 Seccomp/Manager 握手通过**；Root 授权安全门禁保持。

@@ -49,6 +49,8 @@ jobs:
         run: python3 scripts/patch_vfs_419.py .work/KernelSU
       - name: 适配 Mount 与 fsnotify 旧 API
         run: python3 scripts/patch_legacy_apis.py .work/KernelSU
+      - name: 适配旧版 Seccomp 和 task_work API
+        run: python3 scripts/patch_policy_419.py .work/KernelSU
       - name: 静态风险清单（已知阻塞不退出）
         run: python3 scripts/audit.py .work/kernel .work/KernelSU --expect-blocked selinux-abi manager-handshake
       - name: 尝试编译以收集实际错误（禁止发布 Image）
