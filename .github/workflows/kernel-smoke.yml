@@ -36,6 +36,7 @@ jobs:
           python3 scripts/patch_dispatch_419.py .work/KernelSU
           python3 scripts/patch_avtab_419.py .work/KernelSU
           python3 scripts/patch_filename_419.py .work/KernelSU
+          python3 scripts/patch_type_419.py .work/KernelSU
       - name: 保留所有已知的安全阻塞
         run: python3 scripts/audit.py .work/kernel .work/KernelSU --expect-blocked selinux-abi manager-handshake
       - name: 仅编译 KernelSU 驱动目录（不生成可刷写镜像）

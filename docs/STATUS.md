@@ -101,3 +101,11 @@ bash scripts/build_kernel.sh ksu
 - 增加 `patch_filename_419.py`：在 Linux 4.19 分支使用包含 `stype` 的 `struct filename_trans`，配合旧版 `struct hashtab *` 和 `filename_trans_ttypes` 进行增改。
 - 两个补丁均保持新内核分支的官方实现不变，均提供幂等性和上游版本变化拒绝测试。
 - 当前仍未解决 `add_type` 的 `flex_array` 扩容、SELinux 安全策略发布和旧版 SID 转换，`selinux-abi` 与 `manager-handshake` BLOCK 不得取消。CI 成功不等于真机可用。
+
+## 2026-10-14：SELinux 4.19 Type/Attribute 兼容编译
+
+- CI #38539924974：先前的 avtab 和 filename_trans 编译错误已清零；剩余大量编译错误为 `add_type` 和 `rules.c` 现代策略发布。
+- 新增 `patch_type_419.py`，通过旧内核 `flex_array_alloc`、`flex_array_prealloc`、`flex_array_get/put` 构建 type->attribute、自定义 type->datum 和 type->name 映射。
+- 所有新数组分配、复制和新条目初始化成功后才替换旧容器；错误时释放新数组及新条目的 bitmap，避免直接将旧版 flex_array 转成指针数组。
+- 旧版属性取值也改为 `flex_array_get`，并防御空指针；不改变新内核实现分支。
+- **仅解决静态编译兼容，尚需验证 type 更新的并发、role 扩展失败和策略序列化长度。** 保留 P0 阻塞。

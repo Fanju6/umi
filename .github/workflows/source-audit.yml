@@ -42,6 +42,8 @@ jobs:
         run: python3 scripts/patch_avtab_419.py .work/KernelSU
       - name: 适配旧版 SELinux filename_trans
         run: python3 scripts/patch_filename_419.py .work/KernelSU
+      - name: 适配旧版 SELinux type/attribute flex_array
+        run: python3 scripts/patch_type_419.py .work/KernelSU
       - name: 校验旧内核原生 SELinux 快照及策略发布机制
         run: python3 scripts/inspect_selinux_419.py .work/kernel .work/KernelSU --require-native | tee selinux-api.json
       - name: 对照已知 SELinux 阻塞，禁止误判可刷机

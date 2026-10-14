@@ -59,6 +59,8 @@ jobs:
         run: python3 scripts/patch_avtab_419.py .work/KernelSU
       - name: 适配旧版 SELinux filename_trans
         run: python3 scripts/patch_filename_419.py .work/KernelSU
+      - name: 适配旧版 SELinux type/attribute flex_array
+        run: python3 scripts/patch_type_419.py .work/KernelSU
       - name: 静态风险清单（已知阻塞不退出）
         run: python3 scripts/audit.py .work/kernel .work/KernelSU --expect-blocked selinux-abi manager-handshake
       - name: 尝试编译以收集实际错误（禁止发布 Image）
