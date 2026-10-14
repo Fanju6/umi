@@ -1,0 +1,44 @@
+name: 官方 KernelSU 快速驱动编译
+
+on:
+  push:
+    paths:
+      - 'scripts/**'
+      - 'config/**'
+      - '.github/workflows/kernel-smoke.yml'
+      - '.github/workflows/kernel-compile.yml'
+      - '.github/workflows/source-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  kernelsu-driver:
+    name: 4.19 KernelSU Kbuild 快速诊断
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: 安装交叉编译工具链
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-18 lld-18 llvm-18 gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi bc bison flex libssl-dev libelf-dev
+      - name: 获取固定源码
+        run: bash scripts/prepare_sources.sh
+      - name: 应用官方 KernelSU 的安全兼容补丁
+        run: |
+          python3 scripts/apply_compat.py .work/KernelSU
+          python3 scripts/patch_vfs_419.py .work/KernelSU
+      - name: 保留所有已知的安全阻塞
+        run: python3 scripts/audit.py .work/kernel .work/KernelSU --expect-blocked selinux-abi manager-handshake
+      - name: 仅编译 KernelSU 驱动目录（不生成可刷写镜像）
+        run: |
+          set -o pipefail
+          KERNEL_QUICK=1 bash scripts/build_kernel.sh ksu 2>&1 | tee quick-driver.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kernelsu-driver-quick-log
+          path: quick-driver.log
+          if-no-files-found: ignore

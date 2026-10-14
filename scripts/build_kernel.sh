@@ -50,7 +50,12 @@ echo "KernelSU config: $(grep -E '^CONFIG_KSU=|^# CONFIG_KSU is not set' "$out/.
 echo "CLANG: $(clang-18 --version | head -1)"
 if [[ "$mode" == "ksu" ]]; then
   # Fast single-object compile to surface the first KernelSU ABI error.
-  make -C "$kernel" "${build_args[@]}" -j2 drivers/kernelsu/infra/file_wrapper.o
+  # Kbuild 4.19 supports a directory target, not an individual subdir object.
+  make -C "$kernel" "${build_args[@]}" -j4 drivers/kernelsu/
+  if [[ "${KERNEL_QUICK:-0}" == "1" ]]; then
+    echo "KernelSU driver-only diagnostic completed; full kernel not built."
+    exit 0
+  fi
 fi
 make -C "$kernel" "${build_args[@]}" -j4 Image dtbs
 echo "诊断编译完成：$out/arch/arm64/boot/Image"
