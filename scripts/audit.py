@@ -64,6 +64,18 @@ def inspect(kernel: Path, ksu_repo: Path) -> list[dict]:
     else:
         add("vfs-compat", "BLOCK", "未确认 Linux 4.19 的 VFS file_operations 兼容分支")
 
+    # Old fsnotify callback signatures are ABI-incompatible with 3.3.0.
+    observer = read(ksu, "manager/pkg_observer.c")
+    mount = read(ksu, "infra/su_mount_ns.c")
+    if "UMI_KSU_419_FSNOTIFY_COMPAT" in observer and ".handle_event = ksu_handle_event" in observer:
+        add("fsnotify-compat", "WARN", "旧版 handle_event 已独立适配；待编译及真机验证")
+    else:
+        add("fsnotify-compat", "BLOCK", "4.19 fsnotify_ops 缺少现代 handle_inode_event")
+    if "UMI_KSU_419_MOUNT_COMPAT" in mount and "set_fs(old_fs)" in mount:
+        add("mount-compat", "WARN", "4.19 do_mount 已适配，恢复旧地址空间限制；待运行验证")
+    else:
+        add("mount-compat", "BLOCK", "4.19 缺少新版 path_mount 调用接口")
+
     selinux = read(kernel, "security/selinux/include/security.h")
     krules = read(ksu, "selinux/rules.c")
     if ("struct selinux_ss *ss;" in selinux and "selinux_state.policy" in krules

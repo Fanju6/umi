@@ -50,6 +50,10 @@ echo "KernelSU config: $(grep -E '^CONFIG_KSU=|^# CONFIG_KSU is not set' "$out/.
 echo "CLANG: $(clang-18 --version | head -1)"
 if [[ "$mode" == "ksu" ]]; then
   # Fast single-object compile to surface the first KernelSU ABI error.
+  # KernelSU includes SELinux's generated flask.h through objsec.h.
+  # Normal full builds generate it as part of SELinux; driver-only builds must
+  # request it explicitly before compiling the KernelSU directory.
+  make -C "$kernel" "${build_args[@]}" security/selinux/flask.h
   # Kbuild 4.19 supports a directory target, not an individual subdir object.
   make -C "$kernel" "${build_args[@]}" -j4 drivers/kernelsu/
   if [[ "${KERNEL_QUICK:-0}" == "1" ]]; then

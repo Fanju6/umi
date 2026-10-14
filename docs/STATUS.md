@@ -58,3 +58,11 @@ bash scripts/build_kernel.sh ksu
 - 新增 `scripts/patch_vfs_419.py`，原生采用 `clone_file_range` / `dedupe_file_range`，在不修改新版分支语义的前提下修复旧 VFS 接口。
 - 新增 VFS 适配检查、单元测试及单对象编译步骤；还没有验证全量构建成功。
 - SELinux 和 Manager/Seccomp 的 P0 安全阻塞仍在，绝不发布未经验证的 boot.img。
+
+## 2026-10-14：第二轮 KernelSU 驱动编译诊断
+
+- 快速 CI #38533421758：工具链路径及 VFS 原有报错不再出现。新增三处阻塞：`flask.h` 未在子目录编译前生成；旧内核缺少 `uapi/linux/mount.h`；`fsnotify_ops` 从旧版 `handle_event` 演进为新版 `handle_inode_event`。
+- 先编译 `security/selinux/flask.h`，使 Kbuild 生成相应头文件，再单独构建 KernelSU。
+- 新增 `patch_legacy_apis.py`，为 4.19 提供保持旧回调原型的 fsnotify 桥接；使用 `do_mount()`（旧版 API）替代不存在的 `path_mount()`。
+- 旧内核 `do_mount` 读取用户地址，本补丁仅在该调用期间将当前任务地址限制临时切换到 KERNEL_DS，并明确无条件恢复。此方案仅限 4.19 实验使用，仍需真机安全验证。
+- SELinux 策略布局、Manager/Seccomp 与内核 Hook 的 P0 不变，**禁止发布 boot.img**。
