@@ -36,6 +36,8 @@ jobs:
         run: python3 scripts/patch_policy_419.py .work/KernelSU
       - name: 适配 Linux 4.19 的 Sulog minmax 头文件
         run: python3 scripts/patch_sulog_419.py .work/KernelSU
+      - name: 校验旧内核原生 SELinux 快照及策略发布机制
+        run: python3 scripts/inspect_selinux_419.py .work/kernel .work/KernelSU --require-native | tee selinux-api.json
       - name: 对照已知 SELinux 阻塞，禁止误判可刷机
         run: |
           python3 scripts/audit.py .work/kernel .work/KernelSU --expect-blocked selinux-abi manager-handshake --json | tee audit.json
@@ -44,5 +46,7 @@ jobs:
         if: always()
         with:
           name: static-audit-report
-          path: audit.json
+          path: |
+            audit.json
+            selinux-api.json
           if-no-files-found: ignore

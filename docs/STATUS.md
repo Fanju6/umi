@@ -81,3 +81,10 @@ bash scripts/build_kernel.sh ksu
 - 旧版 `struct selinux_ss` 是 `policy_rwlock + policydb + sidtab`，新版 `struct selinux_policy` 的 `policy_mutex + RCU 指针整体替换` 不是等价接口。下一阶段需要设计可验证的安全策略复制和原子发布方案。
 - CI 快速编译现在附带精简的 Clang 错误摘要，完整日志仍保留在 Artifact。
 - 原版 LineageOS 的全量内核诊断编译已经在 CI #38533020110 单独通过。**这不构成可刷机、KernelSU 驱动成功或真机通过的证明。**
+
+## 2026-10-14：4.19 SELinux 原生事务接口核实
+
+- 已确认 `security_read_policy()` 在 `policy_rwlock` 读锁下序列化原始策略。
+- `security_load_policy()` 对完整策略执行 SID 转换、在写锁下发布，以及 AVC 清空、状态通知。
+- 优先使用旧内核自己的事务原语而不是仿造新版 `selinux_state.policy` 指针替换。
+- 引入源码能力检查 `inspect_selinux_419.py` 和单元测试；它不解除 `selinux-abi` 阻塞，详情见 `docs/SELINUX_419_PORT.md`。
