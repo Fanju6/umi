@@ -1,0 +1,60 @@
+name: 内核诊断编译（非刷机包）
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  baseline:
+    name: LineageOS 原版内核诊断编译
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: 安装交叉编译工具链（暂为探索版本）
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-18 lld-18 llvm-18 gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi bc bison flex libssl-dev libelf-dev
+      - name: 固定上游源码
+        run: bash scripts/prepare_sources.sh
+      - name: 编译原版 LineageOS 内核（不启用 KernelSU）
+        run: |
+          set -o pipefail
+          bash scripts/build_kernel.sh baseline 2>&1 | tee baseline-build.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: baseline-build-log
+          path: baseline-build.log
+          if-no-files-found: ignore
+
+  ksu-diagnostic:
+    name: 官方 KernelSU 4.19 兼容编译诊断（允许失败）
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: 安装交叉编译工具链（暂为探索版本）
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-18 lld-18 llvm-18 gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi bc bison flex libssl-dev libelf-dev
+      - name: 获取固定上游源码
+        run: bash scripts/prepare_sources.sh
+      - name: 应用已审查的安全兼容改动
+        run: python3 scripts/apply_compat.py .work/KernelSU
+      - name: 静态风险清单（已知阻塞不退出）
+        run: python3 scripts/audit.py .work/kernel .work/KernelSU --expect-blocked selinux-abi
+      - name: 尝试编译以收集实际错误（禁止发布 Image）
+        run: |
+          set -o pipefail
+          bash scripts/build_kernel.sh ksu 2>&1 | tee ksu-build.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kernelsu-compile-diagnostics
+          path: ksu-build.log
+          if-no-files-found: ignore
