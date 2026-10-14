@@ -156,3 +156,10 @@ bash scripts/build_kernel.sh ksu
 - 上游 `sm8250-common/BoardConfigCommon.mk` 非 Virtual A/B 分支预期 Boot Header v2、page size 4096、DTB 纳入 boot image、DTBO 独立，**仍需验证现有原版 boot.img 头及实际分区容量**。
 - `config/umi_preflight_20261014.json` 只保存无个人标识的观测信息；`scripts/check_umi_preflight.py` 与回归测试保证固定源码匹配、拒绝误用 A/B 配置，并始终报告 `safe_to_flash=false`。
 - CI #38555215723 已通过完整内核链接和 umi DTBO 验收；但并未生成可刷写镜像，也尚未验证 SELinux 策略运行时可靠性与 Manager 握手，两项继续 BLOCK。
+
+## 2026-10-14：真机首次启动失败（必须阻止重复刷入）
+
+- 用户在小米 10 umi / LineageOS 23.2-20261004 上刷入通过 CI #38567509103 结构验收的实验 `boot.img`，**开机失败**；随后刷回同版本原版 `boot.img`，已恢复正常启动。
+- 失败镜像 SHA-256：`b5701bb8347ea4d37c584b96eedd00f6e51d867aa9a68ec21d75a16f85ae2aaf`（CI #38567509103，Git commit dbad536）。**标记为 KNOWN_BOOT_FAILURE，禁止重复刷写。** CI 结构校验不等于真机可启动。
+- 失败阶段（黑屏、Logo、bootanimation、Recovery/fastboot）、内核 panic/ramoops/pstore 日志：**尚无实机证据**，不得擅自归因 SELinux 或 KernelSU。
+- 下一步：只读收集残存 pstore/bootreason；从原版 Image 的 IKCONFIG 比对 Clang18 编译的 KernelSU .config，先完成干净的非 KSU 基线兼容验证，再隔离早期 Hook、SELinux 策略事务等因素。任何新调试版也不等于稳定或安全。

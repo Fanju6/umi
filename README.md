@@ -28,6 +28,11 @@
 
 后续自动化、源代码改动和检查详见仓库中的 `docs/` 与 `scripts/`。
 
+## 重要：已知实验镜像启动失败
+
+> [!CAUTION]
+> **2026-10-14 真机验证：KernelSU 3.3.0 的实验 boot.img 无法正常启动，用户恢复原版 boot.img 后已重新开机。** 已知失败的 SHA-256：`b5701bb8347ea4d37c584b96eedd00f6e51d867aa9a68ec21d75a16f85ae2aaf`。**不要重复刷入该版本**。编译、镜像结构和 AVB Footer 静态验收均不能排除内核初始化异常。详见 [故障与排查](docs/BOOT_FAILURE_20261014.md)。
+
 ## 已完成的 CI 与实机只读预检
 
 - [整核链接、Image、umi DTBO 完整验收](https://github.com/Fanju6/umi/actions/runs/38555215723)：成功，但仍是不可刷写的编译产物。

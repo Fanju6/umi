@@ -8,6 +8,7 @@ on:
       - 'scripts/inspect_stock_boot.py'
       - 'tests/test_stock_boot.py'
       - 'docs/BOOT_REFERENCE_TRIGGER.md'
+      - 'scripts/inspect_stock_kernel.py'
 
 permissions:
   contents: read
@@ -101,6 +102,10 @@ jobs:
           assert repacked['avb_footer_magic_at_file_end']
           print('Roundtrip AVB hash footer has expected format and size')
           PY
+      - name: 提取官方 Image 内嵌 Kconfig 和编译器标识（若可用）
+        run: |
+          python3 scripts/inspect_stock_kernel.py .work/stock_boot/boot.img \
+            --output stock-kernel-config-audit.json
       - name: 留存只读镜像结构报告（不上传原始 boot.img）
         if: always()
         uses: actions/upload-artifact@v4
@@ -114,4 +119,5 @@ jobs:
             roundtrip-boot-layout.json
             roundtrip-boot-avb.txt
             roundtrip-boot-with-avb.json
+            stock-kernel-config-audit.json
           if-no-files-found: ignore
