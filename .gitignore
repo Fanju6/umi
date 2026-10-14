@@ -1,0 +1,8 @@
+.work/
+*.pyc
+__pycache__/
+*.img
+*.dtb
+*.dtbo
+*.o
+out/

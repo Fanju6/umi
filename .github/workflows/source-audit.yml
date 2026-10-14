@@ -1,0 +1,40 @@
+name: 上游源码与安全门禁
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    name: 兼容补丁单元测试
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Python 回归测试
+        run: python3 -m unittest discover -s tests -v
+
+  upstream-audit:
+    name: 官方上游集成（已知阻塞检查）
+    needs: unit-tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: 获取固定版本并集成 KernelSU
+        run: bash scripts/prepare_sources.sh
+      - name: 应用无内存布局风险的兼容补丁
+        run: python3 scripts/apply_compat.py .work/KernelSU
+      - name: 对照已知 SELinux 阻塞，禁止误判可刷机
+        run: |
+          python3 scripts/audit.py .work/kernel .work/KernelSU --expect-blocked selinux-abi --json | tee audit.json
+          python3 -c 'import json; d=json.load(open("audit.json")); assert d["status"]=="BLOCKED"'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: static-audit-report
+          path: audit.json
+          if-no-files-found: ignore

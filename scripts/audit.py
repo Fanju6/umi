@@ -1,0 +1,99 @@
+#!/usr/bin/env python3
+"""Static pre-build checks. This is NOT a compiler or boot test."""
+import argparse
+import json
+import re
+import sys
+from pathlib import Path
+
+
+def read(root: Path, name: str) -> str:
+    path = root / name
+    return path.read_text(encoding="utf-8", errors="replace") if path.exists() else ""
+
+
+def inspect(kernel: Path, ksu_repo: Path) -> list[dict]:
+    ksu = ksu_repo / "kernel" if (ksu_repo / "kernel/Kbuild").is_file() else ksu_repo
+    if not (kernel / "Makefile").is_file() or not (ksu / "Kbuild").is_file():
+        raise ValueError("请提供完整的 LineageOS 内核源码和官方 KernelSU 源码")
+    result = []
+
+    def add(key: str, status: str, detail: str):
+        result.append(dict(key=key, status=status, detail=detail))
+
+    mk = read(kernel, "Makefile")
+    add("kernel-version", "PASS" if re.search(r"^VERSION = 4\nPATCHLEVEL = 19$", mk, re.M) else "BLOCK",
+        "本项目仅审查 Linux 4.19 内核")
+    add("ksu-wiring", "PASS" if
+        'source "drivers/kernelsu/Kconfig"' in read(kernel, "drivers/Kconfig") and
+        'obj-$(CONFIG_KSU) += kernelsu/' in read(kernel, "drivers/Makefile")
+        else "BLOCK", "KernelSU Kbuild/Kconfig 已正确接线")
+    add("umi-config", "PASS" if "CONFIG_KSU=y" in read(
+        kernel, "arch/arm64/configs/vendor/xiaomi/umi.config") else "BLOCK",
+        "umi 配置片段包含 CONFIG_KSU=y；仍须核对最终生成的 .config")
+    apis = [
+        ("syscall-table", "sys_call_table" in read(kernel, "arch/arm64/kernel/sys.c")),
+        ("trace-enter", "TRACE_EVENT_FN(sys_enter" in read(kernel, "include/trace/events/syscalls.h")),
+        ("trace-priority", "register_trace_prio_##name" in read(kernel, "include/linux/tracepoint.h")),
+        ("nofault-write", "copy_to_kernel_nofault" in read(kernel, "include/linux/uaccess.h")),
+    ]
+    for key, found in apis:
+        add(key, "PASS" if found else "BLOCK", "基础接口" + ("存在" if found else "不存在"))
+
+    sec = read(kernel, "kernel/seccomp.c")
+    ksec = read(ksu, "infra/seccomp_cache.c")
+    if "struct seccomp_filter" not in sec:
+        add("seccomp", "BLOCK", "无法确认 seccomp_filter 原生布局")
+    elif "struct action_cache cache;" not in sec and (
+            "UMI_KSU_419_NO_ACTION_CACHE" in ksec and
+            "LINUX_VERSION_CODE < KERNEL_VERSION(5, 9, 0)" in ksec):
+        add("seccomp", "WARN", "已防止直接访问不存在的 action_cache；管理器通信仍需真机验证")
+    elif "struct action_cache cache;" not in sec and "filter->cache.allow_native" in ksec:
+        add("seccomp", "BLOCK", "旧版 seccomp_filter 缺少 action_cache；直接访问不安全")
+    else:
+        add("seccomp", "WARN", "需检查原生 seccomp 机制")
+
+    selinux = read(kernel, "security/selinux/include/security.h")
+    krules = read(ksu, "selinux/rules.c")
+    if ("struct selinux_ss *ss;" in selinux and "selinux_state.policy" in krules
+            and "selinux_state.policy_mutex" in krules):
+        add("selinux-abi", "BLOCK",
+            "官方新版 policy/policy_mutex 与 umi 旧版 ss/policy_rwlock 不兼容；禁止刷写")
+    else:
+        add("selinux-abi", "WARN", "旧版 policydb、sidtab、AVC 一致性必须专门验证")
+
+    if "CONFIG_CFI_CLANG=y" in read(kernel, "arch/arm64/configs/vendor/kona-perf_defconfig"):
+        add("cfi", "WARN", "Clang CFI 已启用：需验证 Hook 函数调用与内存修改")
+    return result
+
+
+def main() -> int:
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument("kernel", type=Path)
+    p.add_argument("ksu", type=Path)
+    p.add_argument("--expect-blocked", nargs="*", default=None,
+                   help="仅供 CI 回归测试：期望仍存在的已知 BLOCK 项")
+    p.add_argument("--json", action="store_true")
+    args = p.parse_args()
+    try:
+        checks = inspect(args.kernel.resolve(), args.ksu.resolve())
+    except ValueError as exc:
+        p.error(str(exc))
+    blocked = sorted(c["key"] for c in checks if c["status"] == "BLOCK")
+    result = {"status": "BLOCKED" if blocked else "STATIC_ONLY",
+              "checks": checks, "blocked": blocked,
+              "warning": "即使静态审查通过，也不等于编译通过或可以刷机。"}
+    print(json.dumps(result, indent=2, ensure_ascii=False) if args.json else
+          "\n".join(f"[{x['status']}] {x['key']}: {x['detail']}" for x in checks) +
+          "\nRESULT: " + result["status"])
+    if args.expect_blocked is not None:
+        expected = sorted(args.expect_blocked)
+        if blocked != expected:
+            print(f"期望 BLOCK {expected}，实际 BLOCK {blocked}", file=sys.stderr)
+            return 2
+        return 0
+    return 2 if blocked else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
