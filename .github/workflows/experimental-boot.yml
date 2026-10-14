@@ -1,0 +1,125 @@
+name: umi KernelSU 实验版 boot.img（未验证）
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/experimental-boot.yml'
+      - 'docs/EXPERIMENTAL_BOOT_TRIGGER.md'
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: 编译内核并按原版结构封装（不会自动刷机）
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: 安装交叉编译环境
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-18 lld-18 llvm-18 gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi bc bison flex libssl-dev libelf-dev
+      - name: 固定源码并应用已验证的 4.19 补丁
+        run: |
+          set -Eeuo pipefail
+          bash scripts/prepare_sources.sh
+          python3 scripts/apply_compat.py .work/KernelSU
+          python3 scripts/patch_vfs_419.py .work/KernelSU
+          python3 scripts/patch_legacy_apis.py .work/KernelSU
+          python3 scripts/patch_policy_419.py .work/KernelSU
+          python3 scripts/patch_sulog_419.py .work/KernelSU
+          python3 scripts/patch_dispatch_419.py .work/KernelSU
+          python3 scripts/patch_avtab_419.py .work/KernelSU
+          python3 scripts/patch_filename_419.py .work/KernelSU
+          python3 scripts/patch_type_419.py .work/KernelSU
+          python3 scripts/patch_selinux_core_419.py .work/kernel
+          python3 scripts/patch_rules_419.py .work/KernelSU
+          python3 scripts/patch_umount_419.py .work/kernel .work/KernelSU
+          python3 scripts/audit.py .work/kernel .work/KernelSU --expect-blocked selinux-abi manager-handshake
+      - name: 编译 umi 官方 KernelSU 3.3.0 内核
+        run: |
+          set -o pipefail
+          bash scripts/build_kernel.sh ksu 2>&1 | tee ksu-build.log
+      - name: 下载 SHA256 锁定的 20261004 官方 boot.img 和封装工具
+        run: |
+          set -Eeuo pipefail
+          mkdir -p .work/stock .work/experiment
+          curl -fLsS --connect-timeout 30 --max-time 1200 --retry 3 \
+            'https://mirrorbits.lineageos.org/full/umi/20261004/boot.img' -o .work/stock/boot.img
+          echo 'ce4a917a9233921b03e748b1fffc7b5ecea613c7ddf72208f26c77189f31a693  .work/stock/boot.img' | sha256sum --check
+          git clone --depth 1 --branch lineage-23.0 https://github.com/LineageOS/android_system_tools_mkbootimg.git .work/mkbootimg
+          git clone --depth 1 --branch lineage-23.0 https://github.com/LineageOS/android_external_avb.git .work/avb
+          python3 .work/avb/avbtool.py info_image --image .work/stock/boot.img | tee stock-avb.txt
+          grep -F 'Algorithm:                NONE' stock-avb.txt
+          grep -F 'Partition Name:        boot' stock-avb.txt
+          grep -F "Prop: com.android.build.boot.os_version -> '16'" stock-avb.txt
+          grep -F "Prop: com.android.build.boot.fingerprint -> 'Xiaomi/lineage_umi/umi:16/BP4A.251205.006/94c0e3448d:userdebug/release-keys'" stock-avb.txt
+      - name: 使用原版 Ramdisk、DTB 和全部 Header 字段重封装
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 .work/mkbootimg/unpack_bootimg.py \
+            --boot_img .work/stock/boot.img --out .work/stock/unpacked \
+            --format mkbootimg --null > .work/stock/args.bin
+          declare -a args=()
+          while IFS= read -r -d '' arg; do args+=("$arg"); done < .work/stock/args.bin
+          found=0
+          for ((i=0; i<${#args[@]}-1; i++)); do
+            if [[ "${args[$i]}" == '--kernel' ]]; then
+              args[$((i+1))]='.work/output-ksu/arch/arm64/boot/Image'
+              found=1
+              break
+            fi
+          done
+          test "$found" -eq 1
+          python3 .work/mkbootimg/mkbootimg.py "${args[@]}" \
+            --output .work/experiment/umi-KernelSU3.3.0-20261004-EXPERIMENTAL-boot.img
+      - name: 重新计算 AVB Hash Footer，保留原版 fingerprint
+        run: |
+          set -Eeuo pipefail
+          image='.work/experiment/umi-KernelSU3.3.0-20261004-EXPERIMENTAL-boot.img'
+          salt="$(sha256sum .work/output-ksu/arch/arm64/boot/Image | cut -d' ' -f1)"
+          python3 .work/avb/avbtool.py add_hash_footer \
+            --image "$image" --partition_size 134217728 --partition_name boot \
+            --algorithm NONE --hash_algorithm sha256 --salt "$salt" \
+            --prop 'com.android.build.boot.os_version:16' \
+            --prop 'com.android.build.boot.fingerprint:Xiaomi/lineage_umi/umi:16/BP4A.251205.006/94c0e3448d:userdebug/release-keys'
+          python3 .work/avb/avbtool.py info_image --image "$image" | tee experimental-avb.txt
+      - name: 校验所有原版 Ramdisk、DTB、Header、命令行、AVB 与镜像体积
+        run: |
+          set -Eeuo pipefail
+          image='.work/experiment/umi-KernelSU3.3.0-20261004-EXPERIMENTAL-boot.img'
+          python3 scripts/check_experimental_boot.py \
+            .work/stock/boot.img "$image" .work/output-ksu/arch/arm64/boot/Image \
+            stock-avb.txt experimental-avb.txt \
+            --output experimental-boot-verification.json | tee experimental-boot-verification.log
+          sha256sum "$image" | tee experimental-boot.sha256
+          printf '%s\n' 'EXPERIMENTAL: not boot-tested, not SELinux/Manager validated. No flash executed.' > experimental-WARNING.txt
+      - name: 上传实验版镜像，仅供自愿且可恢复的真机调试
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: EXPERIMENTAL-UNVERIFIED-umi-KernelSU3.3.0-boot
+          path: |
+            .work/experiment/umi-KernelSU3.3.0-20261004-EXPERIMENTAL-boot.img
+            experimental-boot-verification.json
+            experimental-boot.sha256
+            experimental-avb.txt
+            stock-avb.txt
+            experimental-WARNING.txt
+          retention-days: 7
+          compression-level: 1
+          if-no-files-found: error
+      - name: 记录失败证据
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: experimental-boot-failure-log
+          path: |
+            ksu-build.log
+            stock-avb.txt
+            experimental-avb.txt
+            experimental-boot-verification.json
+          if-no-files-found: ignore
