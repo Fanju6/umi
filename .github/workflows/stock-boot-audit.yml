@@ -46,6 +46,11 @@ jobs:
           assert r['sections']['ramdisk']['size'] > 0
           print('Read-only boot layout validation complete. NO FLASHABLE IMAGE generated.')
           PY
+      - name: 验证原版 AVB Footer 及签名描述
+        run: |
+          set -Eeuo pipefail
+          git clone --depth 1 --branch lineage-23.0 https://github.com/LineageOS/android_external_avb.git .work/avb
+          python3 .work/avb/avbtool.py info_image --image .work/stock_boot/boot.img | tee stock-boot-avb.txt
       - name: 留存只读镜像结构报告（不上传原始 boot.img）
         if: always()
         uses: actions/upload-artifact@v4
@@ -55,4 +60,5 @@ jobs:
             stock-boot.sha256
             stock-boot-layout.json
             stock-boot-layout.log
+            stock-boot-avb.txt
           if-no-files-found: ignore
