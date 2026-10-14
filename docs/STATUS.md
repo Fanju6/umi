@@ -148,3 +148,11 @@ bash scripts/build_kernel.sh ksu
 - 旧版批量 SELinux 命令改为**任意命令失败均取消整批事务**，不得发布已部分修改的 policydb。
 - 增强产物检查：必须包含 umi-sm8250-overlay.dtbo；记录 Image 与 umi DTBO 的 SHA-256 清单。
 - 尚未进行真机 SELinux Enforcing、Root/Manager 握手、boot.img 封装；安全阻塞继续保留。
+
+## 2026-10-14：真实 Xiaomi Mi 10 umi 非 A/B 分区布局已确认
+
+- 真机只读报告：`umi` / Android 16（API 36）/ LineageOS `23.2-20261004-NIGHTLY-umi` / `4.19.325-cip131-st15-perf-g71b13e62f057` / SELinux `Enforcing`。
+- `ro.build.ab_update=false`，`ro.boot.slot` 和 `ro.boot.slot_suffix` 为空，且只读查看到独立的 `boot`、`recovery`、`dtbo`、`vbmeta`，无 A/B 槽位后缀：据此确认非 A/B、独立 Recovery 布局。
+- 上游 `sm8250-common/BoardConfigCommon.mk` 非 Virtual A/B 分支预期 Boot Header v2、page size 4096、DTB 纳入 boot image、DTBO 独立，**仍需验证现有原版 boot.img 头及实际分区容量**。
+- `config/umi_preflight_20261014.json` 只保存无个人标识的观测信息；`scripts/check_umi_preflight.py` 与回归测试保证固定源码匹配、拒绝误用 A/B 配置，并始终报告 `safe_to_flash=false`。
+- CI #38555215723 已通过完整内核链接和 umi DTBO 验收；但并未生成可刷写镜像，也尚未验证 SELinux 策略运行时可靠性与 Manager 握手，两项继续 BLOCK。

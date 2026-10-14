@@ -33,3 +33,5 @@
 - [整核链接、Image、umi DTBO 完整验收](https://github.com/Fanju6/umi/actions/runs/38555215723)：成功，但仍是不可刷写的编译产物。
 - [Windows PowerShell / Linux 真机只读预检](docs/DEVICE_PREFLIGHT.md)：仅获取版本、SELinux、槽位和分区名称，不写入设备。
 - SELinux 策略运行时安全、Manager 授权和真机启动验证均未完成。
+
+设备真机只读检查已确认非 A/B、独立 `boot/recovery/dtbo/vbmeta` 分区布局；版本和内核 Git 后缀与固定源码匹配。详见 [umi 启动镜像验收约束](docs/UMI_BOOT_LAYOUT.md)。这**不意味着现有 boot.img 已被验证或可以刷机**。

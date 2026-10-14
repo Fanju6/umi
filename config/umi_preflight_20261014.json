@@ -1,0 +1,21 @@
+{
+  "captured_date": "2026-10-14",
+  "source": "read-only adb observations supplied in conversation; sensitive identifiers omitted",
+  "device": "umi",
+  "android_api": 36,
+  "android_version": "16",
+  "lineage_version": "23.2-20261004-NIGHTLY-umi",
+  "kernel_release": "4.19.325-cip131-st15-perf-g71b13e62f057",
+  "selinux": "Enforcing",
+  "boot_slot_suffix": "",
+  "boot_slot": "",
+  "ab_update": "false",
+  "virtual_ab": "",
+  "verified_boot": "orange",
+  "partition_names": [
+    "boot",
+    "dtbo",
+    "recovery",
+    "vbmeta"
+  ]
+}
