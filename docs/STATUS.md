@@ -72,3 +72,12 @@ bash scripts/build_kernel.sh ksu
 - CI #38534591389：SELinux 生成头文件、VFS、Mount、fsnotify 已进入正常编译；随后遇到 `struct seccomp.filter_count` 不存在、`TWA_RESUME` 新版枚举不兼容，以及 `put_task_struct` 头文件缺失。
 - `patch_policy_419.py` 只对 Linux 4.19 使用 `put_seccomp_filter(fake)` 和旧版 `task_work_add(..., true)`，避免访问不存在的 seccomp 成员；额外包含旧版 `sched/task.h`。
 - 这是兼容性编译修复，**不等于 Seccomp/Manager 握手通过**；Root 授权安全门禁保持。
+
+## 2026-10-14：SELinux 4.19 核心阻塞（最新快速 CI #38535181738）
+
+- 之前的 LLVM、VFS、mount、fsnotify、seccomp/task_work 编译报错已不再出现，快速 Kbuild 进入 SELinux C 文件编译。
+- Sulog `linux/minmax.h` 在旧内核不存在：引入单独的 `patch_sulog_419.py`，仅在 4.19 使用 `linux/kernel.h`。
+- 不允许将旧版 `struct avtab.htable` （`struct flex_array *`）当作新版 `struct avtab_node **` 使用；不允许将旧版 `filename_trans` 当作新版 `filename_trans_key`。
+- 旧版 `struct selinux_ss` 是 `policy_rwlock + policydb + sidtab`，新版 `struct selinux_policy` 的 `policy_mutex + RCU 指针整体替换` 不是等价接口。下一阶段需要设计可验证的安全策略复制和原子发布方案。
+- CI 快速编译现在附带精简的 Clang 错误摘要，完整日志仍保留在 Artifact。
+- 原版 LineageOS 的全量内核诊断编译已经在 CI #38533020110 单独通过。**这不构成可刷机、KernelSU 驱动成功或真机通过的证明。**

@@ -32,15 +32,25 @@ jobs:
           python3 scripts/patch_vfs_419.py .work/KernelSU
           python3 scripts/patch_legacy_apis.py .work/KernelSU
           python3 scripts/patch_policy_419.py .work/KernelSU
+          python3 scripts/patch_sulog_419.py .work/KernelSU
       - name: 保留所有已知的安全阻塞
         run: python3 scripts/audit.py .work/kernel .work/KernelSU --expect-blocked selinux-abi manager-handshake
       - name: 仅编译 KernelSU 驱动目录（不生成可刷写镜像）
         run: |
           set -o pipefail
           KERNEL_QUICK=1 bash scripts/build_kernel.sh ksu 2>&1 | tee quick-driver.log
+      - name: 编译错误汇总
+        if: always()
+        run: |
+          if test -s quick-driver.log; then
+            python3 scripts/summarize_compiler_errors.py quick-driver.log | tee error-summary.md
+            cat error-summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: kernelsu-driver-quick-log
-          path: quick-driver.log
+          path: |
+            quick-driver.log
+            error-summary.md
           if-no-files-found: ignore
