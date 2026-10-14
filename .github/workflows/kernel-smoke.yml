@@ -46,6 +46,26 @@ jobs:
         run: |
           set -o pipefail
           KERNEL_QUICK=1 bash scripts/build_kernel.sh ksu 2>&1 | tee quick-driver.log
+      - name: 对照正常启动原版 boot.img 的内嵌 Kconfig 与试验构建配置
+        run: |
+          set -Eeuo pipefail
+          mkdir -p .work/stock
+          curl -fLsS --connect-timeout 30 --max-time 1200 --retry 3 \
+            'https://mirrorbits.lineageos.org/full/umi/20261004/boot.img' \
+            -o .work/stock/boot.img
+          echo 'ce4a917a9233921b03e748b1fffc7b5ecea613c7ddf72208f26c77189f31a693  .work/stock/boot.img' | sha256sum --check
+          python3 scripts/inspect_stock_kernel.py .work/stock/boot.img \
+            --generated-config .work/output-ksu/.config \
+            --output kernel-config-diff.json | tee kernel-config-diff.log
+          python3 - <<'PY'
+          import json
+          d=json.load(open("kernel-config-diff.json"))
+          assert d["ikconfig_found"]
+          assert d["stock_critical_config"]["CONFIG_KSU"] == "n"
+          assert d["generated_critical_config"]["CONFIG_KSU"] == "y"
+          assert d["boot_failure_root_cause_proven"] is False
+          assert d["safe_to_flash"] is False
+          PY
       - name: 编译错误汇总
         if: always()
         run: |
@@ -60,4 +80,6 @@ jobs:
           path: |
             quick-driver.log
             error-summary.md
+            kernel-config-diff.json
+            kernel-config-diff.log
           if-no-files-found: ignore

@@ -20,3 +20,9 @@
 5. 单独审查早期 KSU init hook、4.19 的 SELinux policydb 更新与 Android 16 第二阶段 init 顺序，补上失败回滚和保守禁用条件。
 
 **即使后来 CI 再次绿色，也不能覆盖真实失败事实。** 除非有真机启动成功且功能正常的证据，所有实验镜像均为不可证实安全的调试产物。
+
+## 只读内核版本比对的新增发现
+
+从官方 SHA256 锁定的 `boot.img` 的 Image 中成功提取了 5312 项 IKCONFIG 条目（CI #38574558265）。真实原版内核由 **Android Clang 21.0.0** 编译，基于 LLVM `r563880c`（构建信息还包含内部版本号 `14054515`）；此前的实验构建却使用了 **Ubuntu Clang 18.1.3**。原版 `CONFIG_LTO_CLANG=y`、`CONFIG_CFI_CLANG=y`、`CONFIG_CFI_PERMISSIVE=n`，也未启用 `CONFIG_KPROBES`，实验 KSU 构建启用了后者。
+
+这不是启动失败的充分原因，但表明我们还没有建立严格的可比基线。已新增 `scripts/inspect_stock_kernel.py`，快速驱动编译 CI 将获取正常启动原版 Image 的原始 IKCONFIG 与本仓库编译出的完整 `.config` 进行逐项对比。**在修正 Clang、配置与确认失败阶段以前，不再生成给用户刷写的“修复版”。**
