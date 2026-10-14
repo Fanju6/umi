@@ -19,8 +19,8 @@ static int ksu_wrapper_iopoll(struct kiocb *kiocb, bool spin)
 // no REMAP_FILE_DEDUP: use file_in
 static loff_t ksu_wrapper_remap_file_range(void) { return 0; }
 static int ksu_wrapper_fadvise(struct file *fp, loff_t off1, loff_t off2, int flags) { return 0; }
-p->ops.iopoll = fp->f_op->iopoll ? ksu_wrapper_iopoll : NULL;
-p->ops.remap_file_range = fp->f_op->remap_file_range ? ksu_wrapper_remap_file_range : NULL;
+    p->ops.iopoll = fp->f_op->iopoll ? ksu_wrapper_iopoll : NULL;
+    p->ops.remap_file_range = fp->f_op->remap_file_range ? ksu_wrapper_remap_file_range : NULL;
 """
 
 class Tests(unittest.TestCase):
