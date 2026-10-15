@@ -27,37 +27,74 @@ OLD_INIT = """void __init ksu_supercalls_init(void)
     ksu_supercall_dump_commands();"""
 NEW_INIT = """#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 0, 0)
 /*
- * EXPERIMENT ONLY, for official Manager's bundled libksud.so:
- * sched_process_exec fires AFTER do_close_on_exec() in umi fs/exec.c.
- * A new CLOEXEC driver FD created here is therefore visible to this one
- * ksud process; other apps and Manager child processes are not modified.
- * Manager UID is validated against the APK-signature-crowned KSU identity.
- * Never expose a non-CLOEXEC FD from the parent or bypass Seccomp.
+ * EXPERIMENT ONLY. Linux 4.19 tracepoint callbacks execute with preemption
+ * disabled. Never call ksu_install_fd() (GFP_KERNEL, anon_inode_getfile)
+ * in sched_process_exec! Queue a small GFP_ATOMIC task_work callback instead.
+ * notify=true makes it run before this successful exec returns to user mode.
+ * The original KSU driver FD remains CLOEXEC, with no Seccomp bypass.
  */
+struct umi_manager_fd_work {
+    struct callback_head cb;
+};
+
 static bool umi_manager_fd_trace_registered;
+
+static void umi_manager_ksud_install_fd_work(struct callback_head *cb)
+{
+    struct umi_manager_fd_work *work =
+        container_of(cb, struct umi_manager_fd_work, cb);
+    int fd;
+
+    /* task_work may also run on exit: fail closed if no trusted Manager. */
+    if (!(current->flags & PF_EXITING) && is_manager()) {
+        fd = ksu_install_fd();
+        if (fd < 0)
+            pr_warn("manager ksud post-exec fd install failed: %d\\n", fd);
+        else
+            pr_info("manager ksud post-exec driver fd installed\\n");
+    }
+    kfree(work);
+}
 
 static void umi_manager_ksud_post_exec(void *data, struct task_struct *task,
                                        pid_t old_pid, struct linux_binprm *bprm)
 {
     const char *filename;
-    const char *basename;
-    int fd;
+    const char *manager_dir;
+    const char *suffix = "/lib/arm64/libksud.so";
+    size_t len, suffix_len;
+    struct umi_manager_fd_work *work;
+    int rc;
 
     if (task != current || !is_manager() || !bprm)
         return;
     filename = bprm->filename;
     if (!filename || strncmp(filename, "/data/app/", 10))
         return;
-    if (!strstr(filename, "/me.weishu.kernelsu-"))
+    manager_dir = strstr(filename, "/me.weishu.kernelsu-");
+    if (!manager_dir)
         return;
-    basename = strrchr(filename, '/');
-    if (!basename || strcmp(basename, "/libksud.so"))
+    len = strlen(filename);
+    suffix_len = strlen(suffix);
+    if (len < suffix_len || strcmp(filename + len - suffix_len, suffix))
         return;
-    fd = ksu_install_fd();
-    if (fd < 0)
-        pr_warn("manager ksud post-exec fd install failed: %d\\n", fd);
-    else
-        pr_info("manager ksud post-exec driver fd installed\\n");
+
+    /*
+     * The filename check narrows the event; the previously verified signed
+     * Manager appid (is_manager) is the actual security boundary.
+     * Allocation must remain non-sleeping inside the tracepoint.
+     */
+    work = kmalloc(sizeof(*work), GFP_ATOMIC);
+    if (!work) {
+        pr_warn("manager ksud post-exec work allocation failed\\n");
+        return;
+    }
+    work->cb.func = umi_manager_ksud_install_fd_work;
+    rc = task_work_add(current, &work->cb, true);
+    if (rc) {
+        kfree(work);
+        pr_warn("manager ksud post-exec task_work failed: %d\\n", rc);
+    }
 }
 #endif
 
