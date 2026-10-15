@@ -56,3 +56,31 @@ adb shell pm path me.weishu.kernelsu
 - SELinux Runtime / Manager handshake：仍需 Root 全流程和重启后的实际检查。
 
 不得把 manager「工作中」宣传为完整 Root 功能已完成。
+
+## 2026-10-15：ADB Root 在当前 ROM 上受限
+
+用户实际结果：
+
+```text
+ro.debuggable = 0
+adb root = ADB Root access is disabled by system setting
+adb shell id = uid=2000(shell) ... context=u:r:shell:s0
+```
+
+因此此前的“通过 adb root 安装官方 ksud”路线在当前状态**不可执行**，不要继续运行 `adb push` + `ksud install` 命令。Android ADB Root 通常还要求 debuggable 系统构建；`ro.debuggable=0` 的 user build 很可能不显示或不支持 **Rooted debugging**。如果开发者选项有明确的 Rooted debugging 开关可以尝试，否则**不要**为了临时开启权限直接修改 `build.prop`、刷不匹配的调试内核、或关闭 SELinux。
+
+下一步优先进行 Recovery **只读**能力验证。之前已证实 Recovery 可通过 ADB 读取 `/sys/fs/pstore`，但尚未证实当前 Recovery 的运行 UID 或加密 userdata 是否可访问：
+
+```powershell
+adb reboot recovery
+adb devices
+adb shell id
+adb shell getprop ro.build.type
+adb shell ls -ld /data /data/adb
+adb shell cat /proc/mounts | Select-String ' /data '
+adb shell ls -lZ /data/adb/ksud
+```
+
+如果 Recovery 里 `uid=0`、`/data` 已正确挂载并可访问实际的 `/data/adb`，再对**匹配的同版本官方 ksud** 设计独立的用户自主安装步骤并验证 SELinux context；所有操作必须保留可回滚路径。若 userdata 在 Recovery 中尚未解密或挂载，不要通过新建 Recovery RAM 临时 `/data` 目录伪装真实存储；不要格式化 userdata。
+
+仍以实际 `KernelSU: open ksud err: -2` 及 Manager 的 Root 失败为首要排查目标；无数据权限前不能断言真实 `/data/adb/ksud` 文件一定不存在，只能确认内核打开该绝对路径时得到 ENOENT。
