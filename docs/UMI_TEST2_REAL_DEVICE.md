@@ -174,3 +174,23 @@ uid=0(root) gid=0(root)
 下一项最小隔离测试：暂时关闭 Rooted debugging 避免 ADB Root 误判；在管理器的超级用户页面拒绝已授权的测试终端，确保其在新进程中无法获得 uid 0，再恢复该终端授权，确认能再次获得 uid 0。注意拒绝测试可能令 `su` 退出非零/显示 permission denied；这是期望结果。切勿授权未知应用、停用 SELinux 或以关闭 Rooted debugging 作为证明普通应用失去 KernelSU 授权的依据。
 
 此阶段为**基础功能验证进行中**；仍未构成生产稳定/全面支持 Android 16 的证明。
+
+## 2026-10-15：TEST2 基础 Root 功能验收完成
+
+用户对前述 Root 授权隔离实验回复「正常」，确认此前要求的两个测试流程均正常：
+1. 在 KernelSU Manager 的「超级用户」中关闭 Termux 授权，退出原有 Root Shell 并重新运行时，普通用户未获得 `uid=0`；
+2. 重新允许 Termux 的 Root 授权后，再次调用 `/system/bin/su -c id`，能恢复 `uid=0(root)`。
+
+结合先前已收集的真实输出，**TEST2 基础功能实测通过**（范围仅限 Xiaomi Mi 10 / umi + 当前 LineageOS 23.2-20261004 + 官方 KernelSU 3.3.0）：
+
+- [x] Android 16 正常启动（`sys.boot_completed=1`）
+- [x] SELinux 持续 `Enforcing`
+- [x] KernelSU Manager 识别、无获取 Root 错误
+- [x] 官方 `ksud` 用户空间安装、匹配 `ksu_file` 标签
+- [x] 普通应用 `su` 提权获得 `uid=0(root)`
+- [x] 首次正常重启后重复应用提权成功
+- [x] Root 授权撤销能够阻止新提权，恢复授权后又能正常提权
+
+**尚未验证：**真实模块挂载和模块脚本生命周期、动态 SELinux policy 修改/安全隔离压力测试、服务阶段（post-fs-data/services）日志及模块管理、长期温度/性能/续航/稳定性、多次重启、KSU 内核驱动边界情况。当前阶段记录为 `TEST2_BASIC_FUNCTIONS_PASSED`，不是稳定版，也不证明适用于其他 umi ROM 或设备。
+
+建议后续先关闭 Rooted debugging 并核验普通应用仍可提权；用只读日志审查 `KernelSU` / `avc` / 服务阶段；再使用可恢复、已审查的最小模块，最后开展长时间稳定性与回滚测试。任何高风险的策略写入、模块加载应明确备份并分阶段执行，不自动推送为 Release。
