@@ -114,3 +114,39 @@ TEST2 构建：GitHub Actions `#38678653507`，结果为 `success`，artifact `U
 - REBOOT_STABILITY_PENDING
 
 详细验收路径见 [TEST2 Root Bootstrap](UMI_TEST2_ROOT_BOOTSTRAP.md)。在普通应用成功获取 Root、Enforcing 下拒绝授权有效且重启验证以前，仍归类 TEST2，不能宣称稳定发布。
+
+## 2026-10-15：真实普通应用 Root 成功、重启系统正常
+
+用户已在可信终端应用中运行 KernelSU `su`，确认输出：
+
+```text
+uid=0(root) gid=0(root)
+```
+
+这一结果独立于开发者选项中的 ADB Root：**普通应用实际得到 KernelSU Root，首次授权路径通过。**
+
+随后执行一次 `adb reboot`。最初的 `adb wait-for-device` 返回时系统尚未完成启动，`getprop sys.boot_completed` 临时为空；稍后复查：
+
+```text
+sys.boot_completed = 1
+getenforce = Enforcing
+/data/adb/ksud:
+-rwxr-xr-x 1 root root u:object_r:ksu_file:s0 4892712 2026-10-15 14:31
+```
+
+这证明**至少一次正常系统重启已通过、SELinux 仍处于 Enforcing、ksud 保留并带有正确 SELinux 标签**。
+
+文件变化记录：首次用户通过外部官方发布的 `ksud-aarch64-linux-android` 安装时 `/data/adb/ksud` 为 6,286,568 字节、权限 0700；正常重启后变为 4,892,712 字节、权限 0755、时间 14:31。对照官方 KernelSU v3.3.0 的 `manager/.../ui/MainActivity.kt`：`onCreate` 在 `Natives.isManager && !Natives.requireNewKernel()` 下执行 `install()`；`KsuCli.kt` 从 APK 私有 `libksud.so` 执行 `ksud install`；`userspace/ksud/src/utils.rs` 的 `install()` 会删除并重建 `/data/adb/ksud`。所以**管理器启动时的自动重新部署是文件尺寸、权限变化的合理解释**，但要通过设备上两个 ELF 文件的 SHA-256 比对才能作最终确认。
+
+现阶段状态：
+
+- BOOT_SUCCESS
+- KERNELSU_APP_SU_AUTHORIZATION_SUCCESS（重启前）
+- FIRST_REBOOT_SUCCESS
+- SELINUX_ENFORCING_AFTER_REBOOT
+- KSUD_EXISTS_AFTER_REBOOT_WITH_KSU_FILE_LABEL
+- APP_ROOT_AFTER_REBOOT_PENDING
+- DENY_ALLOW_POLICY_PENDING
+- MODULES_AND_LONG_TERM_STABILITY_UNVERIFIED
+
+**尚未声明稳定版。** 最小后续工作：重启后在同一普通终端应用再次执行 `/system/bin/su -c id`，继续验证拒绝授权的隔离效果；另收集 `ksud` 与 `libksud.so` 哈希，不必再次刷 boot。

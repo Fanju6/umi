@@ -112,3 +112,14 @@ uid=0(root) gid=0(root) ... context=u:r:su:s0
 5. 验证后在日常使用中关闭 **Rooted debugging** 以减小 ADB 提权攻击面；关闭前确保普通应用 Root 授权已完成，不再依赖 adb root 进行安装。
 
 当前状态：`BOOT_SUCCESS / KSUD_INSTALL_SUCCESS / SELINUX_LABEL_OK / MANAGER_REPORTED_NORMAL / APP_ROOT_TEST_PENDING / REBOOT_PERSISTENCE_PENDING`。
+
+## 2026-10-15：普通应用 Root 成功与首次重启检查
+
+- 用户已通过**非 ADB 的普通终端应用**获取 `uid=0(root) gid=0(root)`，KernelSU APP 侧授权路径已实际成功。
+- 设备已完成一次正常重启，重新读取 `sys.boot_completed=1`、`getenforce=Enforcing`。
+- `/data/adb/ksud` 继续存在，标签 `u:object_r:ksu_file:s0`，但大小从 6,286,568 字节变成 4,892,712 字节，权限从 0700 变成 0755。
+- 源码解释：官方 KernelSU v3.3.0 的 `MainActivity.onCreate()` 主动调用 `install()`，`KsuCli.kt` 调用 APK 中的 `libksud.so install`，`utils.install()` 删除、重新复制 `/data/adb/ksud`。这是最可信的变化来源，但没有直接比对设备文件哈希，不将其宣称为唯一原因。
+- **尚未在重启之后重新运行普通应用提权**；与第一次成功区分记录。
+- 建议实际确认官方 Manager 现在仍「工作中」、无红色错误，并且可信终端在此次重启之后执行 `/system/bin/su -c id` 得到 `uid=0(root)`。
+
+保持现有 TEST2 内核，无需为这些已通过的测试重新打包镜像。
