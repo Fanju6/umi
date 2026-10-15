@@ -68,8 +68,29 @@ Enforcing
 
 仍待验证：`/data/adb/ksud` 当前状态和哈希、Manager 首次自动安装、撤销与恢复 Root 授权、重启后 Root 可用性、模块与长期稳定性。**保留旧 ksud，不在日用设备删除或覆盖。**
 
+## 2026-10-15：第三轮 ksud 文件、权限、SELinux 标签及哈希（用户实测）
+
+用户在 MT 管理器提供的**已经获得 KernelSU Root** 的交互式终端执行只读命令，原始结果：
+
+```text
+id: uid=0(root) gid=0(root) groups=0(root) context=u:r:ksu:s0
+ls -lZ /data/adb/ksud:
+-rwxr-xr-x. 1 root root u:object_r:ksu_file:s0 4990848 2026-10-15 17:08 /data/adb/ksud
+sha256sum /data/adb/ksud:
+4f7d5fd65631915ea579ff406bd9cbe58217f2c91dac6527f5b2f28ad4508171  /data/adb/ksud
+getenforce: Enforcing
+```
+
+**经证实**：系统已经正常启动，第三方应用可以进入 KernelSU Root (`u:r:ksu:s0`)，SELinux 依旧 Enforcing，`/data/adb/ksud` 真实存在且可执行、由 root 所有，标签是预期的 `u:object_r:ksu_file:s0`。文件体积 4,990,848 字节、修改时间 17:08，与此前 TEST2 v3.3.0 真机最后记录的 4,892,712 字节不同，显示用户空间二进制**发生了变化**。
+
+**不能从以上数据推出**：这份 `ksud` 必然与官方 v3.3.1 Manager 内嵌 `lib/arm64-v8a/libksud.so` 字节相同；也不能由文件时间或大小证明之前确实没有 `/data/adb/ksud`，或由 Manager 从零自举。独立发布的 `ksud-aarch64-linux-android` ELF 与 APK 内置 `libksud.so` 是不同打包/编译产物，SHA 不相等不构成故障证据。后续通过提取**设备当前安装的 Manager APK 的内置 ELF** 与此哈希直接对比，而不作不实版本归因。
+
+待测：Manager 页面无错误、授权关闭/恢复是否隔离、重启后仍能 su、模块/策略生命周期，以及**只在有安全回滚条件的独立环境中**测无旧 ksud 的真正首次自动初始化。不要在当前日用机删除或覆盖 ksud。
+
+**状态更新：`ROOT_CONFIRMED` / `KSUD_FILE_PRESENT` / `KSUD_LABEL_CORRECT` / `SELINUX_ENFORCING` / `KSUD_BUILD_PROVENANCE_PENDING` / `FIRST_INSTALL_UNVERIFIED`。**
+
 ## 发布门禁
 
-当前已由用户的只读 ADB 原始输出验证正常完成 Android 启动、SELinux Enforcing 及官方 Manager APK v3.3.1 安装版本，且已确认第三方应用终端的 KernelSU Root 上下文与 Enforcing；ksud 文件、授权撤销以及首次初始化仍需单独真机验证。PR #3、PR #4 仍保持 Draft；特别是 PR #4 的 `manager-handshake`、`selinux-abi` 静态阻塞不能因本次开机成功而自动清除。
+当前已由用户的只读 ADB 原始输出验证正常完成 Android 启动、SELinux Enforcing 及官方 Manager APK v3.3.1 安装版本，且已确认第三方应用终端的 KernelSU Root 上下文与 Enforcing；ksud 文件和标签已由真机实测确认；用户空间 ELF 版本来源、授权撤销以及首次初始化仍需单独验证。PR #3、PR #4 仍保持 Draft；特别是 PR #4 的 `manager-handshake`、`selinux-abi` 静态阻塞不能因本次开机成功而自动清除。
 
 有关设备备份、回滚、专用首装验证步骤，继续参照 `docs/V331_FIRST_INSTALL_TEST_PROTOCOL.md`。
