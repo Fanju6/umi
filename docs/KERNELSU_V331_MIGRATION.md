@@ -21,3 +21,7 @@
 5. 仅在全部 CI 和经过明确的真机回归策略之后，才考虑新镜像并实测 Android 启动、Enforcing、Manager 初始化、su 授权拒绝/恢复、重启持久性。
 
 **本分支不得因为源码 CI 通过就将 TEST2 v3.3.0 的真机证明转移给 v3.3.1。** 旧的 `umi-ksud-bootstrap.ps1` 是 TEST2/v3.3.0 专用辅助工具；在新核心完成验证前不得用它配套新内核，或者直接给已 Root 的手机手动覆盖 ksud。
+
+## 首轮 v3.3.1 编译修复
+
+快速编译 CI #38697847147 于 manager/pkg_observer.c:48 报错 TWA_RESUME 未声明。v3.3.1 新增的 task_work_add(current, cb, TWA_RESUME) 在 Linux 4.19 的 API 应以 notify=true 表达。已增加有严格锚点与单元测试的独立版本兼容补丁，不改动现代内核路径；尚需重新编译验证。
