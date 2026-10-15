@@ -27,6 +27,22 @@ $ExpectedRom = "23.2-20261004-NIGHTLY-umi"
 $StagingPath = "/data/local/tmp/umi-ksud-3.3.0-bootstrap"
 $InstalledPath = "/data/adb/ksud"
 
+# TEST2 is a v3.3.0-only recovery helper. Refuse to run its installer when
+# the checked-out repo targets a different KernelSU userspace/kernel pair.
+# Checking before 'adb root' also avoids modifying device debugger state.
+if ($Install) {
+    $pinsFile = Join-Path (Join-Path $PSScriptRoot "..") "config/upstream.env"
+    if (-not (Test-Path -LiteralPath $pinsFile)) {
+        throw "TEST2 version pins not found; refusing standalone assisted installation."
+    }
+    $pins = @(Get-Content -LiteralPath $pinsFile)
+    if (($pins -notcontains "KSU_REF=v3.3.0") -or
+        ($pins -notcontains "KSU_SHA=932014ab5b2c9b74a3d11e2ec4d17dd10fc9442e")) {
+        throw "TEST2 bootstrap supports KernelSU v3.3.0 ONLY; current checkout pins another release. Do not mix ksud versions."
+    }
+}
+
+
 function Invoke-CheckedAdb {
     param([string[]]$Arguments)
     $output = & $Adb @Arguments 2>&1
