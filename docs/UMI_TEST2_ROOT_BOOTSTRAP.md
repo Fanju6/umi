@@ -84,3 +84,31 @@ adb shell ls -lZ /data/adb/ksud
 如果 Recovery 里 `uid=0`、`/data` 已正确挂载并可访问实际的 `/data/adb`，再对**匹配的同版本官方 ksud** 设计独立的用户自主安装步骤并验证 SELinux context；所有操作必须保留可回滚路径。若 userdata 在 Recovery 中尚未解密或挂载，不要通过新建 Recovery RAM 临时 `/data` 目录伪装真实存储；不要格式化 userdata。
 
 仍以实际 `KernelSU: open ksud err: -2` 及 Manager 的 Root 失败为首要排查目标；无数据权限前不能断言真实 `/data/adb/ksud` 文件一定不存在，只能确认内核打开该绝对路径时得到 ENOENT。
+
+## 2026-10-15 14:25：用户启用 Rooted debugging 后官方 ksud 成功安装（更新）
+
+前面的 “ADB Root 不可用” 只代表**开关关闭时的观察结果**，**不是**当前 ROM 的永久限制。用户确实在开发者选项发现并开启了 **Rooted debugging**。同样 \`ro.debuggable=0\` 的状态下，重新运行 \`adb root\` 得到 \`restarting adbd as root\`，\`adb shell id\` 返回：
+
+\`\`\`text
+uid=0(root) gid=0(root) ... context=u:r:su:s0
+\`\`\`
+
+官方 KernelSU 3.3.0 ksud 下载后 SHA-256 验证通过（\`8614de6cdc2233c71fd0d1c64381ea10fbe6658651bae9b5a8dab4fe08e6344b\`），用户已使用以下流程成功部署：\`adb push\` 至 \`/data/local/tmp/ksud\`、\`chmod 700\`、\`/data/local/tmp/ksud install\`。随后确证实际持久路径：
+
+\`\`\`text
+-rwx------ 1 root root u:object_r:ksu_file:s0 6286568 ... /data/adb/ksud
+\`\`\`
+
+用户反馈：**KernelSU 管理器现已正常，不再有之前的 Root 获取失败问题**。说明官方用户空间部署是此前症状的关键缺失环节；**不必为了这个问题继续重编或重刷 boot.img**。
+
+注意：ADB Root 成功仅证明调试链路可以获得 UID 0，并不独立证明普通应用的 KernelSU 授权成功。Manager 首页状态恢复是积极证据，但完整 Root 验收还需一款普通终端应用申请授权并实际输出 \`uid=0(root)\`。不要求禁用 SELinux 或安装额外 Root 框架。
+
+### 推荐的分阶段验收
+
+1. 保持 TEST2 现有镜像，打开 KernelSU 管理器确认「工作中」、无红色 Root 错误。
+2. 在 Manager 的 **超级用户** 中允许可信终端应用（例如 Termux），再由该应用运行 \`/system/bin/su -c id\`；应看到 \`uid=0(root)\`，同时检查 Manager 授权记录。
+3. 拒绝一次授权、确认无法获得 root，再恢复允许（注意不要对未知第三方应用授权）。
+4. 验证 \`adb shell getenforce\` 仍为 \`Enforcing\`。在保存数据后做一次正常重启，复测 Manager、Root 与 \`/data/adb/ksud\` 是否仍正常。
+5. 验证后在日常使用中关闭 **Rooted debugging** 以减小 ADB 提权攻击面；关闭前确保普通应用 Root 授权已完成，不再依赖 adb root 进行安装。
+
+当前状态：\`BOOT_SUCCESS / KSUD_INSTALL_SUCCESS / SELINUX_LABEL_OK / MANAGER_REPORTED_NORMAL / APP_ROOT_TEST_PENDING / REBOOT_PERSISTENCE_PENDING\`。
