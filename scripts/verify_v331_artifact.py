@@ -12,6 +12,15 @@ FILES = {IMAGE, 'experimental-boot-verification.json', 'experimental-boot.sha256
          'experimental-avb.txt', 'stock-avb.txt',
          'experimental-WARNING.txt', 'experimental-PROVENANCE.txt'}
 ROM = '23.2-20261004-NIGHTLY-umi'
+EXPECTED_CHECKS = {
+    'header_v2', 'page_size_4096', 'size_not_exceeding_stock_partition',
+    'boot_addresses_unchanged', 'cmdline_unchanged', 'board_name_unchanged',
+    'os_version_unchanged', 'ramdisk_identical_sha256', 'dtb_identical_sha256',
+    'second_identical_sha256', 'recovery_dtbo_identical_sha256',
+    'kernel_matches_rebuilt_image', 'kernel_different_from_stock',
+    'stock_unsigned_avb_hash', 'experimental_unsigned_avb_hash',
+    'lineage_fingerprint_preserved', 'lineage_os_version_preserved',
+}
 HEX64 = re.compile(r'^[0-9a-f]{64}$')
 HEX40 = re.compile(r'^[0-9a-f]{40}$')
 
@@ -25,7 +34,7 @@ def inspect(path: Path, expected_commit: str | None = None) -> dict:
         report = json.loads(z.read('experimental-boot-verification.json'))
         checks = report.get('checks')
         if (not report.get('repack_structurally_verified') or not isinstance(checks, dict)
-                or len(checks) < 16 or not all(v is True for v in checks.values())):
+                or set(checks) != EXPECTED_CHECKS or not all(v is True for v in checks.values())):
             raise ValueError('boot 结构验证不完整')
         if (report.get('experimental_only') is not True
                 or report.get('safe_to_flash') is not False
