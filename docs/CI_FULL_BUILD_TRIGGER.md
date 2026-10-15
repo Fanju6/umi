@@ -17,3 +17,10 @@
 - 追踪提交 e02eef4：批量 SELinux 规则失败时放弃全部候选策略；新增 umi-sm8250-overlay.dtbo 的强制检查及 SHA-256 镜像校验清单。
 - 本次触发用于验证实际 .config、vmlinux、Image、umi DTBO 和内核驱动归档均被新严格门禁接受；产物仅用于诊断，不打包、不发布 boot.img。
 - Root/Manager/Seccomp/SELinux Enforcing 的真机安全检查仍是未解除的 P0 阻塞。
+
+## 2026-10-15：ARM64 sys_call_table 块映射修复后的整核链接验证
+
+- 真机 pstore 表明原版实验内核在 `sys_call_table[42]` 安装 dispatcher 时 `phys_from_virt` 报错，接着仍启用 tracepoint，造成 Android 第一阶段 init 的 stat/fstab 查询返回 ENOSYS；恢复原版 boot.img 能正常开机。
+- 第一轮保护逻辑已通过历史快速驱动编译和源码门禁。
+- 本轮添加了 Linux 4.19 专用 `pud_sect` / `pmd_sect` 识别，先解析有效块映射物理地址，后执行 `pud_bad` / `pmd_bad` 检查；必须通过整核编译与链接，检查异常路径不得回退成“未安装仍激活”。
+- 此次只做 `CONFIG_KSU=y` 下的 Image、vmlinux、umi DTBO 整核校验；**绝不产生新的可刷 boot.img**。CI 通过仍不能证明修复在设备上有效或 Root/Manager/SELinux 可用。
