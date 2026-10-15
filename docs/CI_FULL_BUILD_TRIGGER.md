@@ -32,3 +32,10 @@
 ## 2026-10-15：v3.3.1 pkg_observer task_work 兼容修复后的完整链接
 
 提交 501bb447：旧版 task_work_add(current, cb, true) 取代 4.19 中不存在的 TWA_RESUME 枚举；沿用其余已通过的 v3.3.1 兼容补丁。再次触发仅供诊断的整核链接 CI，**不得发布或自动刷写镜像**。
+
+
+## 2026-10-15：重新验证升级 PR 最新 HEAD 的整核构建
+
+前次完整诊断 CI #38698776009 的 checkout 为旧提交 25b4a18107fc93122a35a3e415bda9eb13f29c66，不能用它代表 PR #3 的最终提交结果。
+此次由本文件变更触发的全量 Image/vmlinux/umi DTBO 编译，必须检查该 Actions 运行的 head_sha 等于本次提交，且 build-manifest、编译链接日志和输出检查全部通过。
+TEST2 的历史 v3.3.0 真机证据保持不变。scripts/umi-ksud-bootstrap.ps1 严格拒绝从 v3.3.1 checkout 安装其固定的旧版 v3.3.0 ksud；首次自动安装仍是独立未完成验收项。
