@@ -91,19 +91,19 @@ getenforce: Enforcing
 
 ## 2026-10-15：Manager v3.3.1 内置 ksud 与已部署 ksud 字节一致（用户实测）
 
-用户在同一台 umi 的 KernelSU Root Shell 中取得当前已安装官方 Manager 包（此前 adb 报告为 \`me.weishu.kernelsu\`，\`versionName=v3.3.1\`、\`versionCode=32680\`）对应提取的 arm64 原生库路径。为避免泄漏私有随机目录，仓库只记录路径**形状**及文件属性：
+用户在同一台 umi 的 KernelSU Root Shell 中取得当前已安装官方 Manager 包（此前 adb 报告为 `me.weishu.kernelsu`，`versionName=v3.3.1`、`versionCode=32680`）对应提取的 arm64 原生库路径。为避免泄漏私有随机目录，仓库只记录路径**形状**及文件属性：
 
-- Manager 内置 ELF：\`/data/app/~~…/me.weishu.kernelsu-…/lib/arm64/libksud.so\`
-- 已部署 ELF：\`/data/adb/ksud\`
+- Manager 内置 ELF：`/data/app/~~…/me.weishu.kernelsu-…/lib/arm64/libksud.so`
+- 已部署 ELF：`/data/adb/ksud`
 - 两文件大小均为 **4,990,848 字节**。
-- 两文件 \`sha256sum\` 均为：\`4f7d5fd65631915ea579ff406bd9cbe58217f2c91dac6527f5b2f28ad4508171\`。
-- 同时重新确认 \`getprop sys.boot_completed=1\`、\`getenforce=Enforcing\`。
+- 两文件 `sha256sum` 均为：`4f7d5fd65631915ea579ff406bd9cbe58217f2c91dac6527f5b2f28ad4508171`。
+- 同时重新确认 `getprop sys.boot_completed=1`、`getenforce=Enforcing`。
 
-**结论：\`MANAGER_BUNDLED_KSUD_MATCHES_DEPLOYED_FILE\` 已获真机 SHA-256 验证；不是对独立 GitHub Release 命令行资产哈希的直接比对。** 结合上轮 Root / \`ksu_file\` 标签和版本信息，目前可以确认 v3.3.1 Manager 随包提供的 arm64 ELF 与设备所部署的 \`ksud\` 二进制一致，避免了 v3.3.0 用户空间二进制残留造成的版本混用。
+**结论：`MANAGER_BUNDLED_KSUD_MATCHES_DEPLOYED_FILE` 已获真机 SHA-256 验证；不是对独立 GitHub Release 命令行资产哈希的直接比对。** 结合上轮 Root / `ksu_file` 标签和版本信息，目前可以确认 v3.3.1 Manager 随包提供的 arm64 ELF 与设备所部署的 `ksud` 二进制一致，避免了 v3.3.0 用户空间二进制残留造成的版本混用。
 
-本机 Manager 原生库路径符合实验 \`post_exec_task_work_419\` 源码路径筛选的形状（\`me.weishu.kernelsu-\` 与 \`/lib/arm64/libksud.so\`），**但并不证明 Manager 曾通过该 FD Hook 成功获取 FD，更不证明安装前 \`/data/adb/ksud\` 为空、或首次自举能够成功**。既有 v3.3.0 用户空间已部署，管理员启动后也可能更新 \`ksud\`，这些情形需要隔离首装测试才能区分。
+本机 Manager 原生库路径符合实验 `post_exec_task_work_419` 源码路径筛选的形状（`me.weishu.kernelsu-` 与 `/lib/arm64/libksud.so`），**但并不证明 Manager 曾通过该 FD Hook 成功获取 FD，更不证明安装前 `/data/adb/ksud` 为空、或首次自举能够成功**。既有 v3.3.0 用户空间已部署，管理员启动后也可能更新 `ksud`，这些情形需要隔离首装测试才能区分。
 
-**后续最低验收：** 在已备份设备和确认可回滚的条件下，先测试 MT 管理器应用关闭授权后退出所有旧 Root Session 的重新提权结果，恢复授权再测；正常重启后复测 \`uid=0\`、\`Enforcing\` 及 \`ksud\` 哈希。首次无 ksud 的 Manager 自动安装和 SELinux 策略/模块生命周期仍属于单独测试门禁。
+**后续最低验收：** 在已备份设备和确认可回滚的条件下，先测试 MT 管理器应用关闭授权后退出所有旧 Root Session 的重新提权结果，恢复授权再测；正常重启后复测 `uid=0`、`Enforcing` 及 `ksud` 哈希。首次无 ksud 的 Manager 自动安装和 SELinux 策略/模块生命周期仍属于单独测试门禁。
 
 ## 发布门禁
 
