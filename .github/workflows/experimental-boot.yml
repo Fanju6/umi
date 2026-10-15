@@ -122,6 +122,7 @@ jobs:
             stock-avb.txt
             experimental-WARNING.txt
             experimental-PROVENANCE.txt
+            scripts/umi-ksud-bootstrap.ps1
           retention-days: 7
           compression-level: 1
           include-hidden-files: true
