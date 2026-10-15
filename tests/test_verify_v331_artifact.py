@@ -21,7 +21,7 @@ class VerifyV331ArtifactTests(unittest.TestCase):
         self.sha = hashlib.sha256(self.image).hexdigest()
         self.commit = 'a' * 40
         self.report = dict(repack_structurally_verified=True,
-                           checks={f'check_{i}': True for i in range(16)},
+                           checks={name: True for name in module.EXPECTED_CHECKS},
                            experimental_only=True, safe_to_flash=False, runtime_validated=False,
                            experimental_image_size_bytes=134217728, experimental_boot_sha256=self.sha,
                            experimental_kernel_sha256='b' * 64)
@@ -57,6 +57,13 @@ class VerifyV331ArtifactTests(unittest.TestCase):
     def test_wrong_commit_rejected(self):
         with self.assertRaisesRegex(ValueError, 'commit SHA 不匹配'):
             module.inspect(self.archive, 'b' * 40)
+
+    def test_wrong_structure_check_names_rejected(self):
+        self.report['checks'].pop('ramdisk_identical_sha256')
+        self.report['checks']['fake_compatibility_pass'] = True
+        self.make_zip()
+        with self.assertRaisesRegex(ValueError, '结构验证不完整'):
+            module.inspect(self.archive, self.commit)
 
     def test_runtime_claim_rejected(self):
         self.report['safe_to_flash'] = True
