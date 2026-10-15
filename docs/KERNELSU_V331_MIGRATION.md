@@ -25,3 +25,9 @@
 ## 首轮 v3.3.1 编译修复
 
 快速编译 CI #38697847147 于 manager/pkg_observer.c:48 报错 TWA_RESUME 未声明。v3.3.1 新增的 task_work_add(current, cb, TWA_RESUME) 在 Linux 4.19 的 API 应以 notify=true 表达。已增加有严格锚点与单元测试的独立版本兼容补丁，不改动现代内核路径；尚需重新编译验证。
+
+## 首次 Root 引导链审查（静态证据，尚待干净设备验证）
+
+官方 v3.3.1 Manager 的 MainActivity 在内核/Manager UAPI 版本一致时运行 install()；用户态 libksud.so debug su 会查找继承的 [ksu_driver] FD，否则使用 reboot magic 请求 FD。内核 manager 的 FD 在 setresuid 路径使用 O_CLOEXEC，子进程 exec 后不能默认继承。4.19 不具备现代 KernelSU 的 seccomp action cache；官方 v3.3.1 ksud 已新增 SIGSYS 检测并可输出 “KernelSU driver install syscall was blocked by seccomp”。
+
+以上说明首次自动安装在无 /data/adb/ksud 的情况下有潜在中断环节，但没有新系统的运行时 errno / SIGSYS 证据，**不得宣称已定位根因，也不应直接扩大 reboot 系统调用的 Seccomp 允许范围**。新增 inspect_bootstrap_331.py 静态诊断和 CI artifact；不写任何手机数据，不修改现有 TEST2 镜像。后续须在可回滚环境中验证官方 3.3.1 Manager 的首次安装路径。
