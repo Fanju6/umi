@@ -21,7 +21,9 @@ class Arm64BlockWalkTests(unittest.TestCase):
             mod.INCLUDE_ANCHOR + "\n"
             + "void *walk(unsigned long addr) {\n"
             + mod.OLD_PUD + "\n"
-            + mod.OLD_PMD + "\n}\n"
+            + mod.OLD_PMD + "\n#endif\n"
+            + "    if (pmd_none(*pmd) || pmd_bad(*pmd))\n"
+            + "        goto fail;\n}\n"
         )
 
     def test_legacy_sect_before_bad_and_idempotence(self):
