@@ -40,6 +40,8 @@ jobs:
         run: python3 scripts/patch_sulog_419.py .work/KernelSU
       - name: 补齐 Linux 4.19 supercall task API
         run: python3 scripts/patch_dispatch_419.py .work/KernelSU
+      - name: 阻止失败的 ARM64 syscall dispatcher 导致 init ENOSYS
+        run: python3 scripts/patch_syscall_failclosed_419.py .work/KernelSU
       - name: 适配旧版 SELinux avtab flex_array
         run: python3 scripts/patch_avtab_419.py .work/KernelSU
       - name: 适配旧版 SELinux filename_trans
