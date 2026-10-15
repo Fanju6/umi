@@ -1,7 +1,10 @@
-name: umi KernelSU 实验版 boot.img（未验证）
+name: umi KernelSU 受控实验启动镜像（未验证）
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - 'docs/EXPERIMENTAL_BOOT_TRIGGER.md'
 
 permissions:
   contents: read
@@ -29,6 +32,8 @@ jobs:
           python3 scripts/patch_dispatch_419.py .work/KernelSU
           python3 scripts/patch_syscall_failclosed_419.py .work/KernelSU
           python3 scripts/patch_arm64_block_walk_419.py .work/KernelSU
+          grep -F 'UMI_KSU_419_DISPATCHER_FAIL_CLOSED' .work/KernelSU/kernel/hook/arm64/syscall_hook.c
+          grep -F 'UMI_KSU_419_ARM64_BLOCK_WALK' .work/KernelSU/kernel/hook/arm64/patch_memory.c
           python3 scripts/patch_avtab_419.py .work/KernelSU
           python3 scripts/patch_filename_419.py .work/KernelSU
           python3 scripts/patch_type_419.py .work/KernelSU
@@ -73,11 +78,11 @@ jobs:
           done
           test "$found" -eq 1
           python3 .work/mkbootimg/mkbootimg.py "${args[@]}" \
-            --output .work/experiment/umi-KernelSU3.3.0-20261004-EXPERIMENTAL-boot.img
+            --output .work/experiment/umi-KernelSU3.3.0-20261004-TEST2-HOOKFIX-boot.img
       - name: 重新计算 AVB Hash Footer，保留原版 fingerprint
         run: |
           set -Eeuo pipefail
-          image='.work/experiment/umi-KernelSU3.3.0-20261004-EXPERIMENTAL-boot.img'
+          image='.work/experiment/umi-KernelSU3.3.0-20261004-TEST2-HOOKFIX-boot.img'
           salt="$(sha256sum .work/output-ksu/arch/arm64/boot/Image | cut -d' ' -f1)"
           python3 .work/avb/avbtool.py add_hash_footer \
             --image "$image" --partition_size 134217728 --partition_name boot \
@@ -88,25 +93,35 @@ jobs:
       - name: 校验所有原版 Ramdisk、DTB、Header、命令行、AVB 与镜像体积
         run: |
           set -Eeuo pipefail
-          image='.work/experiment/umi-KernelSU3.3.0-20261004-EXPERIMENTAL-boot.img'
+          image='.work/experiment/umi-KernelSU3.3.0-20261004-TEST2-HOOKFIX-boot.img'
           python3 scripts/check_experimental_boot.py \
             .work/stock/boot.img "$image" .work/output-ksu/arch/arm64/boot/Image \
             stock-avb.txt experimental-avb.txt \
             --output experimental-boot-verification.json | tee experimental-boot-verification.log
           sha256sum "$image" | tee experimental-boot.sha256
-          printf '%s\n' 'EXPERIMENTAL: not boot-tested, not SELinux/Manager validated. No flash executed.' > experimental-WARNING.txt
+          {
+            echo "PROVENANCE_COMMIT=$GITHUB_SHA"
+            echo "STOCK_ROM=23.2-20261004-NIGHTLY-umi"
+            echo "KERNELSU_TAG=v3.3.0"
+            echo "PREVIOUS_FAILED_BOOT_SHA256=b5701bb8347ea4d37c584b96eedd00f6e51d867aa9a68ec21d75a16f85ae2aaf"
+            printf 'TEST2_KERNEL_IMAGE_SHA256='
+            sha256sum .work/output-ksu/arch/arm64/boot/Image | awk '{print $1}'
+          } > experimental-PROVENANCE.txt
+          printf '%s\n' 'EXPERIMENTAL TEST 2: not boot-tested. ARM64 hook-fix only; SELinux/Root/Manager are UNVERIFIED. Does not auto-flash.' 'User has confirmed recovery via original boot.img and Recovery ADB pstore; failure still possible.' > experimental-WARNING.txt
+
       - name: 上传实验版镜像，仅供自愿且可恢复的真机调试
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: EXPERIMENTAL-UNVERIFIED-umi-KernelSU3.3.0-boot
+          name: UMI-TEST2-HOOKFIX-UNVERIFIED-KernelSU3.3.0-boot
           path: |
-            .work/experiment/umi-KernelSU3.3.0-20261004-EXPERIMENTAL-boot.img
+            .work/experiment/umi-KernelSU3.3.0-20261004-TEST2-HOOKFIX-boot.img
             experimental-boot-verification.json
             experimental-boot.sha256
             experimental-avb.txt
             stock-avb.txt
             experimental-WARNING.txt
+            experimental-PROVENANCE.txt
           retention-days: 7
           compression-level: 1
           include-hidden-files: true

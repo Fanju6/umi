@@ -19,3 +19,23 @@ https://mirrorbits.lineageos.org/full/umi/20261004/boot.img
 5. 严格校验通过后，将临时 `EXPERIMENTAL-UNVERIFIED` ZIP 保存于 Actions Artifacts，**不会刷机、不会发布 Releases**。
 
 重要：`safe_to_flash=false` 始终保留，即使镜像结构验证通过。ROM 运行时、SELinux 强制模式及 KernelSU Manager 均尚未验证。实验前须准备完全匹配的原版 boot.img、确认 Fastboot/Recovery 能访问，并对个人数据做备份；**用户拥有解锁 Bootloader 并不代表所有失败都必然无损恢复。**
+
+## 2026-10-15：第二版测试镜像（Hook-Fix / TEST2）
+
+这次运行是在上次第一阶段 init 失败（pstore 证实 syscall table 写入失败，但 dispatcher 假装安装成功）的基础上制作的**受控对照实验**。
+
+唯一的内核差异来源：原版 LineageOS 23.2 umi 同一源码、原版 Ramdisk/DTB/Boot Header/AVB Hash Footer、不改变 Clang18 工具链；仅新增：
+
+- `UMI_KSU_419_DISPATCHER_FAIL_CLOSED`：sys_call_table 写入失败时，不启用 sys_enter 重定向，也不把失败 Hook 记为已安装。
+- `UMI_KSU_419_ARM64_BLOCK_WALK`：4.19 ARM64 的 PMD/PUD section 映射处理必须先于 `pmd_bad`/`pud_bad`，修复原先无法解析 `sys_call_table[42]` 物理地址的问题。
+
+验证范围：最新源码与驱动/整核的 CI 已通过；本次会**重新完整构建、按官方 boot.img 重包并保留 RAMDISK/DTB 哈希，自动验证原版配置与 AVB Footer**，只有全项通过才上传 `UMI-TEST2-HOOKFIX-UNVERIFIED-KernelSU3.3.0-boot` 附件。每份压缩包包含 `PROVENANCE`、SHA-256 与严格验证 JSON。Workflow 仅因手动 dispatch 或此显式触发文档变化而运行，不在其他代码提交时自动打包。
+
+风险：**本版尚未真机启动验证，不代表可以日常刷入。** 若用户进行自愿复测，先保证当前 ROM 原版 boot.img 可立即恢复、数据已备份，并且 Recovery ADB 的 `/sys/fs/pstore/console-ramoops-0` 可以导出（此前已验证）。失败后尽量先 Recovery 导出 pstore，再恢复原版 boot.img；不要反复重启覆盖诊断信息。回传日志只在本地或聊天上传，不要把包含敏感信息的原始日志上传到公开仓库。
+
+验收标准有两个独立阶段：
+
+1. **能开机**：至少运行到 Android Launcher，`adb shell getenforce` 仍是 Enforcing；`uname -r` 证实是实验内核，而不是原版。
+2. **能 Root**：KernelSU Manager 实际识别并授权，基本文件访问和 SELinux 隔离正常；即便第一阶段成功，第二阶段仍可能不通过。
+
+两个阶段未全部验证前，继续按未验证实验版处理，不公开发布 Release。
