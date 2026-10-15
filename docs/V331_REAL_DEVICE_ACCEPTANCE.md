@@ -48,8 +48,28 @@
 
 下一步必须通过已授权的普通终端应用（如 Termux），而不是缺少 su 的 ADB Shell，实际执行 `su -c id`，并由授权 Root 检查 `ls -lZ /data/adb/ksud`、`sha256sum /data/adb/ksud`。之后再做授权撤销/恢复及重启回归。不能在原设备删除 ksud 或调用 adb root 来冒充首装成功。
 
+## 2026-10-15：第三方应用终端 KernelSU 提权成功（用户原始回显）
+
+用户在 MT 管理器（终端 Bash 位于 `/data/user/0/bin.mt.plus/files/term/bin/bash`）的交互式终端中执行 `su -c id`，实际输出：
+
+```text
+uid=0(root) gid=0(root) groups=0(root) context=u:r:ksu:s0
+```
+
+同时执行 `getenforce` 输出：
+
+```text
+Enforcing
+```
+
+**结论：`KSU_SU_ROOT_CONFIRMED`，`KSU_SELINUX_DOMAIN_CONFIRMED`，`ENFORCING_STILL_CONFIRMED`。** 这次输出证明实际进入了 KernelSU 的 Root 安全上下文；但此前 ADB shell 无 su 不构成失败，本轮也尚未验证关闭授权后拒绝提权。
+
+执行 `su -c 'ls -lZ /data/adb/ksud; sha256sum /data/adb/ksud'` 时，MT 管理器 Bash 报错，将整个带分号的命令字符串呈现在 `No such file or directory` 的“命令名”位置。这一输出无法用作 ksud 缺失证据。由于用户提示符已是 `#`，下一步应**直接在现有 Root Shell 分别执行** `ls -lZ /data/adb/ksud` 和 `sha256sum /data/adb/ksud`，无需嵌套 `su -c`。
+
+仍待验证：`/data/adb/ksud` 当前状态和哈希、Manager 首次自动安装、撤销与恢复 Root 授权、重启后 Root 可用性、模块与长期稳定性。**保留旧 ksud，不在日用设备删除或覆盖。**
+
 ## 发布门禁
 
-当前已由用户的只读 ADB 原始输出验证正常完成 Android 启动、SELinux Enforcing 及官方 Manager APK v3.3.1 安装版本，但普通应用 Root、ksud 与首次初始化仍需单独真机验证。PR #3、PR #4 仍保持 Draft；特别是 PR #4 的 `manager-handshake`、`selinux-abi` 静态阻塞不能因本次开机成功而自动清除。
+当前已由用户的只读 ADB 原始输出验证正常完成 Android 启动、SELinux Enforcing 及官方 Manager APK v3.3.1 安装版本，且已确认第三方应用终端的 KernelSU Root 上下文与 Enforcing；ksud 文件、授权撤销以及首次初始化仍需单独真机验证。PR #3、PR #4 仍保持 Draft；特别是 PR #4 的 `manager-handshake`、`selinux-abi` 静态阻塞不能因本次开机成功而自动清除。
 
 有关设备备份、回滚、专用首装验证步骤，继续参照 `docs/V331_FIRST_INSTALL_TEST_PROTOCOL.md`。
