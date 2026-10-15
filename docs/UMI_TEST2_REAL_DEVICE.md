@@ -89,3 +89,11 @@ TEST2 构建：GitHub Actions `#38678653507`，结果为 `success`，artifact `U
 - 内核内存补丁、SELinux 4.19 策略事务及 Manager/Seccomp 尚未完成真机稳定性验证，不将该构建标记稳定或发布正式 Release。
 
 **状态：BOOT_SUCCESS / ROOT_NOT_YET_VERIFIED / SELINUX_ENFORCING / STABILITY_NOT_YET_VERIFIED。**
+
+## 2026-10-15：Root 授权阶段的真实失败与已发现原因
+
+测试结果：官方 Manager v3.3.0 显示「工作中 / 32601-2」，但提示「获取 root 失败」；`adb shell su -c id` 报 `su: inaccessible or not found`。内核日志记录了 `Crowning manager`、`ksu fd installed`，并在 sucompat Hook 中多次记录 `open ksud err: -2`。
+
+官方 KernelSU v3.3.0 的 `KSUD_PATH` 为 `/data/adb/ksud`。此前 TEST2 构建仅替换内核而保留官方原版 Ramdisk，未安装匹配的用户空间 `ksud`。优先补齐用户空间程序并确认 SELinux 标签，**不要在尚未测试前认定必须继续重编内核**。
+
+只读确认、用户自主条件安装及后续验证见 [TEST2 Root Bootstrap](UMI_TEST2_ROOT_BOOTSTRAP.md)。状态：BOOT_SUCCESS / MANAGER_RECOGNIZED / ROOT_FAILED / KSUD_MISSING_OR_INACCESSIBLE。
