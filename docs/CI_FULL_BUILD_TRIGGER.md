@@ -32,3 +32,9 @@
 ## 2026-10-15：v3.3.1 pkg_observer task_work 兼容修复后的完整链接
 
 提交 501bb447：旧版 task_work_add(current, cb, true) 取代 4.19 中不存在的 TWA_RESUME 枚举；沿用其余已通过的 v3.3.1 兼容补丁。再次触发仅供诊断的整核链接 CI，**不得发布或自动刷写镜像**。
+
+
+## 2026-10-15：PR #4 post-exec task_work 独立全量编译
+
+PR #4 仍以 PR #3 的 KernelSU v3.3.1 升级为基础，全部代码仅限 experiment/v331-manager-fd-bootstrap 分支。本次全量 Image/vmlinux/umi DTBO 诊断将验证由 sched_process_exec（不能睡眠）投递 GFP_ATOMIC task_work，再在可睡眠的返回用户态前回调中安装 CLOEXEC FD 的原型是否与 Linux 4.19 编译和链接兼容。
+必须从 Actions 的 head_sha、内核编译日志与 build-manifest 确认本次实验 HEAD，禁止误用此前的快速驱动检查或旧版编译结果。仍不生成、不上传 boot.img，也不能判定首次 Root 已经完成。
