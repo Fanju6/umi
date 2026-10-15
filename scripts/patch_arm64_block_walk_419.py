@@ -26,6 +26,7 @@ INCLUDE_PATCHED = (
 OLD_PUD = """    pud = pud_offset(p4d, addr);
     if (pud_none(*pud) || pud_bad(*pud))
         goto fail;
+    pr_debug("pud of 0x%lx p=0x%lx v=0x%lx", addr, (uintptr_t)pud, (uintptr_t)pud_val(*pud));
 #if defined(pud_leaf)
     if (pud_leaf(*pud)) {
 """
@@ -42,6 +43,7 @@ NEW_PUD = """    pud = pud_offset(p4d, addr);
 #endif
     if (pud_bad(*pud))
         goto fail;
+    pr_debug("pud of 0x%lx p=0x%lx v=0x%lx", addr, (uintptr_t)pud, (uintptr_t)pud_val(*pud));
 #if defined(pud_leaf)
     if (pud_leaf(*pud)) {
 """
