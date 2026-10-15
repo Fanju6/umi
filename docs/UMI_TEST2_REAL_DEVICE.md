@@ -150,3 +150,27 @@ getenforce = Enforcing
 - MODULES_AND_LONG_TERM_STABILITY_UNVERIFIED
 
 **尚未声明稳定版。** 最小后续工作：重启后在同一普通终端应用再次执行 `/system/bin/su -c id`，继续验证拒绝授权的隔离效果；另收集 `ksud` 与 `libksud.so` 哈希，不必再次刷 boot。
+
+## 2026-10-15：TEST2 重启后 KernelSU Root 再次成功（用户复测）
+
+在已经完成一次正常重启、`sys.boot_completed=1`、SELinux `Enforcing` 且 `/data/adb/ksud` 仍存在后，用户进一步确认从此前已授权的普通终端应用再次执行 `/system/bin/su -c id`，输出依然是：
+
+```text
+uid=0(root) gid=0(root)
+```
+
+**结论：已证明 KernelSU 对该普通应用的提权在首次重启之后仍可用。** 这与 ADB 的调试 root 权限不是同一条验证路径。状态更新：
+
+- BOOT_SUCCESS
+- KSU_MANAGER_RECOGNIZED
+- KSUD_INSTALLED
+- APP_ROOT_SUCCESS_BEFORE_REBOOT
+- APP_ROOT_SUCCESS_AFTER_REBOOT
+- SELINUX_ENFORCING_AFTER_REBOOT
+- FIRST_REBOOT_STABILITY_PASS
+- DENY_ALLOW_ISOLATION_PENDING
+- MODULE_COMPAT_AND_LONG_TERM_STABILITY_NOT_YET_TESTED
+
+下一项最小隔离测试：暂时关闭 Rooted debugging 避免 ADB Root 误判；在管理器的超级用户页面拒绝已授权的测试终端，确保其在新进程中无法获得 uid 0，再恢复该终端授权，确认能再次获得 uid 0。注意拒绝测试可能令 `su` 退出非零/显示 permission denied；这是期望结果。切勿授权未知应用、停用 SELinux 或以关闭 Rooted debugging 作为证明普通应用失去 KernelSU 授权的依据。
+
+此阶段为**基础功能验证进行中**；仍未构成生产稳定/全面支持 Android 16 的证明。
