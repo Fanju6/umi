@@ -38,3 +38,10 @@
 
 PR #4 仍以 PR #3 的 KernelSU v3.3.1 升级为基础，全部代码仅限 experiment/v331-manager-fd-bootstrap 分支。本次全量 Image/vmlinux/umi DTBO 诊断将验证由 sched_process_exec（不能睡眠）投递 GFP_ATOMIC task_work，再在可睡眠的返回用户态前回调中安装 CLOEXEC FD 的原型是否与 Linux 4.19 编译和链接兼容。
 必须从 Actions 的 head_sha、内核编译日志与 build-manifest 确认本次实验 HEAD，禁止误用此前的快速驱动检查或旧版编译结果。仍不生成、不上传 boot.img，也不能判定首次 Root 已经完成。
+
+
+## 2026-10-15：重新验证升级 PR 最新 HEAD 的整核构建
+
+前次完整诊断 CI #38698776009 的 checkout 为旧提交 25b4a18107fc93122a35a3e415bda9eb13f29c66，不能用它代表 PR #3 的最终提交结果。
+此次由本文件变更触发的全量 Image/vmlinux/umi DTBO 编译，必须检查该 Actions 运行的 head_sha 等于本次提交，且 build-manifest、编译链接日志和输出检查全部通过。
+TEST2 的历史 v3.3.0 真机证据保持不变。scripts/umi-ksud-bootstrap.ps1 严格拒绝从 v3.3.1 checkout 安装其固定的旧版 v3.3.0 ksud；首次自动安装仍是独立未完成验收项。
