@@ -45,3 +45,12 @@
 补丁 `scripts/patch_syscall_failclosed_419.py` 使 syscall table 修改失败时不记录成功 Hook，也不发布 dispatcher 编号；`sys_enter` 因编号 -1 自行退出。此补丁**尚未经过新镜像真机验证**；属于保守关闭失效特性，并不能保证 KernelSU Root、Manager、SELinux 正常。
 
 请在回归测试及新内核链接检查完成以前，不提供刷写版本；保留真实失败回归信息。
+
+
+## 2026-10-15：确定的 ARM64 4.19 页表判断问题及第二轮补丁
+
+源码核对 `arch/arm64/include/asm/pgtable.h` 可见 `pmd_bad(pmd)` 判定需要 `PMD_TABLE_BIT`，但 `pmd_sect(pmd)` 正常块映射为 `PMD_TYPE_SECT`。官方 KernelSU v3.3.0 的 `phys_from_virt()` 在旧内核上缺少有效的 `pmd_leaf/pud_leaf` 检测，导致在检查块映射前将正常 PMD/PUD 映射判为坏页表。日志中系统调用表虚拟地址映射转物理失败，与此完全一致。
+
+新增 `scripts/patch_arm64_block_walk_419.py`：仅对已锁定源码进行精确替换，显式在 `pmd_bad` 之前处理 `pmd_sect`，在 `pud_bad` 之前处理 `pud_sect`；正确使用块地址掩码获取物理页框基址。在无法补丁 syscall 表时，第一轮 fail-closed 补丁继续保证不改写正常系统调用。已加入幂等性与源码漂移拒绝测试。
+
+**未做真机测试：本次修复是基于页表宏语义的明确代码更改，不能等同于 sys_call_table 安装成功，更不能证明 Root、SELinux、Manager 正常运行。**
