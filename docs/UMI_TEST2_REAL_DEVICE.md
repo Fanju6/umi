@@ -100,9 +100,9 @@ TEST2 构建：GitHub Actions `#38678653507`，结果为 `success`，artifact `U
 
 ## 2026-10-15 14:25：官方 ksud 部署成功，Manager 恢复正常
 
-用户确认：在开发者选项启用 **Rooted debugging** 后，\`adb root\` 成功，\`adb shell id\` 返回 \`uid=0(root)\`、\`context=u:r:su:s0\`；下载官方 KernelSU v3.3.0 的 \`ksud-aarch64-linux-android\`、SHA-256 校验通过后，在 ADB Root 下执行 \`/data/local/tmp/ksud install\` 成功，持久路径 \`/data/adb/ksud\` 已存在，权限 \`-rwx------ root:root\`，SELinux 标签为 \`u:object_r:ksu_file:s0\`。用户反馈 **KernelSU 管理器已经正常**。
+用户确认：在开发者选项启用 **Rooted debugging** 后，`adb root` 成功，`adb shell id` 返回 `uid=0(root)`、`context=u:r:su:s0`；下载官方 KernelSU v3.3.0 的 `ksud-aarch64-linux-android`、SHA-256 校验通过后，在 ADB Root 下执行 `/data/local/tmp/ksud install` 成功，持久路径 `/data/adb/ksud` 已存在，权限 `-rwx------ root:root`，SELinux 标签为 `u:object_r:ksu_file:s0`。用户反馈 **KernelSU 管理器已经正常**。
 
-**修正历史状态**：之前的「\`ksud\` 缺失」诊断得到可操作的验证和修复；既有的 \`adb shell su\` 找不到命令并不能证明 KernelSU Hook 永久失效，TEST2 的本次错误属于未部署 \`ksud\` 的用户空间初始化缺口。ADB Root 的成功与 APP 侧 Root 不是同一种验收。
+**修正历史状态**：之前的「`ksud` 缺失」诊断得到可操作的验证和修复；既有的 `adb shell su` 找不到命令并不能证明 KernelSU Hook 永久失效，TEST2 的本次错误属于未部署 `ksud` 的用户空间初始化缺口。ADB Root 的成功与 APP 侧 Root 不是同一种验收。
 
 真机状态更新为：
 - BOOT_SUCCESS
