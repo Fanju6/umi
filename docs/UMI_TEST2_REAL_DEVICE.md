@@ -62,3 +62,30 @@ adb pull /sys/fs/pstore "$env:USERPROFILE\Desktop\umi-test2-pstore"
 - `dispatcher patch failed; disabled syscall redirection`：说明 fail-closed 保护工作，启动可能恢复，但 Root 功能很可能缺失。
 
 **当前 TEST2 的所有真机验收均为未完成。**
+
+## 2026-10-15：TEST2 真机启动成功（用户 ADB 实测）
+
+用户在 Xiaomi Mi 10 umi 上刷入 TEST2 后，已能正常进入 Android，并从 adb 获得以下结果（仅记录必要事实，不包含设备 ID 或其他个人标识）：
+
+```text
+adb shell getprop sys.boot_completed
+1
+adb shell uname -r
+4.19.325-cip131-st15-perf-g71b13e62f057-dirty
+adb shell getenforce
+Enforcing
+```
+
+**阶段结论：Android 正常启动通过。** `-dirty` 与我们的自编译内核特征一致；但仅根据内核发行名并不能唯一证明已加载哪个字节级 boot.img，如有必要可另行核对编译器/打包散列。此结果与旧版因系统调用分发器导致的第一阶段 `init` 失败形成清晰对照。
+
+TEST2 构建：GitHub Actions `#38678653507`，结果为 `success`，artifact `UMI-TEST2-HOOKFIX-UNVERIFIED-KernelSU3.3.0-boot`，源提交 `992dfbc1cbbb01e0b7b1bfbea82fedd6fecf362c`。成功不等于 Root 成功。
+
+**剩余必测项目：**
+
+- 官方 KernelSU v3.3.0 Manager 是否识别到 KernelSU 内核（需用户明确提供界面状态）。
+- 对授权终端/ADB shell 运行 `id` 的实际结果，确认是否出现 `uid=0(root)`；不以 `su` 文件存在为通过条件。
+- 查看登录后的 Hook 状态（`dispatcher verified at slot` 或 `dispatcher patch failed; disabled syscall redirection`），必要时结合 Android Kernel log / Recovery pstore 判定。
+- 允许/拒绝授权流程、再次正常启动与 SELinux 保持 Enforcing 的情况。
+- 内核内存补丁、SELinux 4.19 策略事务及 Manager/Seccomp 尚未完成真机稳定性验证，不将该构建标记稳定或发布正式 Release。
+
+**状态：BOOT_SUCCESS / ROOT_NOT_YET_VERIFIED / SELINUX_ENFORCING / STABILITY_NOT_YET_VERIFIED。**
