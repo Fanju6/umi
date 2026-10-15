@@ -28,3 +28,7 @@
 ## 2026-10-15：KernelSU 官方 v3.3.1 Linux 4.19 完整编译与链接
 
 在隔离分支 `upgrade/kernelsu-v3.3.1` 上，升级的核心版本已经锁定 `0c0fdb960178fa12d80d6cbcfdcb6ad8be6a865d`。上游源码审查 CI #38697847154 通过，现单独触发 **v3.3.1 内核 Image/vmlinux/DTBO 的全量编译链接**。使用当前相同的 LineageOS umi 源码和 Clang 18 实验工具链做对照；不改变已验证成功的 TEST2 内核，也不自动生成可刷 Boot。
+
+## 2026-10-15：v3.3.1 pkg_observer task_work 兼容修复后的完整链接
+
+提交 501bb447：旧版 task_work_add(current, cb, true) 取代 4.19 中不存在的 TWA_RESUME 枚举；沿用其余已通过的 v3.3.1 兼容补丁。再次触发仅供诊断的整核链接 CI，**不得发布或自动刷写镜像**。
