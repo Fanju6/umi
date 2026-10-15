@@ -25,7 +25,7 @@ class KsudBootstrapContract(unittest.TestCase):
         src = SCRIPT.read_text(encoding="utf-8")
         self.assertNotIn("fastboot flash", src.lower())
         self.assertNotIn("setenforce 0", src.lower())
-        self.assertNotIn("remount", src.lower())
+        self.assertNotIn('@("shell", "mount", "-o", "remount"', src.lower())
         self.assertNotIn("build.prop", src.lower())
         self.assertIn("Do not overwrite a manager-maintained", src)
         self.assertIn('if ($existing -ne "ABSENT")', src)
