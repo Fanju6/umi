@@ -5,7 +5,6 @@
 """
 import argparse
 import json
-import re
 import subprocess
 import sys
 from pathlib import Path
@@ -118,7 +117,7 @@ def build_report(values: dict[str, list[str]]) -> dict:
         "source": "adb shell unprivileged readonly",
         "safe_to_flash": False,
         "first_boot_test": False,
-        "limitations": "未读取原始 DTB/reg 属性、未检查实际寄存器范围；空列表表示未观察到/权限不足，并非缺失",
+        "limitations": "未读取原始 DTB/reg 属性、未检查实际寄存器范围；空列表含义未知（未观察到/权限不足），并非硬件缺失",
     })
     return report
 
