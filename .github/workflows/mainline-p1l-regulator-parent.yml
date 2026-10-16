@@ -1,0 +1,53 @@
+name: umi P1l RPMh parent schema versus electrical safety
+
+on:
+  pull_request:
+    paths:
+      - 'config/mainline-p1l-regulator-parent-gates.json'
+      - 'scripts/mainline_p1l_regulator_parent_audit.py'
+      - 'tests/test_mainline_p1l.py'
+      - 'docs/mainline-port/P1L_REGULATOR_PARENT_GATES.md'
+      - 'docs/mainline-port/README.md'
+      - '.github/workflows/mainline-p1l-regulator-parent.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: P1l source-locked input grouping and no UFS/PMIC activation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: P1l/P1e/P1f and P1k static gate regression
+        run: |
+          set -euo pipefail
+          python3 scripts/mainline_p1l_regulator_parent_audit.py
+          python3 -m unittest discover -s tests -p test_mainline_p1l.py -v
+          python3 scripts/mainline_p1e_ufs_audit.py
+          python3 scripts/mainline_p1f_ufs_lifecycle.py
+          python3 scripts/mainline_p1k_ramoops_bridge_audit.py
+      - name: Obtain pinned Linux 6.12 RPMh regulator driver and binding
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/umi-p1l
+          pinned=adc218676eef25575469234709c2d87185ca223a
+          gh api --header 'Accept: application/vnd.github.raw+json' \
+            "repos/torvalds/linux/contents/drivers/regulator/qcom-rpmh-regulator.c?ref=$pinned" \
+            > /tmp/umi-p1l/driver.c
+          gh api --header 'Accept: application/vnd.github.raw+json' \
+            "repos/torvalds/linux/contents/Documentation/devicetree/bindings/regulator/qcom,rpmh-regulator.yaml?ref=$pinned" \
+            > /tmp/umi-p1l/regulator.yaml
+          test -s /tmp/umi-p1l/driver.c
+          test -s /tmp/umi-p1l/regulator.yaml
+      - name: Verify required versus allowed properties and UFS block
+        run: |
+          set -euo pipefail
+          python3 scripts/mainline_p1l_regulator_parent_audit.py \
+            --driver /tmp/umi-p1l/driver.c \
+            --binding /tmp/umi-p1l/regulator.yaml
+          echo 'All six parent phandles unknown; two vendor UFS votes unmapped; voltage/hardware disabled; safe_to_flash=false.' >> "$GITHUB_STEP_SUMMARY"

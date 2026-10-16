@@ -35,6 +35,9 @@
 
 **P1k 进展（2026-10-16）：** [umi 4.19 实测 Ramoops 四参数及主线 6.12 迁移安全门禁](P1K_RAMOOPS_MIGRATION.md) 确认用户的非 Root 真机参数 `0xB0000000`、4 MiB、console 2 MiB、pmsg 2 MiB 均与旧驱动一致，且本地完整脱敏报告验证通过。修复 P1j 运行时证据标志随 `--report` 动态导出；主线内存所有权、动态池、故障恢复等仍未知；未改任何 DTS、未生成启动镜像、仍禁止刷机。
 
+
+**P1l 进展（2026-10-16）：** [六组 PM8150 上游供电属性的 schema 与真实布线区别](P1L_REGULATOR_PARENT_GATES.md)：固定主线 6.12 的 RPMh binding 仅强制要求 `compatible` 与 `qcom,pmic-id`，允许的六组输入供电字段并非全部标记 required；驱动 `supply_name` 把七个输出轨归入六组。强调 DTS 语法通过**不代表**真实 parent、电气时序或 UFS 供电安全。六组 parent 仍为 null，两条 Vendor UFS 额外投票仍未迁移，研究 DTS 全部 disabled，不执行硬件操作或刷机。
+
 ## 已直接核对的源码
 
 | 轨道 | 固定来源 | 可证事实 |
