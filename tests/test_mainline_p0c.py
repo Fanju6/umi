@@ -67,7 +67,7 @@ class MainlineP0cTests(unittest.TestCase):
         self.assertNotIn("su -c", s)
         for forbidden in ("dd if=", "/proc/kcore", "/dev/mem", "setprop ", "fastboot ", "chmod ", "getprop |"):
             self.assertNotIn(forbidden, s)
-        self.assertEqual(s.count("|reg "), 0)  # shell prints tag + key before bytes, not literal data
+        self.assertIn("|reg ", s)  # check the planned read-only property commands
 
     def test_dts_never_claims_boot_ready(self):
         dts = (ROOT / "research/mainline/sm8250-xiaomi-umi-p0c.dts").read_text()
