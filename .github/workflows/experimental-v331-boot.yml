@@ -13,7 +13,7 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
-      - name: 保证仅在 v3.3.1 独立实验分支构建（不覆盖 TEST2）
+      - name: 校验 v3.3.1 固定版本并只在受控分支构建
         run: |
           set -Eeuo pipefail
           if [[ "${GITHUB_REF_NAME}" != "main" && "${GITHUB_REF_NAME}" != "experiment/v331-manager-fd-bootstrap" ]]; then
@@ -109,7 +109,7 @@ jobs:
             printf 'V331_KERNEL_IMAGE_SHA256='
             sha256sum .work/output-ksu/arch/arm64/boot/Image | awk '{print $1}'
           } > experimental-PROVENANCE.txt
-          printf '%s\n' 'KernelSU v3.3.1 Manager FD experiment: NO on-device boot or first-install verification; NEVER auto-flash, NEVER claim stable.' 'User has confirmed recovery via original boot.img and Recovery ADB pstore; failure still possible.' > experimental-WARNING.txt
+          printf '%s\n' 'KernelSU v3.3.1 controlled image: CI validates structure only; device-specific test results are documented separately. NEVER auto-flash, NEVER claim stable.' 'User has confirmed recovery via original boot.img and Recovery ADB pstore; failure still possible.' > experimental-WARNING.txt
 
       - name: 上传独立 v3.3.1 实验镜像，仅供有回滚方案的专用测试机
         if: success()
