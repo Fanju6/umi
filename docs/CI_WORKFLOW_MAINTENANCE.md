@@ -22,3 +22,11 @@
 4. 历史实验 Artifacts 包含 `UNVERIFIED` 标识，属于不可篡改的旧产物标识。即便对应版本已有真机功能反馈，也不应在没有新的发布安全验收之前改名为 `STABLE` 或清除 `safe_to_flash=false`。
 
 整个工作流优化独立于文档 PR、不能替代真机安全评估和恢复测试。
+
+## 实验镜像触发的分支隔离
+
+旧触发文件在所有开发分支上提交时都会执行，导致文档分支的 TEST2 工作流因 KernelSU v3.3.1 而失败，同时 v3.3.1 镜像工作流因不是实验专用分支而失败。现在固定：
+
+- `experimental-boot.yml` 只有 `main` 上修改 TEST2 触发文件才会自动运行。
+- `experimental-v331-boot.yml` 只有 `experiment/v331-manager-fd-bootstrap` 上修改对应触发文件才会自动运行。
+- 两者继续保留 `workflow_dispatch` 和原有 SHA/分支运行时断言，不能通过换分支绕过源码与 ROM 检查；更不自动刷机。

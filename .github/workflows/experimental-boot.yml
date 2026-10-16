@@ -3,6 +3,8 @@ name: umi KernelSU 受控实验启动镜像（未验证）
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     paths:
       - 'docs/EXPERIMENTAL_BOOT_TRIGGER.md'
 
