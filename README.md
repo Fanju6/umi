@@ -9,11 +9,11 @@
 | 设备 | Xiaomi Mi 10（`umi`） |
 | ROM | `LineageOS 23.2-20261004-NIGHTLY-umi` |
 | 内核 | Linux 4.19.325，Clang 18 |
-| KernelSU | 官方 `v3.3.1` 迁移分支；`v3.3.0 TEST2` 回滚基线 |
+| KernelSU | 官方 `v3.3.1`（当前 `main`）；历史 `v3.3.0 TEST2` 可由 Git 提交恢复 |
 | 真机功能 | 启动、SELinux Enforcing、应用 Root、授权隔离、重启保持已通过；Manager 首次自动安装 ksud 由测试者确认 |
 | 发布 | 尚未发布稳定版本，安全审计仍在进行 |
 
-**分支说明：** 默认 `main` 保存已经真机验证的 **KernelSU v3.3.0 TEST2**。v3.3.1 代码在 [PR #3](https://github.com/Fanju6/umi/pull/3)，首次安装适配在其上的 [PR #4](https://github.com/Fanju6/umi/pull/4)。**不要将未合并的 v3.3.1 功能误认为已包含在 `main`。**
+**版本说明：** `main` 维护官方 KernelSU **v3.3.1** 和针对 umi 4.19 的首装兼容方案；v3.3.0 TEST2 的经过验证的状态保留在 Git 历史（[升级记录 PR #3](https://github.com/Fanju6/umi/pull/3)、[首次安装记录 PR #4](https://github.com/Fanju6/umi/pull/4)），不再保留长期开发分支。
 
 ## 快速导航
 

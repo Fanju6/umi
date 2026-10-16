@@ -5,6 +5,7 @@
 ```text
 config/upstream.env                   固定上游分支和 Git SHA
 scripts/prepare_sources.sh            克隆内核和 KernelSU，接入 Kbuild
+scripts/apply_patches.py              按官方 SHA 和版本统一调度补丁
 scripts/apply_compat.py               基础内核 API 兼容
 scripts/patch_*.py                    Linux 4.19 兼容与安全修复
 scripts/inspect_*.py                  源码/boot/Manager 静态分析
@@ -48,4 +49,4 @@ docs/                                 使用、维护、验收和历史记录
 
 ## 分支关系
 
-`main` 保留 v3.3.0 TEST2，PR #3 是 v3.3.1 移植，PR #4 以 PR #3 为基础提供 Manager 首次部署适配。改进请保持上游版本固定、补丁可重复、失败即拒绝、测试证据有出处。
+`main` 维护官方 KernelSU v3.3.1 与 Manager 首次部署适配；v3.3.0 TEST2 已退役为历史 Git 提交，不再通过主分支的旧工作流构建。改进时须保持上游版本固定、补丁可重复、失败即拒绝、测试证据有出处。
