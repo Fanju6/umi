@@ -1,6 +1,6 @@
 # P0b：umi 4.19 → 主线 6.12 关键硬件映射
 
-**状态：公开源码静态核对完成；umi 实机 FDT、驱动枚举与板级参数仍待只读采集。** 不生成镜像、不修改 `main`、不触碰 Flash/EDL 分区。检查日期：2026-10-16。
+**状态：公开源码地址映射已核对，且 umi 真机节点和驱动名称已通过测试者上传的只读 JSON 获得确认。真实保留内存 `reg` 地址/长度及新内核运行状态仍未验证。** 不生成镜像、不修改 `main`、不触碰 Flash/EDL 分区。检查日期：2026-10-16。
 
 ## 公开代码的实际对应
 
@@ -22,6 +22,10 @@
 
 **重要技术边界：** “寄存器地址与 IRQ 相同”只说明同一 SoC IP 在 DTS 中对应，不证明 regulator、clock、pinctrl、IOMMU、firmware 或 Android HAL 已兼容。主线 SoC DTS 中的 UFS 与 USB 节点默认 `status = "disabled"`，需要正确的 umi 板级配置才能启用。此阶段不能生成可刷 Boot。
 
+## 真机数据更新
+
+首轮 umi 的设备数据已经由测试者上传并完成核对，详见 [P0b 实机观察记录](P0B_REAL_DEVICE_FINDINGS.md)。目前的 `ufs_hosts=[]` 仅代表旧版 sysfs 路径无枚举，**不得推导为 UFS 故障**。实机 reserved-memory 的节点名已经观察到，但尚未读取实际 `reg` 属性，因此不应据此直接编写内存 carveout。
+
 ## 第一次实机只读采集
 
 采集器 `scripts/mainline_device_probe.py` 只通过**未 Root 的 ADB Shell**读取白名单数据：设备/内核版本、Root DT 的 model/compatible、reserved-memory 目录名、分区名称、UFS/USB 枚举与少量 PMIC/触控设备名称。**不会读取**序列号、IMEI、MAC、Android ID、全量 getprop、`/proc/cmdline`、原始 DTB/内存、用户文件，也不运行 Root/写操作。
@@ -30,7 +34,7 @@ Windows PowerShell（本仓库研究分支目录下，要求 Python 3 和 ADB �
 
 ```powershell
 adb devices
-py -3 scripts/mainline_device_probe.py --output umi-p0b-report.json
+python scripts/mainline_device_probe.py --output umi-p0b-report.json
 ```
 
 Linux / macOS：

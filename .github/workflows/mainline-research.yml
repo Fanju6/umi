@@ -8,8 +8,10 @@ on:
       - 'docs/mainline-port/**'
       - 'scripts/mainline_inventory.py'
       - 'scripts/mainline_device_probe.py'
+      - 'scripts/mainline_reserved_memory_probe.py'
       - 'tests/test_mainline_inventory.py'
       - 'tests/test_mainline_device_probe.py'
+      - 'tests/test_mainline_reserved_memory_probe.py'
       - '.github/workflows/mainline-research.yml'
   workflow_dispatch:
 
@@ -27,9 +29,9 @@ jobs:
         run: python3 scripts/mainline_inventory.py --manifest config/mainline-research.json
       - name: 执行离线回归测试
         run: |
-          python3 -m py_compile scripts/mainline_inventory.py scripts/mainline_device_probe.py
+          python3 -m py_compile scripts/mainline_inventory.py scripts/mainline_device_probe.py scripts/mainline_reserved_memory_probe.py
           python3 -m unittest discover -s tests -p 'test_mainline_*.py' -v
       - name: 标记证据边界
         run: |
-          echo 'P0/P0b 静态元数据与采集器模拟回归。未克隆 4 份源码或连接实机，具体 Git SHA/实机枚举不可宣称已通过。' >> "$GITHUB_STEP_SUMMARY"
+          echo 'P0/P0b 静态元数据、非 Root 采集器模拟回归及 DT reg big-endian 解析。既有 umi 实机数据在文档中人工分级记录；该 CI 本身未连接实机。' >> "$GITHUB_STEP_SUMMARY"
           echo '不会生成内核 Image、boot.img，也不会执行 ADB/Fastboot。' >> "$GITHUB_STEP_SUMMARY"

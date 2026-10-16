@@ -32,10 +32,20 @@ python3 scripts/mainline_inventory.py --require-all \
 
 ```powershell
 adb devices
-py -3 scripts/mainline_device_probe.py --output umi-p0b-report.json
+python scripts/mainline_device_probe.py --output umi-p0b-report.json
 ```
 
 程序只记录白名单的属性、DT 节点名、平台 UFS/USB/部分 I2C 和电源组件名称，不包含 serial、IMEI、MAC、Android ID、原始 FDT、敏感配置或 userdata；参见 [P0b 映射说明](P0B_HARDWARE_MAPPING.md)。建议人工复核 JSON 后再分享。
+
+## P0b+ 保留内存地址与大小的只读核对
+
+首轮真实 umi 报告显示多个保留内存节点与主线通用 SM8250 默认布局不同。下面这一步用于读取**14 个固定白名单 DT 节点的 `reg` 元数据**（只读、不提权，不读取任何物理内存内容）：
+
+```powershell
+python scripts/mainline_reserved_memory_probe.py --output "$env:USERPROFILE\Desktop\umi-p0b-memory.json"
+```
+
+程序将 DT 的 `#address-cells` / `#size-cells`、每个白名单节点 `reg` 作为 big-endian 单元解析；若路径不可读则标记 `unreadable`，不会自动切换到 Root 或操作分区。参见 [实机内存布局问题](P0B_REAL_DEVICE_FINDINGS.md)。检查 JSON 后再分享，勿将本地报告自动提交 GitHub。
 
 ## 第二轮需补充的设备事实
 
