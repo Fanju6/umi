@@ -18,6 +18,7 @@
 | 研究 | [P0c 全 34 节点内存与真实 DTS 编译](mainline-port/P0C_FULL_MEMORY_AND_DTC.md) | 22 固定区间、12 动态池、6.12 DTS 实际编译与安全边界 |
 | 研究 | [P1a UFS/USB/PMIC 板级依赖](mainline-port/P1A_BOARD_DEPENDENCIES.md) | 固定源码对照、禁用态 DTS、供电与内存消费者门禁 |
 | 研究 | [P1b PM8150 供电与 Type-C 核验](mainline-port/P1B_POWER_TYPEC.md) | 旧 UFS/USB 供电到 6.12 的候选映射和非 Root 只读实机采集 |
+| 研究 | [P1c RPMh regulator 输入拓扑](mainline-port/P1C_RPMH_TOPOLOGY.md) | 七条 PM8150 输出、六组父供电属性与禁用态参考 DTS |
 | 历史 | [开发历史与故障档案](history/README.md) | TEST2、首版启动失败、Manager 原型 |
 
 **文档状态标记：**“命令回显”有真实设备或 CI 输出，“测试者确认”代表已经报告成功但未必提供原始全流程日志，“静态审计 BLOCK”表示代码安全分析尚未签收。这三类证据不能互相代替。

@@ -9,6 +9,7 @@ on:
       - 'config/mainline-p1a-dependencies.json'
       - 'config/mainline-p1b-power.json'
       - 'config/mainline-p1b-observed.json'
+      - 'config/mainline-p1c-rpmh-topology.json'
       - 'docs/mainline-port/**'
       - 'scripts/mainline_inventory.py'
       - 'scripts/mainline_device_probe.py'
@@ -18,6 +19,7 @@ on:
       - 'scripts/mainline_p1b_sources.py'
       - 'scripts/mainline_p1b_probe.py'
       - 'scripts/mainline_p1b_observations.py'
+      - 'scripts/mainline_p1c_topology.py'
       - 'scripts/mainline_full_reserved_probe.py'
       - 'research/mainline/**'
       - 'tests/test_mainline_inventory.py'
@@ -28,6 +30,7 @@ on:
       - 'tests/test_mainline_p1a.py'
       - 'tests/test_mainline_p1b.py'
       - 'tests/test_mainline_p1b_observations.py'
+      - 'tests/test_mainline_p1c.py'
       - '.github/workflows/mainline-research.yml'
   workflow_dispatch:
 
@@ -45,11 +48,12 @@ jobs:
         run: python3 scripts/mainline_inventory.py --manifest config/mainline-research.json
       - name: 执行离线回归测试
         run: |
-          python3 -m py_compile scripts/mainline_inventory.py scripts/mainline_device_probe.py scripts/mainline_reserved_memory_probe.py scripts/mainline_compare_memory.py scripts/mainline_full_reserved_probe.py scripts/mainline_p1a_audit.py scripts/mainline_p1b_sources.py scripts/mainline_p1b_probe.py scripts/mainline_p1b_observations.py
+          python3 -m py_compile scripts/mainline_inventory.py scripts/mainline_device_probe.py scripts/mainline_reserved_memory_probe.py scripts/mainline_compare_memory.py scripts/mainline_full_reserved_probe.py scripts/mainline_p1a_audit.py scripts/mainline_p1b_sources.py scripts/mainline_p1b_probe.py scripts/mainline_p1b_observations.py scripts/mainline_p1c_topology.py
           python3 -m unittest discover -s tests -p 'test_mainline_*.py' -v
           python3 scripts/mainline_p1a_audit.py
           python3 scripts/mainline_p1b_sources.py
           python3 scripts/mainline_p1b_observations.py
+          python3 scripts/mainline_p1c_topology.py
           python3 -m unittest discover -s tests -p test_mainline_p1b.py -v
       - name: 标记证据边界
         run: |

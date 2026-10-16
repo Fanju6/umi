@@ -7,13 +7,16 @@ on:
       - 'config/mainline-p1a-dependencies.json'
       - 'config/mainline-p1b-power.json'
       - 'config/mainline-p1b-observed.json'
+      - 'config/mainline-p1c-rpmh-topology.json'
       - 'scripts/mainline_p1a_audit.py'
       - 'scripts/mainline_p1b_sources.py'
       - 'scripts/mainline_p1b_probe.py'
       - 'scripts/mainline_p1b_observations.py'
+      - 'scripts/mainline_p1c_topology.py'
       - 'tests/test_mainline_p1a.py'
       - 'tests/test_mainline_p1b.py'
       - 'tests/test_mainline_p1b_observations.py'
+      - 'tests/test_mainline_p1c.py'
       - 'config/mainline-umi-p0c-memory.json'
       - 'scripts/mainline_validate_p0c.py'
       - 'tests/test_mainline_validate_p0c.py'
@@ -38,6 +41,8 @@ jobs:
           python3 -m unittest discover -s tests -p test_mainline_p1a.py -v
           python3 scripts/mainline_p1b_sources.py
           python3 scripts/mainline_p1b_observations.py
+          python3 scripts/mainline_p1c_topology.py
+          python3 -m unittest discover -s tests -p test_mainline_p1c.py -v
           python3 -m unittest discover -s tests -p test_mainline_p1b.py -v
       - name: Install Device Tree Compiler
         run: sudo apt-get update && sudo apt-get install -y device-tree-compiler
@@ -112,6 +117,46 @@ jobs:
             --vendor-usb /tmp/umi-vendor/kona-usb.dtsi \
             --vendor-umi /tmp/umi-vendor/umi-sm8250.dtsi
           echo 'P1b rail mapping static only; live voltages / Type-C roles are unverified.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Audit P1c source-pinned RPMh supply groups
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/umi-rpmh-sources
+          source_sha=adc218676eef25575469234709c2d87185ca223a
+          curl --fail --silent --show-error --location --retry 3 \
+            "https://raw.githubusercontent.com/torvalds/linux/${source_sha}/Documentation/devicetree/bindings/regulator/qcom,rpmh-regulator.yaml" \
+            --output /tmp/umi-rpmh-sources/qcom,rpmh-regulator.yaml
+          curl --fail --silent --show-error --location --retry 3 \
+            "https://raw.githubusercontent.com/torvalds/linux/${source_sha}/arch/arm64/boot/dts/qcom/sm8250-xiaomi-elish-common.dtsi" \
+            --output /tmp/umi-rpmh-sources/elish.dtsi
+          test -s /tmp/umi-rpmh-sources/qcom,rpmh-regulator.yaml
+          test -s /tmp/umi-rpmh-sources/elish.dtsi
+          python3 scripts/mainline_p1c_topology.py \
+            --binding /tmp/umi-rpmh-sources/qcom,rpmh-regulator.yaml \
+            --soc upstream/arch/arm64/boot/dts/qcom/sm8250.dtsi \
+            --reference-board /tmp/umi-rpmh-sources/elish.dtsi
+      - name: Compile disabled PM8150 RPMh research provider (P1c)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp research/mainline/sm8250-xiaomi-umi-p1c.dts upstream/arch/arm64/boot/dts/qcom/
+          cpp -nostdinc -I upstream/include -I upstream/arch/arm64/boot/dts/qcom \
+            -undef -D__DTS__ -x assembler-with-cpp \
+            upstream/arch/arm64/boot/dts/qcom/sm8250-xiaomi-umi-p1c.dts \
+            /tmp/umi-p1c-preprocessed.dts
+          dtc -@ -I dts -O dtb -o /tmp/umi-p1c-research.dtb /tmp/umi-p1c-preprocessed.dts
+          parent=/soc@0/rsc@18200000/regulators-umi-reference
+          test "$(fdtget -t s /tmp/umi-p1c-research.dtb "$parent" status)" = disabled
+          test "$(fdtget -t s /tmp/umi-p1c-research.dtb "$parent" compatible)" = qcom,pm8150-rpmh-regulators
+          for child in smps4 ldo2 ldo5 ldo6 ldo9 ldo12 ldo17; do
+            fdtget -l /tmp/umi-p1c-research.dtb "$parent" | grep -Fx "$child"
+          done
+          for node in /soc@0/ufshc@1d84000 /soc@0/phy@1d87000 \
+                      /soc@0/usb@a6f8800 /soc@0/usb@a6f8800/usb@a600000 \
+                      /soc@0/phy@88e3000 /soc@0/phy@88e8000; do
+            test "$(fdtget -t s /tmp/umi-p1c-research.dtb "$node" status)" = disabled
+          done
+          echo 'P1c PM8150 provider and all UFS/USB nodes remain disabled; 0 parent supply phandles or voltage constraints.' >> "$GITHUB_STEP_SUMMARY"
       - name: Optional reserved-memory schema diagnostics
         if: success()
         continue-on-error: true

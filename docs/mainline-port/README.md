@@ -10,6 +10,8 @@
 
 **P1b 进展（2026-10-16）：** 已建立 [PM8150 供电与 Type-C 源码及实机核验](P1B_POWER_TYPEC.md)，第二份真实 umi P1b 报告观察到 **56 条稳压器记录，其中 UFS/USB2 PHY 所需的 7 条实体电源轨均已启用**。已将七轨脱敏快照与八条旧 DTS 供电关系关联并加入离线回归；安全电压、上游 phandle/供电时序、Type-C/PD 新版驱动仍未验证，`safe_to_flash=false`。
 
+**P1c 进展（2026-10-16）：** 已建立 [PM8150 七条实体输出轨与六组主线 RPMh 父供电属性的对照](P1C_RPMH_TOPOLOGY.md)。P1c 离线研究 DTS 继承 P1a，只含 `disabled` 的示范性 regulator provider；父供电 phandle、电压配置和 UFS/USB 硬件仍然全部禁用。这是输入拓扑建模，尚非可用的板级供电配置。
+
 ## 已直接核对的源码
 
 | 轨道 | 固定来源 | 可证事实 |
