@@ -1,5 +1,9 @@
 """P1j bounded physical interval, pinned source and unprivileged probe tests."""
 import importlib.util
+import io
+import tempfile
+from contextlib import redirect_stderr, redirect_stdout
+from unittest import mock
 import json
 import unittest
 from pathlib import Path
@@ -151,6 +155,64 @@ class P1jTests(unittest.TestCase):
                           "/dev/block/", "/proc/cmdline", "/sys/fs/pstore/*",
                           "> /sys/", "> /dev/"):
             self.assertNotIn(forbidden, s)
+
+
+    def test_probe_empty_sysfs_output_is_unknown(self):
+        result = probe.parse(SAMPLE.replace(
+            "__UMI_P1J_MEM_ADDRESS__\n2952790016\n",
+            "__UMI_P1J_MEM_ADDRESS__\n"))
+        self.assertIsNone(result["module_parameter_values"]["mem_address"])
+        self.assertFalse(result["all_four_parameters_readable"])
+        self.assertFalse(result["parameter_values_match_vendor_candidate"])
+
+    def test_probe_rejects_multiline_sysfs_without_echoing_data(self):
+        with self.assertRaisesRegex(probe.ProbeValidationError,
+                                    "multiple sysfs lines for: mem_address"):
+            probe.parse(SAMPLE.replace("2952790016", "not-a-number\nprivate-value"))
+
+    def test_cli_reports_sanitized_parse_error(self):
+        raw = SAMPLE.replace("2952790016", "private-device-output")
+        mocked = probe.subprocess.CompletedProcess(
+            ["adb"], returncode=0, stdout=raw, stderr="private-adb-stderr")
+        errors = io.StringIO()
+        with mock.patch.object(probe.subprocess, "run", return_value=mocked), \
+             mock.patch.object(probe.sys, "argv", ["probe", "--probe"]), \
+             redirect_stderr(errors):
+            self.assertEqual(probe.main(), 1)
+        message = errors.getvalue()
+        self.assertIn("P1j validation failure: non-numeric parameter metadata: mem_address", message)
+        self.assertNotIn("private-device-output", message)
+        self.assertNotIn("private-adb-stderr", message)
+
+    def test_cli_reports_adb_exit_without_leaking_output(self):
+        err = probe.subprocess.CalledProcessError(
+            17, ["adb"], output="private-output", stderr="private-stderr")
+        errors = io.StringIO()
+        with mock.patch.object(probe.subprocess, "run", side_effect=err), \
+             mock.patch.object(probe.sys, "argv", ["probe", "--probe"]), \
+             redirect_stderr(errors):
+            self.assertEqual(probe.main(), 1)
+        self.assertIn("exit status 17", errors.getvalue())
+        self.assertNotIn("private-", errors.getvalue())
+
+    def test_cli_mocked_adb_writes_sanitized_report(self):
+        result = probe.subprocess.CompletedProcess(
+            ["adb"], returncode=0, stdout=SAMPLE, stderr="")
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "sanitized-p1j.json"
+            with mock.patch.object(probe.subprocess, "run", return_value=result), \
+                 mock.patch.object(probe.sys, "argv",
+                                   ["probe", "--probe", "--output", str(output)]), \
+                 redirect_stdout(io.StringIO()):
+                self.assertEqual(probe.main(), 0)
+            audited = audit.verify_report(json.loads(output.read_text(encoding="utf-8")))
+            self.assertTrue(audited["values_match_locked_vendor_source"])
+            self.assertFalse(audited["safe_to_flash"])
+
+    def test_empty_sysfs_script_fallback(self):
+        self.assertIn("value=$(cat", probe.SCRIPT)
+        self.assertIn('if [ -n "$value" ]', probe.SCRIPT)
+        self.assertIn("else echo unavailable; fi", probe.SCRIPT)
 
 if __name__ == "__main__":
     unittest.main()

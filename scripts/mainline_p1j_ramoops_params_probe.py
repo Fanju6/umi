@@ -34,16 +34,21 @@ for key in mem_address mem_size console_size pmsg_size; do
     section "$key"
     path="/sys/module/ramoops/parameters/$key"
     if [ -r "$path" ]; then
-        cat "$path" 2>/dev/null || echo unavailable
+        value=$(cat "$path" 2>/dev/null) || value=
+        if [ -n "$value" ]; then printf '%s\n' "$value"; else echo unavailable; fi
     else
         echo unavailable
     fi
 done
 """
 
+class ProbeValidationError(ValueError):
+    """Only developer-authored, sanitized validation messages."""
+
+
 def require(ok, message):
     if not ok:
-        raise ValueError(message)
+        raise ProbeValidationError(message)
 
 def parse(source):
     sections = {}
@@ -58,7 +63,7 @@ def parse(source):
         elif item and name is not None:
             sections[name].append(item)
         elif item:
-            raise ValueError("unmarked output")
+            raise ProbeValidationError("unexpected unmarked ADB stdout")
     require(set(sections) == set(MARKERS), "incomplete report")
     require(sections["device"] == ["umi"], "not umi")
     require(len(sections["kernel"]) == 1 and
@@ -71,7 +76,10 @@ def parse(source):
             sections["platform"] == ["yes"], "P1i pstore/platform observations changed")
     parsed = {}
     for key in PARAMS:
-        require(len(sections[key]) == 1, "bad parameter result: " + key)
+        require(len(sections[key]) <= 1, "multiple sysfs lines for: " + key)
+        if not sections[key]:
+            parsed[key] = None  # empty sysfs read is unavailable, not a parse crash
+            continue
         raw = sections[key][0]
         if raw == "unavailable":
             parsed[key] = None
@@ -123,9 +131,23 @@ def main():
         else:
             print(output)
         return 0
+    except ProbeValidationError as exc:
+        # Message contains only hardcoded section names and assertions, never raw values.
+        print("P1j validation failure: " + str(exc), file=sys.stderr)
+        return 1
+    except subprocess.CalledProcessError as exc:
+        print("P1j ADB shell command failed (exit status %d); raw output hidden."
+              % exc.returncode, file=sys.stderr)
+        return 1
+    except subprocess.TimeoutExpired:
+        print("P1j ADB shell timeout; raw output hidden.", file=sys.stderr)
+        return 1
+    except FileNotFoundError:
+        print("P1j ADB executable or local output directory not found.", file=sys.stderr)
+        return 1
     except (OSError, ValueError, subprocess.SubprocessError):
-        print("P1j probe aborted; verify unprivileged ADB, umi and old kernel. "
-              "No read of raw RAM/logs and no device modification.", file=sys.stderr)
+        print("P1j probe aborted during local I/O or numeric decoding; "
+              "raw device output hidden.", file=sys.stderr)
         return 1
 
 if __name__ == "__main__":

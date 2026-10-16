@@ -81,3 +81,31 @@ python scripts/mainline_p1j_ramoops_memory_audit.py --report "$env:USERPROFILE\D
 [旧 sm8250-common.config](https://github.com/LineageOS/android_kernel_xiaomi_sm8250/blob/71b13e62f057a649b77fe4062feb73ee72ad609c/arch/arm64/configs/vendor/xiaomi/sm8250-common.config)；
 [主线 6.12 ramoops](https://github.com/torvalds/linux/blob/adc218676eef25575469234709c2d87185ca223a/fs/pstore/ram.c)；
 [已完成的 P1i](P1I_RAMOOPS_REGISTRATION.md)。
+
+
+## 六、P1j.1：真机探针失败的安全诊断修复
+
+2026-10-16，用户确认：P1j 离线脚本通过、20 项原始单元测试通过，但第一次真机参数探针只显示统一错误 "P1j probe aborted"，未产生 JSON；紧随其后的带 --report 离线审计因文件不存在而报错。这只能证明首次探针失败，**不意味着 sysfs 参数不存在，也不证明需要 Root**。
+
+对探针做以下小范围修复：
+- 如果普通 ADB 可读取 sysfs 节点但该节点返回空文本，按 unavailable/null 处理；不再强行要求必须有非空数值。
+- 只有四个白名单参数接受数字（十进制或 0x 十六进制）；多行、乱码或额外设备信息仍然 fail-closed，不进入仓库或正常报告。
+- 错误不再全被统一吞掉：会明确指出设备身份/启动状态/具体参数格式等**开发者定义的安全错误原因**；ADB 命令失败报告退出代码，超时单独报告。**继续刻意隐藏真实 ADB stdout/stderr、原始 sysfs 值和个人信息**。
+- 新增 6 项模拟测试，包括空值、恶意多行、ADB 退出状态和 stdout 隐私、成功的 JSON 创建及离线校验。测试在 CI 中完全不连接设备。
+
+重新执行原命令即可，仍不需要 Root，且不会进行重启、刷机、写分区或读取 Pstore 日志正文：
+
+~~~powershell
+cd C:\Users\fanju\umi-p0b
+git pull --ff-only
+python -m unittest discover -s tests -p test_mainline_p1j.py -v
+python scripts/mainline_p1j_ramoops_params_probe.py --probe --output "$env:USERPROFILE\Desktop\umi-p1j-ramoops-params.json"
+~~~
+
+**只在看到 "sanitized read-only report saved locally" 后**，再执行：
+
+~~~powershell
+python scripts/mainline_p1j_ramoops_memory_audit.py --report "$env:USERPROFILE\Desktop\umi-p1j-ramoops-params.json"
+~~~
+
+若仍失败，请仅发送新探针的具体安全诊断文字，而不是直接贴出未脱敏的 ADB 输出。无论结果如何，安全门禁保持 false。
