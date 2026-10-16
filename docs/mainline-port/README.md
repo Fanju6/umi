@@ -38,6 +38,9 @@
 
 **P1l 进展（2026-10-16）：** [六组 PM8150 上游供电属性的 schema 与真实布线区别](P1L_REGULATOR_PARENT_GATES.md)：固定主线 6.12 的 RPMh binding 仅强制要求 `compatible` 与 `qcom,pmic-id`，允许的六组输入供电字段并非全部标记 required；驱动 `supply_name` 把七个输出轨归入六组。强调 DTS 语法通过**不代表**真实 parent、电气时序或 UFS 供电安全。六组 parent 仍为 null，两条 Vendor UFS 额外投票仍未迁移，研究 DTS 全部 disabled，不执行硬件操作或刷机。
 
+
+**Root 快速基线（2026-10-16）：** 用户明确允许通过 Root 加快 umi 旧系统硬件取证，新增 [一次性 Root 只读硬件采集](ROOT_HARDWARE_SURVEY.md)：集中检查 PMIC regulator、已有的 debugfs 供电层级、`/proc/iomem` 中 Ramoops 相交区间、UFS runtime PM 和 Boot/Recovery/DTBO 最前 64 字节的头部元数据。脚本不重启、不刷机、不写分区，不挂载 debugfs，也不采集私人数据；仅将过滤后的 JSON 保存在本地。旧系统 Root 元数据依然不足以证明 Linux 6.12 的供电接线和恢复能力，所有安全门禁不变。今后优先集中验证实际阻塞项，不再为同类非 Root 属性逐个拆阶段。
+
 ## 已直接核对的源码
 
 | 轨道 | 固定来源 | 可证事实 |

@@ -1,0 +1,27 @@
+name: umi Root metadata survey safety tests
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/mainline_root_hardware_survey.py'
+      - 'tests/test_mainline_root_survey.py'
+      - 'docs/mainline-port/ROOT_HARDWARE_SURVEY.md'
+      - '.github/workflows/mainline-root-survey.yml'
+      - 'docs/mainline-port/README.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  simulate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify root survey parse, privacy and safety without device access
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p 'test_mainline_root_survey.py' -v
+          python3 scripts/mainline_p1l_regulator_parent_audit.py
+          echo 'No device accessed. su would only be used on an explicitly opted-in local umi. No writes/boots/flashes.' >> "$GITHUB_STEP_SUMMARY"
