@@ -214,5 +214,32 @@ class P1jTests(unittest.TestCase):
         self.assertIn('if [ -n "$value" ]', probe.SCRIPT)
         self.assertIn("else echo unavailable; fi", probe.SCRIPT)
 
+
+    def test_report_mode_promotes_only_runtime_parameter_flag(self):
+        report = probe.parse(SAMPLE)
+        with tempfile.TemporaryDirectory() as dirname:
+            outfile = Path(dirname) / "local-report.json"
+            outfile.write_text(json.dumps(report), encoding="utf-8")
+            buf = io.StringIO()
+            with mock.patch.object(audit.sys, "argv",
+                                   ["p1j", "--report", str(outfile)]), \
+                 redirect_stdout(buf):
+                self.assertEqual(audit.main(), 0)
+            data = json.loads(buf.getvalue())
+            self.assertTrue(data["live_module_parameter_values_verified"])
+            self.assertTrue(data["local_report_verified"])
+            self.assertFalse(data["runtime_parameter_evidence"]["physical_memory_ownership_verified"])
+            self.assertFalse(data["safe_to_attempt_mainline_boot"])
+            self.assertFalse(data["safe_to_flash"])
+
+    def test_default_mode_does_not_promote_live_evidence(self):
+        buf = io.StringIO()
+        with mock.patch.object(audit.sys, "argv", ["p1j"]), \
+             redirect_stdout(buf):
+            self.assertEqual(audit.main(), 0)
+        data = json.loads(buf.getvalue())
+        self.assertFalse(data["live_module_parameter_values_verified"])
+        self.assertFalse(data["local_report_verified"])
+
 if __name__ == "__main__":
     unittest.main()

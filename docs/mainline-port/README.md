@@ -32,6 +32,9 @@
 
 **P1j 进展（2026-10-16）：** [旧 BSP Ramoops 的固定候选内存地址与 P0c 冲突核查](P1J_RAMOOPS_MEMORY.md)：锁定 4.19 的 `sm8250-common.config` 配置 `ramoops_memreserve=4M`，`fs/pstore/ram.c` 使用 `memblock_reserve` 和平台设备注册，源代码候选为 `0xB0000000` 的 4 MiB；与 P0c 已记录的 22 个固定内存区零重叠，紧邻 `0xB0400000` 的显示 dump 区，但 12 个动态池及运行时参数仍待查。提供可选非 Root sysfs 数字元数据探针、源码锁定 CI 和拒绝不安全使能的回归测试；继续禁用主线启动/刷机。
 
+
+**P1k 进展（2026-10-16）：** [umi 4.19 实测 Ramoops 四参数及主线 6.12 迁移安全门禁](P1K_RAMOOPS_MIGRATION.md) 确认用户的非 Root 真机参数 `0xB0000000`、4 MiB、console 2 MiB、pmsg 2 MiB 均与旧驱动一致，且本地完整脱敏报告验证通过。修复 P1j 运行时证据标志随 `--report` 动态导出；主线内存所有权、动态池、故障恢复等仍未知；未改任何 DTS、未生成启动镜像、仍禁止刷机。
+
 ## 已直接核对的源码
 
 | 轨道 | 固定来源 | 可证事实 |

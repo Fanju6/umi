@@ -195,6 +195,10 @@ def main():
         if args.report:
             output["runtime_parameter_evidence"] = verify_report(
                 json.loads(args.report.read_text(encoding="utf-8")))
+            # Derived only from the user-provided local report, never the static graph.
+            output["live_module_parameter_values_verified"] = (
+                output["runtime_parameter_evidence"]["local_sysfs_values_readable"] and
+                output["runtime_parameter_evidence"]["values_match_locked_vendor_source"])
         output["local_report_verified"] = args.report is not None
         print(json.dumps(output, ensure_ascii=False, indent=2))
         return 0

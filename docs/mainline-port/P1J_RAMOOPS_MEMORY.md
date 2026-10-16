@@ -109,3 +109,8 @@ python scripts/mainline_p1j_ramoops_memory_audit.py --report "$env:USERPROFILE\D
 ~~~
 
 若仍失败，请仅发送新探针的具体安全诊断文字，而不是直接贴出未脱敏的 ADB 输出。无论结果如何，安全门禁保持 false。
+
+
+### P1k 更新：已验证真实旧版 sysfs 参数
+
+用户在真实 umi 4.19 非 Root ADB 环境完成四参数探测：mem_address=2952790016 (0xB0000000)、mem_size=4194304 (4 MiB)、console_size=pmsg_size=2097152 (各 2 MiB)，本地 `--report` 校验通过。旧版 P1j 输出的 `live_module_parameter_values_verified=false` 属于静态报告初值，原脚本未按本地 `--report` 动态提升。P1k 对审计脚本进行修正，**只有本地完整 JSON 经白名单校验且四参数均吻合**时才输出 `live_module_parameter_values_verified=true`。这仅代表已读取的旧版 sysfs 参数可信度提高，不是新的物理内存所有权证明，也不开放 Linux 6.12 的 Ramoops / 启动门禁。见 [P1k](P1K_RAMOOPS_MIGRATION.md)。
