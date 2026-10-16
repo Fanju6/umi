@@ -12,6 +12,8 @@
 
 **P1c 进展（2026-10-16）：** 已建立 [PM8150 七条实体输出轨与六组主线 RPMh 父供电属性的对照](P1C_RPMH_TOPOLOGY.md)。P1c 离线研究 DTS 继承 P1a，只含 `disabled` 的示范性 regulator provider；父供电 phandle、电压配置和 UFS/USB 硬件仍然全部禁用。这是输入拓扑建模，尚非可用的板级供电配置。
 
+**P1d 进展（2026-10-16）：** [锁定 umi 4.19 Kona VRM 资源](P1D_VRM_EVIDENCE.md) 明确 PM8150 七条电源轨使用 `ldoaN/smpa4`（资源 ID 后缀 `a`）。另外补齐 UFS 厂商专有的参考时钟供电与 VCCQ 上游 parent 两条依赖。主线 PMIC ID 候选置信度提高，但仍未经 Linux 6.12 真机探测，父供电与电压设置继续未知。
+
 ## 已直接核对的源码
 
 | 轨道 | 固定来源 | 可证事实 |

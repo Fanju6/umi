@@ -24,25 +24,29 @@ jobs:
           set -euo pipefail
           python3 scripts/mainline_p1d_rpmh_audit.py
           python3 -m unittest discover -s tests -p test_mainline_p1d.py -v
-      - name: Fetch only six pinned DTS / YAML sources
+      - name: Fetch pinned public-source evidence via authenticated GitHub API
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           mkdir -p /tmp/umi-p1d
           vendor=71b13e62f057a649b77fe4062feb73ee72ad609c
           upstream=adc218676eef25575469234709c2d87185ca223a
           for file in kona.dtsi kona-regulators.dtsi xiaomi-sm8250-common.dtsi umi-sm8250.dtsi; do
-            curl --fail --silent --show-error --retry 3 --location \
-              "https://raw.githubusercontent.com/LineageOS/android_kernel_xiaomi_sm8250/${vendor}/arch/arm64/boot/dts/vendor/qcom/${file}" \
-              -o "/tmp/umi-p1d/${file}"
+            gh api --header 'Accept: application/vnd.github.raw+json' \
+              "repos/LineageOS/android_kernel_xiaomi_sm8250/contents/arch/arm64/boot/dts/vendor/qcom/${file}?ref=${vendor}" \
+              > "/tmp/umi-p1d/${file}"
             test -s "/tmp/umi-p1d/${file}"
           done
-          curl --fail --silent --show-error --retry 3 --location \
-            "https://raw.githubusercontent.com/torvalds/linux/${upstream}/Documentation/devicetree/bindings/regulator/qcom,rpmh-regulator.yaml" \
-            -o /tmp/umi-p1d/binding.yaml
-          curl --fail --silent --show-error --retry 3 --location \
-            "https://raw.githubusercontent.com/torvalds/linux/${upstream}/arch/arm64/boot/dts/qcom/sm8250-xiaomi-elish-common.dtsi" \
-            -o /tmp/umi-p1d/elish.dtsi
+          gh api --header 'Accept: application/vnd.github.raw+json' \
+            "repos/torvalds/linux/contents/Documentation/devicetree/bindings/regulator/qcom,rpmh-regulator.yaml?ref=${upstream}" \
+            > /tmp/umi-p1d/binding.yaml
+          gh api --header 'Accept: application/vnd.github.raw+json' \
+            "repos/torvalds/linux/contents/arch/arm64/boot/dts/qcom/sm8250-xiaomi-elish-common.dtsi?ref=${upstream}" \
+            > /tmp/umi-p1d/elish.dtsi
+          grep -q '^#include' /tmp/umi-p1d/kona-regulators.dtsi
+          grep -q 'qcom,pm8150-rpmh-regulators' /tmp/umi-p1d/binding.yaml
       - name: Validate resource names, parent groups, and two hidden UFS edges
         run: |
           set -euo pipefail
