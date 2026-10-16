@@ -1,0 +1,52 @@
+name: umi P1h pstore runtime evidence and pinned ramoops audit
+
+on:
+  pull_request:
+    paths:
+      - 'config/mainline-p1h-pstore-evidence.json'
+      - 'scripts/mainline_p1h_pstore_audit.py'
+      - 'tests/test_mainline_p1h.py'
+      - 'docs/mainline-port/P1H_PSTORE_EVIDENCE.md'
+      - 'docs/mainline-port/README.md'
+      - '.github/workflows/mainline-p1h-pstore.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: P1h observed P1g console/pmsg and Linux 6.12 pstore source audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Offline P1h/P1g regression, no ADB, no device access
+        run: |
+          set -euo pipefail
+          python3 scripts/mainline_p1h_pstore_audit.py
+          python3 -m unittest discover -s tests -p test_mainline_p1h.py -v
+          python3 -m unittest discover -s tests -p test_mainline_p1g.py -v
+          python3 scripts/mainline_p1g_recovery_audit.py
+      - name: Read immutable Linux 6.12 pstore implementation and DT binding
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/umi-p1h
+          upstream=adc218676eef25575469234709c2d87185ca223a
+          gh api --header 'Accept: application/vnd.github.raw+json' \
+            "repos/torvalds/linux/contents/fs/pstore/ram.c?ref=$upstream" > /tmp/umi-p1h/ram.c
+          gh api --header 'Accept: application/vnd.github.raw+json' \
+            "repos/torvalds/linux/contents/Documentation/devicetree/bindings/reserved-memory/ramoops.yaml?ref=$upstream" \
+              > /tmp/umi-p1h/ramoops.yaml
+          test -s /tmp/umi-p1h/ram.c
+          test -s /tmp/umi-p1h/ramoops.yaml
+      - name: Verify two independent pstore buffers and unknown umi RAM topology
+        run: |
+          set -euo pipefail
+          python3 scripts/mainline_p1h_pstore_audit.py \
+            --upstream-ram /tmp/umi-p1h/ram.c \
+            --upstream-binding /tmp/umi-p1h/ramoops.yaml
+          echo 'P1h source audit passed. No pstore RAM map or crash recovery verified; safe_to_flash=false.' >> "$GITHUB_STEP_SUMMARY"

@@ -23,6 +23,9 @@
 
 **P1g 进展（2026-10-16）：** [umi 非 A/B 恢复与早期日志安全门禁](P1G_RECOVERY_LOG_GATES.md) 将 P0b 的分区布局观察、旧 DTS UART 控制器启用、XBL/UEFI 保留日志区与真正能用的串口/Pstore 区分开；新增只读可选探针、18 项单测和固定 SHA 跨源码 CI。未验证恢复镜像、Recovery 可用性、实体 UART/earlycon、pstore 跨故障保留。当前仍不允许尝试主线启动或刷机，且不修改既有 DTS。
 
+
+**P1h 进展（2026-10-16）：** [umi 实测 Pstore/Ramoops 摘要及 6.12 源码对照](P1H_PSTORE_EVIDENCE.md) 确认现有 4.19 系统可挂载 Pstore，用户只读探针可见 `console-ramoops*` 与 `pmsg-ramoops*` 两类记录，但未验证跨重启/崩溃保留、实际 RAM 后端及内存地址。对比主线 6.12 的 `fs/pstore/ram.c` 与 `ramoops.yaml`，保留所有供电、物理地址、恢复及刷机门禁；新增本地完整脱敏报告校验、负向测试和固定源码 CI。
+
 ## 已直接核对的源码
 
 | 轨道 | 固定来源 | 可证事实 |
