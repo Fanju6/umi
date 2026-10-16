@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "stage": "P1e",
+  "device": "umi",
+  "locked": {
+    "vendor": "71b13e62f057a649b77fe4062feb73ee72ad609c",
+    "upstream": "adc218676eef25575469234709c2d87185ca223a"
+  },
+  "pm8150a_resources": [
+    {
+      "vendor_label": "pm8150a_s8",
+      "vrm_resource": "smpc8",
+      "mainline_candidate": "qcom,pm8150l-rpmh-regulators",
+      "child": "smps8",
+      "driver_template": "smp%s8",
+      "pmic_suffix": "c",
+      "boot_verified": false
+    },
+    {
+      "vendor_label": "pm8150a_bob",
+      "vrm_resource": "bobc1",
+      "mainline_candidate": "qcom,pm8150l-rpmh-regulators",
+      "child": "bob",
+      "driver_template": "bob%s1",
+      "pmic_suffix": "c",
+      "boot_verified": false
+    }
+  ],
+  "parent_inputs": [
+    {
+      "property": "vdd-s4-supply",
+      "umi_parent_phandle": null,
+      "evidence": "binding property only; no umi PCB parent-wiring proof"
+    },
+    {
+      "property": "vdd-l2-l10-supply",
+      "umi_parent_phandle": null,
+      "evidence": "binding property only; no umi PCB parent-wiring proof"
+    },
+    {
+      "property": "vdd-l3-l4-l5-l18-supply",
+      "umi_parent_phandle": null,
+      "evidence": "binding property only; no umi PCB parent-wiring proof"
+    },
+    {
+      "property": "vdd-l6-l9-supply",
+      "umi_parent_phandle": null,
+      "evidence": "binding property only; no umi PCB parent-wiring proof"
+    },
+    {
+      "property": "vdd-l7-l12-l14-l15-supply",
+      "umi_parent_phandle": null,
+      "evidence": "binding property only; no umi PCB parent-wiring proof"
+    },
+    {
+      "property": "vdd-l13-l16-l17-supply",
+      "umi_parent_phandle": null,
+      "evidence": "binding property only; no umi PCB parent-wiring proof"
+    }
+  ],
+  "legacy_ufs_votes": [
+    {
+      "property": "qcom,vddp-ref-clk-supply",
+      "vendor_target": "pm8150_l6",
+      "mainline_equivalent": null,
+      "reason": "ref_clk clock interface cannot prove electrical replacement of legacy regulator vote"
+    },
+    {
+      "property": "qcom,vccq-parent-supply",
+      "vendor_target": "pm8150a_s8",
+      "mainline_equivalent": null,
+      "reason": "S8C parent vote is distinct from standard vccq-supply (L6)"
+    }
+  ],
+  "mainline_ufs": {
+    "controller": "ufs_mem_hc",
+    "phy": "ufs_mem_phy",
+    "status": "disabled",
+    "clocks": [
+      "core_clk",
+      "bus_aggr_clk",
+      "iface_clk",
+      "core_clk_unipro",
+      "ref_clk",
+      "tx_lane0_sync_clk",
+      "rx_lane0_sync_clk",
+      "rx_lane1_sync_clk"
+    ],
+    "phy_clocks": [
+      "ref",
+      "ref_aux",
+      "qref"
+    ],
+    "controller_reset": "GCC_UFS_PHY_BCR",
+    "phy_reset": "ufs_mem_hc 0",
+    "power_domain": "UFS_PHY_GDSC",
+    "iommu_streams": [
+      "0x0e0",
+      "0x4e0"
+    ],
+    "interconnects": [
+      "ufs-ddr",
+      "cpu-ufs"
+    ],
+    "ufs_supplies": [
+      "vcc-supply",
+      "vccq-supply",
+      "vccq2-supply"
+    ],
+    "phy_supplies": [
+      "vdda-phy-supply",
+      "vdda-pll-supply"
+    ],
+    "regulator_phandles_verified": false
+  },
+  "vph_pwr": {
+    "vendor_evidence": "PMIC ADC vph_pwr@83 label",
+    "fixed_regulator_input_verified": false,
+    "mainline_voltage_uv": null
+  },
+  "safety": {
+    "safe_to_flash": false,
+    "boot_image_created": false,
+    "provider_enabled": false,
+    "ufs_enabled": false,
+    "usb_enabled": false,
+    "pmic_probe_verified": false,
+    "board_parent_wiring_verified": false,
+    "voltage_safety_verified": false,
+    "ufs_vote_migration_verified": false,
+    "recovery_and_logging_verified": false
+  }
+}

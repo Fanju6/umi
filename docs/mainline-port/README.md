@@ -14,6 +14,9 @@
 
 **P1d 进展（2026-10-16）：** [锁定 umi 4.19 Kona VRM 资源](P1D_VRM_EVIDENCE.md) 明确 PM8150 七条电源轨使用 `ldoaN/smpa4`（资源 ID 后缀 `a`）。另外补齐 UFS 厂商专有的参考时钟供电与 VCCQ 上游 parent 两条依赖。主线 PMIC ID 候选置信度提高，但仍未经 Linux 6.12 真机探测，父供电与电压设置继续未知。
 
+
+**P1e 进展（2026-10-16）：** [UFS 父供电 / PM8150A S8、BOB 资源审计](P1E_UFS_PARENT_AUDIT.md) 从锁定 4.19 证实 smpc8/bobc1，对照 6.12 PM8150L 驱动模板；补齐 Host/PHY clock、reset、power-domain、IOMMU 和 ICC 的依赖矩阵。六组父供电 phandle 仍未知，两条 UFS 私有投票尚不能替换；新增固定 SHA 源码交叉核验和安全回归，原 DTS 全部禁用。
+
 ## 已直接核对的源码
 
 | 轨道 | 固定来源 | 可证事实 |

@@ -1,0 +1,66 @@
+name: umi P1e UFS parent and RPMh audit
+
+on:
+  pull_request:
+    paths:
+      - 'config/mainline-p1e-ufs-parent-graph.json'
+      - 'scripts/mainline_p1e_ufs_audit.py'
+      - 'tests/test_mainline_p1e.py'
+      - 'docs/mainline-port/P1E_UFS_PARENT_AUDIT.md'
+      - 'docs/mainline-port/README.md'
+      - '.github/workflows/mainline-p1e-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: P1e pinned UFS parent and RPMh evidence (offline only)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run offline graph and safety tests
+        run: |
+          set -euo pipefail
+          python3 scripts/mainline_p1e_ufs_audit.py
+          python3 -m unittest discover -s tests -p test_mainline_p1e.py -v
+          python3 -m unittest discover -s tests -p test_mainline_p1d.py -v
+          python3 -m unittest discover -s tests -p test_mainline_p1c.py -v
+      - name: Fetch locked source versions through authenticated GitHub API
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/umi-p1e
+          vendor=71b13e62f057a649b77fe4062feb73ee72ad609c
+          upstream=adc218676eef25575469234709c2d87185ca223a
+          fetch_pin() {
+            gh api --header 'Accept: application/vnd.github.raw+json' \
+              "repos/$1/contents/$2?ref=$3" > "/tmp/umi-p1e/$4"
+            test -s "/tmp/umi-p1e/$4"
+          }
+          fetch_pin LineageOS/android_kernel_xiaomi_sm8250 arch/arm64/boot/dts/vendor/qcom/kona-regulators.dtsi "$vendor" vrm
+          fetch_pin LineageOS/android_kernel_xiaomi_sm8250 arch/arm64/boot/dts/vendor/qcom/xiaomi-sm8250-common.dtsi "$vendor" common
+          fetch_pin LineageOS/android_kernel_xiaomi_sm8250 arch/arm64/boot/dts/vendor/qcom/umi-sm8250.dtsi "$vendor" umi
+          fetch_pin torvalds/linux arch/arm64/boot/dts/qcom/sm8250.dtsi "$upstream" soc
+          fetch_pin torvalds/linux drivers/regulator/qcom-rpmh-regulator.c "$upstream" reg-driver
+          fetch_pin torvalds/linux Documentation/devicetree/bindings/regulator/qcom,rpmh-regulator.yaml "$upstream" rpmh-binding
+          fetch_pin torvalds/linux Documentation/devicetree/bindings/ufs/qcom,ufs.yaml "$upstream" ufs-binding
+          fetch_pin torvalds/linux Documentation/devicetree/bindings/ufs/ufs-common.yaml "$upstream" ufs-common
+          fetch_pin torvalds/linux Documentation/devicetree/bindings/phy/qcom,sc8280xp-qmp-ufs-phy.yaml "$upstream" phy-binding
+          fetch_pin torvalds/linux drivers/ufs/host/ufs-qcom.c "$upstream" ufs-driver
+          fetch_pin torvalds/linux drivers/ufs/host/ufshcd-pltfrm.c "$upstream" ufs-platform
+      - name: Cross-check vendor and mainline UFS power source facts
+        run: |
+          set -euo pipefail
+          python3 scripts/mainline_p1e_ufs_audit.py \
+            --vendor-vrm /tmp/umi-p1e/vrm --vendor-common /tmp/umi-p1e/common \
+            --vendor-umi /tmp/umi-p1e/umi --soc /tmp/umi-p1e/soc \
+            --reg-driver /tmp/umi-p1e/reg-driver --rpmh-binding /tmp/umi-p1e/rpmh-binding \
+            --ufs-binding /tmp/umi-p1e/ufs-binding --ufs-common /tmp/umi-p1e/ufs-common \
+            --phy-binding /tmp/umi-p1e/phy-binding --ufs-driver /tmp/umi-p1e/ufs-driver \
+            --ufs-platform /tmp/umi-p1e/ufs-platform
+          echo 'P1e research only: unknown parents=6, unmapped vendor votes=2, safe_to_flash=false' >> "$GITHUB_STEP_SUMMARY"
