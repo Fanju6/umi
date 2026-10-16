@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "stage": "P1f",
+  "device": "umi",
+  "locked": {
+    "vendor": "71b13e62f057a649b77fe4062feb73ee72ad609c",
+    "upstream": "adc218676eef25575469234709c2d87185ca223a"
+  },
+  "votes": [
+    {
+      "name": "vddp",
+      "property": "qcom,vddp-ref-clk-supply",
+      "source": "pm8150_l6",
+      "max_uA_in_vendor_dts": 100,
+      "init": "enable",
+      "link_off": "disable",
+      "hibern8": "set_min_load",
+      "resume": "enable_or_restore_load",
+      "mainline_replacement": null
+    },
+    {
+      "name": "vccq_parent",
+      "property": "qcom,vccq-parent-supply",
+      "source": "pm8150a_s8",
+      "max_uA_in_vendor_dts": 210000,
+      "init": "set_load",
+      "link_off": "conditional_unvote",
+      "hibern8": "conditional_unvote",
+      "resume": "restore_load",
+      "mainline_replacement": null
+    }
+  ],
+  "shared_s8c_references": [
+    {
+      "property": "vdd-wlan-rfa2-supply",
+      "source_file": "kona.dtsi",
+      "ref": "pm8150a_s8"
+    },
+    {
+      "property": "qca,bt-vdd-rfa2-supply",
+      "source_file": "xiaomi-sm8250-common.dtsi",
+      "ref": "pm8150a_s8"
+    }
+  ],
+  "interpretation": {
+    "vccq_parent_direct_enable": false,
+    "mainline_equivalent_proven": false,
+    "board_wiring_proven": false,
+    "vendor_current_properties_are_measurements": false,
+    "mainline_pmic_probed": false,
+    "fixed_vph_voltage_uv": null
+  },
+  "boundaries": {
+    "safe_to_flash": false,
+    "boot_image_created": false,
+    "hardware_nodes_enabled": false,
+    "recovery_and_logging_verified": false
+  }
+}

@@ -17,6 +17,9 @@
 
 **P1e 进展（2026-10-16）：** [UFS 父供电 / PM8150A S8、BOB 资源审计](P1E_UFS_PARENT_AUDIT.md) 从锁定 4.19 证实 smpc8/bobc1，对照 6.12 PM8150L 驱动模板；补齐 Host/PHY clock、reset、power-domain、IOMMU 和 ICC 的依赖矩阵。六组父供电 phandle 仍未知，两条 UFS 私有投票尚不能替换；新增固定 SHA 源码交叉核验和安全回归，原 DTS 全部禁用。
 
+
+**P1f 进展（2026-10-16）：** [旧 UFS 特殊 regulator 生命周期审计](P1F_UFS_LIFECYCLE.md) 进一步核对固定 Linux 4.19 UFS driver 的初始化、Link OFF、Hibern8 与恢复：vddp-ref-clk 有实际 enable/disable；vccq-parent 是带 auto BKOPS 条件的负载投票，而非直接 enable。S8C 还被旧 WLAN/BT DTS 消费引用。对比主线 Linux 6.12 的标准 regulator 处理，两个额外 Vendor 投票仍未完成电气等价审查，继续禁止使能硬件。
+
 ## 已直接核对的源码
 
 | 轨道 | 固定来源 | 可证事实 |
