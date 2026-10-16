@@ -7,7 +7,7 @@
 - **设备**：Xiaomi Mi 10（umi），LineageOS `23.2-20261004-NIGHTLY-umi`，Android 16。
 - **内核**：LineageOS `71b13e62f057a649b77fe4062feb73ee72ad609c`，Linux 4.19.325。
 - **官方 KernelSU v3.3.1**：`0c0fdb960178fa12d80d6cbcfdcb6ad8be6a865d`。
-- **默认 main**：仍是 KernelSU v3.3.0 TEST2；升级在 [PR #3](https://github.com/Fanju6/umi/pull/3)，首次 Manager 引导在 [PR #4](https://github.com/Fanju6/umi/pull/4)，两者仍为 Draft。
+- **默认 main**：官方 KernelSU v3.3.1 + umi Linux 4.19 兼容补丁，包含 Manager 首次部署适配；[PR #3](https://github.com/Fanju6/umi/pull/3) 与 [PR #4](https://github.com/Fanju6/umi/pull/4) 为历史开发/验收链，v3.3.0 TEST2 原提交仍可通过 Git 历史恢复。
 
 ## v3.3.1 真机证据
 

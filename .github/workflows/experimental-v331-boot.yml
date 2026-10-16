@@ -1,12 +1,7 @@
-name: umi KernelSU v3.3.1 首次 Manager 引导实验镜像（未验证）
+name: umi KernelSU v3.3.1 受控 Boot 镜像构建（非稳定发行）
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - experiment/v331-manager-fd-bootstrap
-    paths:
-      - 'docs/EXPERIMENT_V331_BOOT_TRIGGER.md'
 
 permissions:
   contents: read
@@ -18,11 +13,11 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
-      - name: 保证仅在 v3.3.1 独立实验分支构建（不覆盖 TEST2）
+      - name: 校验 v3.3.1 固定版本并只在受控分支构建
         run: |
           set -Eeuo pipefail
-          if [[ "${GITHUB_REF_NAME}" != "experiment/v331-manager-fd-bootstrap" ]]; then
-            echo "::error::仅允许在独立实验分支执行此工作流。" >&2
+          if [[ "${GITHUB_REF_NAME}" != "main" && "${GITHUB_REF_NAME}" != "experiment/v331-manager-fd-bootstrap" ]]; then
+            echo "::error::只允许从 main 或保留的 v3.3.1 验证分支手动构建，禁止其他未知分支。" >&2
             exit 1
           fi
           source config/upstream.env
@@ -42,25 +37,11 @@ jobs:
         run: |
           set -Eeuo pipefail
           bash scripts/prepare_sources.sh
-          python3 scripts/apply_compat.py .work/KernelSU
-          python3 scripts/patch_vfs_419.py .work/KernelSU
-          python3 scripts/patch_legacy_apis.py .work/KernelSU
-          python3 scripts/patch_policy_419.py .work/KernelSU
-          python3 scripts/patch_task_work_331.py .work/KernelSU
-          python3 scripts/patch_manager_postexec_fd_419.py .work/KernelSU
-          grep -F 'UMI_KSU_419_MANAGER_POSTEXEC_FD_PROTOTYPE' .work/KernelSU/kernel/supercall/supercall.c
-          python3 scripts/patch_sulog_419.py .work/KernelSU
-          python3 scripts/patch_dispatch_419.py .work/KernelSU
-          python3 scripts/patch_syscall_failclosed_419.py .work/KernelSU
-          python3 scripts/patch_arm64_block_walk_419.py .work/KernelSU
+          python3 scripts/apply_patches.py --profile v3.3.1
           grep -F 'UMI_KSU_419_DISPATCHER_FAIL_CLOSED' .work/KernelSU/kernel/hook/arm64/syscall_hook.c
           grep -F 'UMI_KSU_419_ARM64_BLOCK_WALK' .work/KernelSU/kernel/hook/arm64/patch_memory.c
-          python3 scripts/patch_avtab_419.py .work/KernelSU
-          python3 scripts/patch_filename_419.py .work/KernelSU
-          python3 scripts/patch_type_419.py .work/KernelSU
-          python3 scripts/patch_selinux_core_419.py .work/kernel
-          python3 scripts/patch_rules_419.py .work/KernelSU
-          python3 scripts/patch_umount_419.py .work/kernel .work/KernelSU
+          grep -F 'UMI_KSU_419_MANAGER_POSTEXEC_FD_PROTOTYPE' .work/KernelSU/kernel/supercall/supercall.c
+
           python3 scripts/audit.py .work/kernel .work/KernelSU --expect-blocked selinux-abi manager-handshake
       - name: 编译 umi 官方 KernelSU 3.3.1 + Manager FD 实验内核
         run: |
@@ -128,7 +109,7 @@ jobs:
             printf 'V331_KERNEL_IMAGE_SHA256='
             sha256sum .work/output-ksu/arch/arm64/boot/Image | awk '{print $1}'
           } > experimental-PROVENANCE.txt
-          printf '%s\n' 'KernelSU v3.3.1 Manager FD experiment: NO on-device boot or first-install verification; NEVER auto-flash, NEVER claim stable.' 'User has confirmed recovery via original boot.img and Recovery ADB pstore; failure still possible.' > experimental-WARNING.txt
+          printf '%s\n' 'KernelSU v3.3.1 controlled image: CI validates structure only; device-specific test results are documented separately. NEVER auto-flash, NEVER claim stable.' 'User has confirmed recovery via original boot.img and Recovery ADB pstore; failure still possible.' > experimental-WARNING.txt
 
       - name: 上传独立 v3.3.1 实验镜像，仅供有回滚方案的专用测试机
         if: success()

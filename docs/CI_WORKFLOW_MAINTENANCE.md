@@ -34,3 +34,13 @@
 ## 文案与功能状态分离
 
 早期 `prepare_sources.sh` 和 `build_kernel.sh` 仍会打印“SELinux 完全未实现”“尚未经真机验证”等开发初期提示。现只校正文案：源码准备阶段提示后续补丁/审计仍需完成；编译阶段明确只输出内核 Image 而不是 boot.img。**不修改版本锁定、Kbuild/Clang 参数、任何兼容 C 补丁或镜像封装逻辑**。具体设备验收以 `docs/STATUS.md` 为准。
+
+## 统一补丁入口及 TEST2 退役
+
+`scripts/apply_patches.py` 是当前唯一的兼容补丁入口：读取 `config/upstream.env`、校验固定上游 Git SHA 和检出 HEAD、按 v3.3.1/v3.3.0 选择完全固定顺序（分别 16/14 步）。任何版本不符、上游偏移或补丁失败都会阻断后续构建。单元测试固定两套清单，四条活跃 CI 工作流不再各维护独立补丁副本。
+
+`main` 迁移至 v3.3.1 后，依赖旧版 v3.3.0 的 `experimental-boot.yml` 已移至 `docs/history/experimental-boot-v330.yml`，不会出现在 Actions 工作流菜单内；旧 Boot/源码仍由 Git 历史可追溯。
+
+`experimental-v331-boot.yml` 保留**手动触发**及固定上游 SHA/ROM 与原版 Ramdisk/DTB 校验，在 `main` 上可按需重新构建；不因 README 改动自动耗费构建资源，不自动刷机，不撤除 `safe_to_flash=false` 及静态审计 BLOCK。旧版“实验分支专用”触发文件已退役为历史记录。
+
+以上整理旨在统一执行步骤与触发规则，不改变内核源码里的任何兼容逻辑。

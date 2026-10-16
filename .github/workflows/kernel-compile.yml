@@ -55,38 +55,8 @@ jobs:
           sudo apt-get install -y clang-18 lld-18 llvm-18 gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi bc bison flex libssl-dev libelf-dev
       - name: 获取固定上游源码
         run: bash scripts/prepare_sources.sh
-      - name: 应用已审查的安全兼容改动
-        run: python3 scripts/apply_compat.py .work/KernelSU
-      - name: 适配旧版 VFS file_operations
-        run: python3 scripts/patch_vfs_419.py .work/KernelSU
-      - name: 适配 Mount 与 fsnotify 旧 API
-        run: python3 scripts/patch_legacy_apis.py .work/KernelSU
-      - name: 适配旧版 Seccomp 和 task_work API
-        run: python3 scripts/patch_policy_419.py .work/KernelSU
-      - name: 适配 v3.3.1 Manager 的 Linux 4.19 task_work API
-        run: python3 scripts/patch_task_work_331.py .work/KernelSU
-      - name: 实验：仅官方管理器 libksud exec 后安装驱动 FD（不可发布）
-        run: python3 scripts/patch_manager_postexec_fd_419.py .work/KernelSU
-      - name: 适配 Linux 4.19 的 Sulog minmax 头文件
-        run: python3 scripts/patch_sulog_419.py .work/KernelSU
-      - name: 补齐 Linux 4.19 supercall task API
-        run: python3 scripts/patch_dispatch_419.py .work/KernelSU
-      - name: 阻止失败的 ARM64 syscall dispatcher 导致 init ENOSYS
-        run: python3 scripts/patch_syscall_failclosed_419.py .work/KernelSU
-      - name: 修复 4.19 ARM64 PMD/PUD 大页物理地址转换
-        run: python3 scripts/patch_arm64_block_walk_419.py .work/KernelSU
-      - name: 适配旧版 SELinux avtab flex_array
-        run: python3 scripts/patch_avtab_419.py .work/KernelSU
-      - name: 适配旧版 SELinux filename_trans
-        run: python3 scripts/patch_filename_419.py .work/KernelSU
-      - name: 适配旧版 SELinux type/attribute flex_array
-        run: python3 scripts/patch_type_419.py .work/KernelSU
-      - name: 保护旧版 SELinux 策略并发提交路径
-        run: python3 scripts/patch_selinux_core_419.py .work/kernel
-      - name: 将 KernelSU 规则编辑接入旧版策略事务
-        run: python3 scripts/patch_rules_419.py .work/KernelSU
-      - name: 修复 4.19 缺失的 path_umount 链接符号
-        run: python3 scripts/patch_umount_419.py .work/kernel .work/KernelSU
+      - name: 按 v3.3.1 固定版本执行统一兼容补丁
+        run: python3 scripts/apply_patches.py --profile v3.3.1
       - name: 静态风险清单（已知阻塞不退出）
         run: python3 scripts/audit.py .work/kernel .work/KernelSU --expect-blocked selinux-abi manager-handshake
       - name: 编译完整内核 Image 与设备树（不生成可刷 Boot）

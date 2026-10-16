@@ -6,6 +6,7 @@
 - [2026-10-14 首次启动失败](../BOOT_FAILURE_20261014.md)：pstore 证明 `init ENOSYS`、ARM64 Hook 修复方案。
 - [3.3.0 TEST2 真机验收](../UMI_TEST2_REAL_DEVICE.md) 与 [旧版 ksud 补救](../UMI_TEST2_ROOT_BOOTSTRAP.md)。
 - [3.3.0 首次安装缺口](../KSUD_FIRST_INSTALL_GAP.md)。
+- [TEST2 v3.3.0 已退役的工作流](experimental-boot-v330.yml)：历史源码可复现，但不再作为当前 `main` 的构建入口。
 - [3.3.1 迁移过程](../KERNELSU_V331_MIGRATION.md) 与 [Manager FD 原型](../EXPERIMENT_MANAGER_BOOTSTRAP_331.md)。
 
 **历史已知无法启动的镜像 SHA-256：** `b5701bb8347ea4d37c584b96eedd00f6e51d867aa9a68ec21d75a16f85ae2aaf`，禁止使用。后续 TEST2 和 v3.3.1 已由真机证实正常启动。
