@@ -1,0 +1,53 @@
+name: 一次性清理已合并开发分支
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/cleanup-merged-branches-once.yml'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  cleanup:
+    name: 仅删除已合并且没有独有提交的指定开发分支
+    if: github.repository == 'Fanju6/umi' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: 检查所有 PR、精确 SHA 与 main 祖先关系后清理
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const items = [
+              { branch: 'upgrade/kernelsu-v3.3.1', number: 3, sha: '632b24229c3dc98862b45b4e87d798c8e06e041f' },
+              { branch: 'experiment/v331-manager-fd-bootstrap', number: 4, sha: '6a8afd5bb2e0ded39f6bbe6c1291424989196515' },
+              { branch: 'docs/v331-repository-handbook', number: 5, sha: '21ec4d96279a379553d542a4b4acf88cc83e9a8b' },
+              { branch: 'ci/v331-workflows-hygiene', number: 6, sha: '49ee3c59e1a912c29f33f8cefed727dfec98790b' },
+              { branch: 'refactor/unified-compat-patches', number: 7, sha: '791585522fa74814ab9d1d96d0a999d012171aac' },
+            ];
+            for (const item of items) {
+              const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: item.number });
+              if (!pr.merged || pr.base.ref !== 'main' || pr.head.sha !== item.sha) {
+                throw new Error('PR 合并状态或提交不匹配：#' + item.number);
+              }
+              const { data: ref } = await github.rest.git.getRef({ owner, repo, ref: 'heads/' + item.branch });
+              if (ref.object.sha !== item.sha) {
+                throw new Error('分支存在新提交，拒绝删除：' + item.branch);
+              }
+              const { data: diff } = await github.rest.repos.compareCommits({
+                owner, repo, base: 'main', head: item.branch,
+              });
+              if (diff.ahead_by !== 0) {
+                throw new Error('存在未并入 main 的提交，拒绝删除：' + item.branch);
+              }
+              core.info('已验证：' + item.branch);
+            }
+            for (const item of items) {
+              await github.rest.git.deleteRef({ owner, repo, ref: 'heads/' + item.branch });
+              core.info('已删除：' + item.branch);
+            }
+            core.info('只保留 main。该清理工作流随后应从 main 移除。');
