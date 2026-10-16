@@ -113,3 +113,20 @@ class P1bTests(unittest.TestCase):
     def test_invalid_attribute_name_is_reported(self):
         with self.assertRaisesRegex(ValueError, "采集属性不符合白名单"):
             probe.parse(sample().replace("|microvolts|", "|serialno|"))
+
+    def test_regulator_dot_number_is_standard_kernel_name(self):
+        # Locked Linux 4.19 and v6.12 core.c both use regulator.%lu.
+        text = sample().replace("|regulator|regulator7|", "|regulator|regulator.7|")
+        report = probe.parse(text)
+        self.assertEqual(report["groups"]["regulator"]["regulator.7"]["name"], "pm8150_l17")
+
+    def test_scanner_covers_regulator_dot_number_and_previous_pattern(self):
+        script = probe.SCRIPT
+        self.assertIn("/sys/class/regulator/regulator.[0-9]*", script)
+        self.assertIn("/sys/class/regulator/regulator[0-9]*", script)
+        self.assertIn("id=" + "$" + "{node##*/}", script)
+
+    def test_reject_unexpected_regulator_child_name(self):
+        text = sample().replace("|regulator|regulator7|", "|regulator|regulator.7-device|")
+        with self.assertRaisesRegex(ValueError, "regulator/regulator.7-device"):
+            probe.parse(text)

@@ -17,7 +17,7 @@ ATTR = {
     "ufs": ("status",),
 }
 KEY = {
-    "regulator": re.compile(r"regulator[0-9]+"),
+    "regulator": re.compile(r"regulator(?:\.)?[0-9]+"),
     "typec": re.compile(r"port[0-9]+"),
     "usb_role": re.compile(r"[A-Za-z0-9_.:@-]{1,70}"),
     "usb_supply": re.compile(r"(usb|usbpd|usb_pd|pc_port|main)"),
@@ -36,11 +36,11 @@ read_field() {
   printf '__UMI_P1B__|%s|%s|%s|%s\n' "$cls" "$id" "$prop" "$value"
 }
 count=0
-for node in /sys/class/regulator/regulator[0-9]*; do
+for node in /sys/class/regulator/regulator.[0-9]* /sys/class/regulator/regulator[0-9]*; do
   [ -r "$node/name" ] || continue
   label=$(cat "$node/name" 2>/dev/null) || continue
   case "$label" in *pm8150*|*ufs*|*vreg*|*bob*|*l2*|*l5*|*l6*|*l9*|*l12*|*l17*|*s4*)
-    id=$(basename "$node")
+    id=${node##*/}
     for prop in name microvolts state min_microvolts max_microvolts; do
       read_field regulator "$id" "$prop" "$node/$prop"
     done

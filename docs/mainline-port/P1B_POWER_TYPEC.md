@@ -50,3 +50,13 @@ python scripts/mainline_p1b_probe.py --output "$env:USERPROFILE\Desktop\umi-p1b-
 先根据这台 umi 的真实 sysfs 读数核对 PMIC 和 UFS/USB 的依赖，区分“运行时电压”与“可以在 DTS 配置的安全范围”；再针对可验证的设备加入板级电源定义和低风险 DT schema 检查。USB PD、charging HAL、备用启动日志及恢复能力尚未验收，六个控制器/PHY 维持 `disabled`。
 
 **状态：`P1B_STATIC_MAPPING`、`P1B_DEVICE_POWER_PENDING`、`P1B_NO_HARDWARE_ENABLED`、`SAFE_TO_FLASH_FALSE`。**
+
+## 2026-10-16：首份实机 P1b 报告与稳压器采集修复
+
+实机报告 `umi-p1b-power.json` 已核对：`device=umi`，`writes_performed=false`；Type-C 端口 `port0` 为 `data_role="host [device]"`（当前 Device）、`power_role="source [sink]"`（当前 Sink），`port_type="[dual] source sink"`；USB 电源节点 `usb` 为 `type=USB_PD`、`online=1`、`voltage_max=5000000`、`current_max=1550000`。**后两个为电源框架报告的上限属性，并不是万用表读数、实时充电电压/电流或已确认的 PD 协商 PDO**。另 `pc_port` 为 offline，`main` 节点的 4.4V 上限不应作为 USB VBUS。
+
+初始报告 `regulator={}`、`usb_role={}`、`1d84000.ufshc/status=missing`，**均不能据此认定硬件不存在或关闭**。
+
+**已复核的真正采集器 bug：** [umi 锁定 Linux 4.19 的 `drivers/regulator/core.c` 第 4866 行](https://github.com/LineageOS/android_kernel_xiaomi_sm8250/blob/71b13e62f057a649b77fe4062feb73ee72ad609c/drivers/regulator/core.c#L4866) 实际使用 `dev_set_name(&rdev->dev, "regulator.%lu", ...)`；[Linux v6.12](https://github.com/torvalds/linux/blob/adc218676eef25575469234709c2d87185ca223a/drivers/regulator/core.c#L5734) 亦同。最初 P1b 采集脚本只扫描 `regulator[0-9]*`，解析器也只接受 `regulator7`，**漏掉标准的 `regulator.7`**。现已补上带点号的目录模式及严格解析（兼容旧模式），新增针对 `regulator.7` 和异常子目录的回归。此前 Type-C 子设备模式也已收紧。
+
+因此 P1b 的稳压器实机验收仍须在更新后的脚本上**再执行一次**；无需重做 P0c、无需 Root 或修改设备。
