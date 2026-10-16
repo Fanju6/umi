@@ -16,6 +16,14 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
+      - name: 保证 TEST2 只使用已真机验证的 KernelSU v3.3.0
+        run: |
+          set -Eeuo pipefail
+          source config/upstream.env
+          if [[ "${KSU_REF}" != "v3.3.0" || "${KSU_SHA}" != "932014ab5b2c9b74a3d11e2ec4d17dd10fc9442e" ]]; then
+            echo "::error::TEST2 镜像封装只对官方 v3.3.0 有真机验证；当前版本是 ${KSU_REF}。请使用新的独立 v3.3.1 构建及验收流程。" >&2
+            exit 1
+          fi
       - name: 安装交叉编译环境
         run: |
           sudo apt-get update
