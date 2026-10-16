@@ -1,0 +1,153 @@
+{
+  "schema_version": 1,
+  "phase": "P0b",
+  "device": "umi",
+  "status": "source_static_only",
+  "sources": {
+    "downstream": {
+      "url": "https://github.com/LineageOS/android_kernel_xiaomi_sm8250",
+      "commit": "71b13e62f057a649b77fe4062feb73ee72ad609c"
+    },
+    "upstream612": {
+      "url": "https://github.com/torvalds/linux",
+      "commit": "adc218676eef25575469234709c2d87185ca223a"
+    },
+    "elish_warning": {
+      "url": "https://github.com/torvalds/linux",
+      "commit": "adc218676eef25575469234709c2d87185ca223a"
+    }
+  },
+  "correlations": [
+    {
+      "id": "ufs_controller",
+      "subsystem": "UFS 控制器",
+      "vendor_file": "arch/arm64/boot/dts/vendor/qcom/kona.dtsi",
+      "vendor_line": 3069,
+      "upstream_file": "arch/arm64/boot/dts/qcom/sm8250.dtsi",
+      "upstream_line": 2495,
+      "vendor_reg_base": "0x01d84000",
+      "upstream_reg_base": "0x01d84000",
+      "vendor_irq": "GIC_SPI 265",
+      "upstream_irq": "GIC_SPI 265",
+      "conclusion": "public_soc_mapping_matches_not_umi_boot_verified"
+    },
+    {
+      "id": "ufs_phy",
+      "subsystem": "UFS PHY",
+      "vendor_file": "arch/arm64/boot/dts/vendor/qcom/kona.dtsi",
+      "vendor_line": 3054,
+      "upstream_file": "arch/arm64/boot/dts/qcom/sm8250.dtsi",
+      "upstream_line": 2567,
+      "vendor_reg_base": "0x01d87000",
+      "upstream_reg_base": "0x01d87000",
+      "supply_vendor": "pm8150_l5 / pm8150_l9",
+      "conclusion": "base_matches_binding_and_regulators_differ"
+    },
+    {
+      "id": "usb_dwc3_0",
+      "subsystem": "主 USB DWC3",
+      "vendor_file": "arch/arm64/boot/dts/vendor/qcom/kona-usb.dtsi",
+      "vendor_line": 82,
+      "upstream_file": "arch/arm64/boot/dts/qcom/sm8250.dtsi",
+      "upstream_line": 4204,
+      "vendor_reg_base": "0x0a600000",
+      "upstream_reg_base": "0x0a600000",
+      "vendor_irq": "GIC_SPI 133",
+      "upstream_irq": "GIC_SPI 133",
+      "upstream_parent_base": "0x0a6f8800",
+      "downstream_board_override": "xiaomi-sm8250-common.dtsi:maximum-speed=high-speed",
+      "conclusion": "dwc3_core_matches_parent_usb_phy_pinctrl_must_be_rebuilt"
+    },
+    {
+      "id": "reserved_hyp",
+      "subsystem": "hypervisor 保留区",
+      "vendor_file": "arch/arm64/boot/dts/vendor/qcom/kona.dtsi",
+      "vendor_line": 374,
+      "upstream_file": "arch/arm64/boot/dts/qcom/sm8250.dtsi",
+      "upstream_line": 770,
+      "vendor_reg_base": "0x80000000",
+      "upstream_reg_base": "0x80000000",
+      "vendor_size": "0x600000",
+      "upstream_size": "0x600000",
+      "conclusion": "soc_reference_matches_verify_live_fdt"
+    },
+    {
+      "id": "reserved_xbl_aop",
+      "subsystem": "XBL/AOP 保留区",
+      "vendor_file": "arch/arm64/boot/dts/vendor/qcom/kona.dtsi",
+      "vendor_line": 379,
+      "upstream_file": "arch/arm64/boot/dts/qcom/sm8250.dtsi",
+      "upstream_line": 775,
+      "vendor_reg_base": "0x80700000",
+      "upstream_reg_base": "0x80700000",
+      "vendor_size": "0x160000",
+      "upstream_size": "0x160000",
+      "contrasting_elish": "sm8250-xiaomi-elish-common.dtsi:0x80600000/0x260000",
+      "conclusion": "soc_base_matches_elish_override_is_unsafe_for_umi"
+    },
+    {
+      "id": "reserved_smem",
+      "subsystem": "SMEM 保留区",
+      "vendor_file": "arch/arm64/boot/dts/vendor/qcom/kona.dtsi",
+      "vendor_line": 396,
+      "upstream_file": "arch/arm64/boot/dts/qcom/sm8250.dtsi",
+      "upstream_line": 786,
+      "vendor_reg_base": "0x80900000",
+      "upstream_reg_base": "0x80900000",
+      "vendor_size": "0x200000",
+      "upstream_size": "0x200000",
+      "conclusion": "soc_reference_matches_verify_live_fdt"
+    },
+    {
+      "id": "reserved_xbl_log",
+      "subsystem": "XBL UEFI 日志保留区",
+      "vendor_file": "arch/arm64/boot/dts/vendor/qcom/kona.dtsi",
+      "vendor_line": 390,
+      "upstream_file": "arch/arm64/boot/dts/qcom/sm8250.dtsi",
+      "upstream_line": 780,
+      "vendor_reg_base": "0x80880000",
+      "vendor_size": "0x14000",
+      "upstream_reg_base": null,
+      "conclusion": "downstream_extra_region_not_explicit_in_upstream_soc_base"
+    },
+    {
+      "id": "pmic_battery",
+      "subsystem": "PMIC/充电",
+      "vendor_file": "arch/arm64/boot/dts/vendor/qcom/umi-sm8250.dtsi",
+      "vendor_line": 361,
+      "upstream_file": "arch/arm64/boot/dts/qcom/sm8250-xiaomi-elish-common.dtsi",
+      "upstream_line": 166,
+      "vendor_charger": "pm8150b_charger",
+      "vendor_ufs_supplies": [
+        "pm8150_l17",
+        "pm8150_l6",
+        "pm8150_s4",
+        "pm8150_l5",
+        "pm8150_l9"
+      ],
+      "conclusion": "pmic_family_shared_board_supply_wiring_unverified"
+    },
+    {
+      "id": "gpio_touch",
+      "subsystem": "触摸屏 GPIO",
+      "vendor_file": "arch/arm64/boot/dts/vendor/qcom/umi-sm8250.dtsi",
+      "vendor_line": 216,
+      "upstream_file": null,
+      "vendor_touch_candidates": [
+        "st,fts I2C@0x49",
+        "goodix,gt9889 I2C@0x5d"
+      ],
+      "vendor_gpio": {
+        "irq": 39,
+        "reset": 38
+      },
+      "conclusion": "board_specific_confirm_active_touch_controller"
+    }
+  ],
+  "safety": {
+    "read_only_evidence": true,
+    "flash_allowed": false,
+    "linux612_boot_verified": false,
+    "phone_live_fdt_verified": false
+  }
+}
