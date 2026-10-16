@@ -48,3 +48,14 @@ P0c 已删除并重建 `slpi_mem`、`adsp_mem` 这类标签；新草案必须保
 4. 仅在拥有可靠 UART/Pstore/USB gadget 日志和恢复路径后，再规划最小 UFS 只读启动；在此之前保持 `safe_to_flash=false`。
 
 **当前门禁：`P1A_SOURCE_MAPPED`、`P1A_DRIVERS_NOT_ENABLED`、`NO_BOOT_IMAGE`、`NO_612_DEVICE_TEST`。**
+
+## P1a 实际 CI 验证（2026-10-16）
+
+[Actions #38865386729](https://github.com/Fanju6/umi/actions/runs/38865386729) 已完成并返回 success，运行内容包括：
+
+1. 以锁定 SHA `adc218676eef25575469234709c2d87185ca223a` 稀疏检出 Linux v6.12 的 SM8250 DTS；通过 pinned URL 下载 `71b13e62f057a649b77fe4062feb73ee72ad609c` 的 umi 4.19 厂商 DTS 并验证真实标签、供电描述和六个主线 `memory-region` 消费者。
+2. 执行 P1a 清单与安全回归，全部通过。P0c DTS 保持可编译。
+3. 对 `sm8250-xiaomi-umi-p1a.dts` 真实执行 GNU CPP → `dtc`，生成**临时离线 DTB**。通过 `fdtget` 回读 UFS HCI、UFS PHY、USB1 wrapper、DWC3、USB2 HS PHY、USB3 QMP PHY 的最终 `status`，**六个都是 `disabled`**。
+4. Reserved-memory 的受限 Schema 诊断步骤成功。此步骤**不是完整 `dtbs_check`**，也不证明任何硬件已在 Linux 6.12 下初始化成功。
+
+安全状态不变：`safe_to_flash=false`、`bootable=false`、`no_boot_image`。当前没有在 umi 真机测试 Linux 6.12，所有供电参数仍待单独 P1b 实机核验。
