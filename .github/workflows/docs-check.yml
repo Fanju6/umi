@@ -1,0 +1,32 @@
+name: 文档完整性检查
+
+on:
+  pull_request:
+    paths:
+      - '**/*.md'
+      - 'scripts/check_doc_links.py'
+      - 'tests/test_doc_links.py'
+      - '.github/workflows/docs-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - '**/*.md'
+      - 'scripts/check_doc_links.py'
+      - 'tests/test_doc_links.py'
+      - '.github/workflows/docs-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  docs:
+    name: 导航链接与文档脚本校验
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: 运行文档相对链接校验
+        run: python3 scripts/check_doc_links.py
+      - name: 文档检查回归
+        run: python3 -m unittest discover -s tests -p test_doc_links.py -v

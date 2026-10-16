@@ -3,8 +3,16 @@ name: 内核诊断编译（非刷机包）
 on:
   workflow_dispatch:
   push:
+    branches: [main]
     paths:
-      - 'docs/CI_FULL_BUILD_TRIGGER.md'
+      - 'scripts/**'
+      - 'config/**'
+      - '.github/workflows/kernel-compile.yml'
+  pull_request:
+    paths:
+      - 'scripts/**'
+      - 'config/**'
+      - '.github/workflows/kernel-compile.yml'
 
 permissions:
   contents: read
@@ -17,7 +25,7 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
-      - name: 安装交叉编译工具链（暂为探索版本）
+      - name: 安装已复现的 Clang 18 工具链
         run: |
           sudo apt-get update
           sudo apt-get install -y clang-18 lld-18 llvm-18 gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi bc bison flex libssl-dev libelf-dev
@@ -41,7 +49,7 @@ jobs:
     continue-on-error: false
     steps:
       - uses: actions/checkout@v4
-      - name: 安装交叉编译工具链（暂为探索版本）
+      - name: 安装已复现的 Clang 18 工具链
         run: |
           sudo apt-get update
           sudo apt-get install -y clang-18 lld-18 llvm-18 gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi bc bison flex libssl-dev libelf-dev
@@ -81,7 +89,7 @@ jobs:
         run: python3 scripts/patch_umount_419.py .work/kernel .work/KernelSU
       - name: 静态风险清单（已知阻塞不退出）
         run: python3 scripts/audit.py .work/kernel .work/KernelSU --expect-blocked selinux-abi manager-handshake
-      - name: 尝试编译以收集实际错误（禁止发布 Image）
+      - name: 编译完整内核 Image 与设备树（不生成可刷 Boot）
         run: |
           set -o pipefail
           bash scripts/build_kernel.sh ksu 2>&1 | tee ksu-build.log

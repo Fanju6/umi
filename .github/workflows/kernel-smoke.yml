@@ -2,6 +2,14 @@ name: 官方 KernelSU 快速驱动编译
 
 on:
   push:
+    branches: [main]
+    paths:
+      - 'scripts/**'
+      - 'config/**'
+      - '.github/workflows/kernel-smoke.yml'
+      - '.github/workflows/kernel-compile.yml'
+      - '.github/workflows/source-audit.yml'
+  pull_request:
     paths:
       - 'scripts/**'
       - 'config/**'

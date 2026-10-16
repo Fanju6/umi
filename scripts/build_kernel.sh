@@ -19,8 +19,8 @@ for tool in clang-18 ld.lld-18 llvm-ar llvm-nm llvm-objcopy llvm-strip; do
 done
 
 
-# Clang 18 is an exploratory baseline; the final build must pin the actual
-# toolchain of the installed LineageOS release.
+# Clang 18 is the reproducible test toolchain; any release still must audit the
+# difference from the Clang version used by the original ROM.
 build_args=(
   O="$out" ARCH=arm64
   CC=clang-18 LD=ld.lld-18 AR=llvm-ar-18 NM=llvm-nm-18
@@ -66,4 +66,4 @@ fi
 make -C "$kernel" "${build_args[@]}" -j4 Image dtbs
 python3 "$repo_root/scripts/check_build_output.py" "$mode" "$out" | tee "$workdir/build-manifest-$mode.json"
 echo "诊断编译完成：$out/arch/arm64/boot/Image"
-echo "注意：还未生成 boot.img，也没有经过真机验证。"
+echo "当前命令仅编译内核 Image/设备树，不生成完整 boot.img；版本对应的真机验证参见 docs/STATUS.md。"

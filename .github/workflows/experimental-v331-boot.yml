@@ -3,6 +3,8 @@ name: umi KernelSU v3.3.1 首次 Manager 引导实验镜像（未验证）
 on:
   workflow_dispatch:
   push:
+    branches:
+      - experiment/v331-manager-fd-bootstrap
     paths:
       - 'docs/EXPERIMENT_V331_BOOT_TRIGGER.md'
 
