@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "stage": "P1j",
+  "device": "umi",
+  "locked": {
+    "vendor": "71b13e62f057a649b77fe4062feb73ee72ad609c",
+    "upstream": "adc218676eef25575469234709c2d87185ca223a"
+  },
+  "legacy_source_candidate": {
+    "source": "vendor fs/pstore/ram.c and sm8250-common.config pinned SHA",
+    "config_cmdline": "cgroup_disable=pressure ramoops_memreserve=4M",
+    "early_param": "ramoops_memreserve",
+    "source_physical_base": "0xB0000000",
+    "source_size_bytes": 4194304,
+    "source_end_exclusive": "0xB0400000",
+    "source_console_bytes": 2097152,
+    "source_pmsg_bytes": 2097152,
+    "registered_platform_name": "ramoops",
+    "source_method": "memblock_reserve plus platform_device_register",
+    "actual_running_cmdline_verified": false,
+    "actual_running_parameter_values_verified": false
+  },
+  "p0c_overlap_check": {
+    "source_candidate_overlaps_22_fixed_ranges": false,
+    "adjacent_fixed_region": "disp_rdump_region@9c000000",
+    "adjacent_fixed_region_base": "0xB0400000",
+    "dynamic_pools_have_verified_physical_bases": false,
+    "not_all_ram_owners_enumerated": true
+  },
+  "mainline_diff": {
+    "same_vendor_early_param_in_mainline_612": false,
+    "same_vendor_hardcoded_base_in_mainline_612": false,
+    "allow_direct_mainline_ramoops_dts_insertion": false,
+    "linux_612_device_booted": false
+  },
+  "gates": {
+    "verified_running_ramoops_base_and_size": false,
+    "full_physical_memory_ownership_verified": false,
+    "mainline_ramoops_reuse_safe": false,
+    "crash_log_survival_verified": false,
+    "recovery_path_verified": false,
+    "ufs_power_ready": false,
+    "safe_to_attempt_mainline_boot": false,
+    "safe_to_flash": false
+  }
+}

@@ -29,6 +29,9 @@
 
 **P1i 进展（2026-10-16）：** [旧 4.19 Pstore 注册路径的只读证据探针](P1I_RAMOOPS_REGISTRATION.md)：P0c 实测的 34 个 reserved-memory 节点里没有名为 `ramoops` 的节点，但 P1g/P1h 已确认当前旧内核挂载 Pstore 并暴露 `console`/`pmsg` 记录。新增不提权、必须显式执行的设备元数据探针及离线回归，只观察 platform device / DT compatible / 内核参数目录存在性，不读取物理地址、日志正文或分区。不改变任何 DTS 与启动/刷机安全门禁。
 
+
+**P1j 进展（2026-10-16）：** [旧 BSP Ramoops 的固定候选内存地址与 P0c 冲突核查](P1J_RAMOOPS_MEMORY.md)：锁定 4.19 的 `sm8250-common.config` 配置 `ramoops_memreserve=4M`，`fs/pstore/ram.c` 使用 `memblock_reserve` 和平台设备注册，源代码候选为 `0xB0000000` 的 4 MiB；与 P0c 已记录的 22 个固定内存区零重叠，紧邻 `0xB0400000` 的显示 dump 区，但 12 个动态池及运行时参数仍待查。提供可选非 Root sysfs 数字元数据探针、源码锁定 CI 和拒绝不安全使能的回归测试；继续禁用主线启动/刷机。
+
 ## 已直接核对的源码
 
 | 轨道 | 固定来源 | 可证事实 |
