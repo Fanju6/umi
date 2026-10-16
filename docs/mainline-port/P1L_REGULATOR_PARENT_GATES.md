@@ -54,3 +54,7 @@ python -m unittest discover -s tests -p test_mainline_p1l.py -v
 - https://github.com/torvalds/linux/blob/adc218676eef25575469234709c2d87185ca223a/Documentation/devicetree/bindings/regulator/qcom,rpmh-regulator.yaml
 - https://github.com/torvalds/linux/blob/adc218676eef25575469234709c2d87185ca223a/drivers/regulator/qcom-rpmh-regulator.c
 - [P1d](P1D_VRM_EVIDENCE.md) · [P1e](P1E_UFS_PARENT_AUDIT.md) · [P1f](P1F_UFS_LIFECYCLE.md) · [P1k](P1K_RAMOOPS_MIGRATION.md)
+
+## P1l 修正：固定源码校验选择条件块
+
+首次专项 CI 中，离线证据与 16 项测试全部成功；固定源码交叉校验由于搜索到 YAML 前面的 compatible 枚举而未定位 PM8150 条件分支，误报 `PM8150 SMPS supply naming changed`。修正为明确限定 `allOf` 中适用于 `qcom,pm8150-rpmh-regulators` 的 `if/then` 分支，再从该分支核对六个 parent 名称；新增模拟 YAML 首次 compatible 出现在普通枚举、随后才出现真正条件分支，以及缺失字段拒绝测试。这是 CI 审计器的选择范围修复，不是手机驱动故障或 schema 变更，且不改变电气/启动安全门禁。

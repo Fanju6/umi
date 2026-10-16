@@ -108,5 +108,62 @@ class P1lTests(unittest.TestCase):
                   for label in g["legacy_rails"]}
         self.assertEqual(actual, target)
 
+
+    @staticmethod
+    def synthetic_source_pair():
+        binding = """properties:
+  compatible:
+    enum:
+      - qcom,pm8150-rpmh-regulators
+required:
+  - compatible
+  - qcom,pmic-id
+allOf:
+  - if:
+      properties:
+        compatible:
+          enum:
+            - qcom,pm8150-rpmh-regulators
+            - qcom,pmc8180-rpmh-regulators
+    then:
+      properties:
+        vdd-l2-l10-supply: true
+        vdd-l3-l4-l5-l18-supply: true
+        vdd-l6-l9-supply: true
+        vdd-l7-l12-l14-l15-supply: true
+        vdd-l13-l16-l17-supply: true
+      patternProperties:
+        "^vdd-s([1-9]|10)-supply$": true
+  - if:
+      properties:
+        compatible:
+          enum:
+            - qcom,other-pmic
+    then:
+      properties:
+        vdd-l999-supply: true
+"""
+        driver = """vreg->rdesc.supply_name = rpmh_data->supply_name;
+vreg->addr = cmd_db_read_addr(rpmh_resource_name);
+static const struct rpmh_vreg_init_data pm8150_vreg_data[] = {
+"""
+        for supply, (_, outputs) in m.GROUPS.items():
+            for output in outputs:
+                driver += ('    RPMH_VREG("' + output +
+                           '", "ldo%s1", &pmic5_nldo, "' +
+                           supply.removesuffix("-supply") + '"),\n')
+        driver += "};\n"
+        return driver, binding
+
+    def test_schema_source_scoped_to_conditional_block(self):
+        driver, binding = self.synthetic_source_pair()
+        self.assertTrue(m.crosscheck_sources(driver, binding))
+
+    def test_schema_source_rejects_missing_pm8150_property(self):
+        driver, binding = self.synthetic_source_pair()
+        binding = binding.replace("        vdd-l6-l9-supply: true\n", "")
+        with self.assertRaisesRegex(ValueError, "parent property missing"):
+            m.crosscheck_sources(driver, binding)
+
 if __name__ == "__main__":
     unittest.main()

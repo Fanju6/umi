@@ -127,9 +127,15 @@ def crosscheck_sources(driver, binding):
     )
     require(match, "mainline DT binding required fields drifted")
     # Every listed board-parent input is a permitted name for PM8150.
-    part = binding.split("- qcom,pm8150-rpmh-regulators", 1)
-    require(len(part) == 2, "PM8150 compatible absent from schema")
-    prop_area = part[1].split("\n  - if:", 1)[0]
+    # Scope matching to the correct PM8150 allOf condition.
+    # The same compatible appears in an earlier compatible enum; that
+    # occurrence says nothing about the conditional input supply properties.
+    condition = re.search(
+        r"(?ms)^  - if:\n      properties:\n        compatible:\n"
+        r"          enum:\n            - qcom,pm8150-rpmh-regulators\n"
+        r".*?(?=^  - if:|\Z)", binding)
+    require(condition is not None, "PM8150 conditional schema section absent")
+    prop_area = condition.group(0)
     for name in GROUPS:
         if name.startswith("vdd-s"):
             require('"^vdd-s([1-9]|10)-supply$"' in prop_area,
