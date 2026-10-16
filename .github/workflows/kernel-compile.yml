@@ -3,8 +3,16 @@ name: 内核诊断编译（非刷机包）
 on:
   workflow_dispatch:
   push:
+    branches: [main]
     paths:
-      - 'docs/CI_FULL_BUILD_TRIGGER.md'
+      - 'scripts/**'
+      - 'config/**'
+      - '.github/workflows/kernel-compile.yml'
+  pull_request:
+    paths:
+      - 'scripts/**'
+      - 'config/**'
+      - '.github/workflows/kernel-compile.yml'
 
 permissions:
   contents: read

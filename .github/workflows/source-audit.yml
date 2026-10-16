@@ -2,7 +2,18 @@ name: 上游源码与安全门禁
 
 on:
   push:
+    branches: [main]
+    paths:
+      - 'scripts/**'
+      - 'config/**'
+      - 'tests/**'
+      - '.github/workflows/**'
   pull_request:
+    paths:
+      - 'scripts/**'
+      - 'config/**'
+      - 'tests/**'
+      - '.github/workflows/**'
   workflow_dispatch:
 
 permissions:
