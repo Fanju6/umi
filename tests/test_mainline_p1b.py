@@ -91,3 +91,25 @@ class P1bTests(unittest.TestCase):
             report = probe.collect("adb")
         self.assertEqual(call.call_args.args[0], ["adb", "shell", "sh"])
         self.assertFalse(report["safe_to_flash"])
+
+    def test_typec_glob_filters_partner_cable_and_plugs(self):
+        # port[0-9]* matches port0-partner, port0-cable and port0-plug0,
+        # but the shell must drop any suffix containing a non-digit.
+        script = probe.SCRIPT
+        self.assertIn("suffix=${id#port}", script)
+        self.assertIn('case "$suffix" in ""|*[!0-9]*) continue ;; esac', script)
+        self.assertIn('for node in /sys/class/typec/port[0-9]*;', script)
+
+    def test_bad_typec_directory_is_identified_without_value_dump(self):
+        text = sample("typec").replace("|typec|port0|", "|typec|port0-partner|")
+        with self.assertRaisesRegex(ValueError, r"typec/port0-partner"):
+            probe.parse(text)
+
+    def test_newline_in_attribute_does_not_break_record_format(self):
+        # Shell reads only the first line of a multi-line sysfs attribute.
+        self.assertIn('head -n 1 "$file"', probe.SCRIPT)
+        self.assertNotIn('value=$(cat "$file"', probe.SCRIPT)
+
+    def test_invalid_attribute_name_is_reported(self):
+        with self.assertRaisesRegex(ValueError, "采集属性不符合白名单"):
+            probe.parse(sample().replace("|microvolts|", "|serialno|"))

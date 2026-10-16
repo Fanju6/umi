@@ -21,6 +21,14 @@ Linux v6.12 的 `pm8150b_typec`、`pm8150b_vbus` 在上游 DTS 中已经定义�
 
 机器可核查矩阵见 [`config/mainline-p1b-power.json`](../../config/mainline-p1b-power.json)；固定源码校验器见 [`scripts/mainline_p1b_sources.py`](../../scripts/mainline_p1b_sources.py)。即使源码审计通过，也不代表已验证真实电压。
 
+## 2026-10-16 修复：Type-C 子设备名称导致解析中止
+
+首次 umi P1b 实机尝试出现三次 `P1b 采集失败：未知采集路径或属性`。源码检查发现 shell 中的 `/sys/class/typec/port[0-9]*` 也会匹配 `port0-partner`、`port0-cable`、`port0-plug0`，但解析器原本仅允许 `portN`。这属于**代码缺陷的高概率触发点**，未提供原始 ADB 输出，不能断言设备实际是哪一个目录引起。
+
+现在 shell 会跳过并非严格 `port` 加纯数字的 Type-C 子设备，读取 sysfs 属性时只取首行，避免多行值破坏记录边界。解析器仍坚持原白名单，并在失败时报告具体类别/路径或属性名（不记录原始属性值）。新增回归覆盖 Type-C 子设备、名称不合法、多行数据和安全门禁。
+
+重新 `git pull --ff-only` 后运行下面相同命令即可；无需 Root 或清空任何已有报告。若仍失败，请提供**新的错误文本**，它会指明具体类别。首次失败并不证明 UFS、PMIC 或 USB 硬件异常。
+
 ## 一次只读实机采集
 
 新 [`scripts/mainline_p1b_probe.py`](../../scripts/mainline_p1b_probe.py) 在普通 ADB Shell 下读取**选择性的** `regulator` 名称、当前电压/状态、Type-C 和 USB role、指定 USB 电源项、UFS 主机节点状态。

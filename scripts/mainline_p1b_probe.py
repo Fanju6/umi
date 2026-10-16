@@ -31,7 +31,7 @@ read_field() {
   cls="$1"; id="$2"; prop="$3"; file="$4"
   if [ ! -e "$file" ]; then value=missing
   elif [ ! -r "$file" ]; then value=unreadable
-  else value=$(cat "$file" 2>/dev/null) || value=unreadable
+  else value=$(head -n 1 "$file" 2>/dev/null) || value=unreadable
   fi
   printf '__UMI_P1B__|%s|%s|%s|%s\n' "$cls" "$id" "$prop" "$value"
 }
@@ -50,7 +50,11 @@ done
 count=0
 for node in /sys/class/typec/port[0-9]*; do
   [ -d "$node" ] || continue
-  id=$(basename "$node")
+  id=${node##*/}
+  # The glob also matches port0-partner, port0-cable, port0-plug0, etc.
+  # Only real portN entries may be emitted; never relax the Python whitelist.
+  suffix=${id#port}
+  case "$suffix" in ""|*[!0-9]*) continue ;; esac
   for prop in data_role power_role port_type preferred_role; do
     read_field typec "$id" "$prop" "$node/$prop"
   done
@@ -104,8 +108,14 @@ def parse(output):
                 raise ValueError("无法确认设备 ID")
             identity = value
             continue
-        if cls not in ATTR or not KEY[cls].fullmatch(ident) or prop not in ATTR[cls]:
-            raise ValueError("未知采集路径或属性")
+        if cls not in ATTR:
+            raise ValueError("未知采集类别（未保存原始输出）")
+        if not KEY[cls].fullmatch(ident):
+            # The id is a public sysfs path component, not any sysfs value.
+            safe_id = ident if re.fullmatch(r"[A-Za-z0-9_.:@-]{1,70}", ident) else "<invalid-id>"
+            raise ValueError(f"采集节点不符合白名单：{cls}/{safe_id}（未保存原始输出）")
+        if prop not in ATTR[cls]:
+            raise ValueError(f"采集属性不符合白名单：{cls}/{prop[:30]}（未保存原始输出）")
         groups[cls].setdefault(ident, {})[prop] = value
     if not completed or identity != "umi":
         raise ValueError("不是完整的 umi 采集结果")
