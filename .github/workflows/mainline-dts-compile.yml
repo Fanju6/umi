@@ -5,8 +5,12 @@ on:
     paths:
       - 'research/mainline/**'
       - 'config/mainline-p1a-dependencies.json'
+      - 'config/mainline-p1b-power.json'
       - 'scripts/mainline_p1a_audit.py'
+      - 'scripts/mainline_p1b_sources.py'
+      - 'scripts/mainline_p1b_probe.py'
       - 'tests/test_mainline_p1a.py'
+      - 'tests/test_mainline_p1b.py'
       - 'config/mainline-umi-p0c-memory.json'
       - 'scripts/mainline_validate_p0c.py'
       - 'tests/test_mainline_validate_p0c.py'
@@ -29,6 +33,8 @@ jobs:
           python3 -m unittest discover -s tests -p test_mainline_validate_p0c.py -v
           python3 scripts/mainline_p1a_audit.py
           python3 -m unittest discover -s tests -p test_mainline_p1a.py -v
+          python3 scripts/mainline_p1b_sources.py
+          python3 -m unittest discover -s tests -p test_mainline_p1b.py -v
       - name: Install Device Tree Compiler
         run: sudo apt-get update && sudo apt-get install -y device-tree-compiler
       - name: Fetch locked Torvalds Linux v6.12 DTS headers only
@@ -87,6 +93,21 @@ jobs:
             fi
           done
           echo 'P1a DTS compiles, 6 hardware nodes disabled; safe_to_flash=false' >> "$GITHUB_STEP_SUMMARY"
+      - name: P1b pinned PM8150B Type-C/VBUS source audit (never enable)
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error --retry 3 \
+            "https://raw.githubusercontent.com/torvalds/linux/adc218676eef25575469234709c2d87185ca223a/arch/arm64/boot/dts/qcom/pm8150b.dtsi" \
+            --output /tmp/umi-upstream-pm8150b.dtsi
+          test -s /tmp/umi-upstream-pm8150b.dtsi
+          python3 scripts/mainline_p1b_sources.py \
+            --upstream-soc upstream/arch/arm64/boot/dts/qcom/sm8250.dtsi \
+            --upstream-pmicb /tmp/umi-upstream-pm8150b.dtsi \
+            --vendor-common /tmp/umi-vendor/xiaomi-sm8250-common.dtsi \
+            --vendor-usb /tmp/umi-vendor/kona-usb.dtsi \
+            --vendor-umi /tmp/umi-vendor/umi-sm8250.dtsi
+          echo 'P1b rail mapping static only; live voltages / Type-C roles are unverified.' >> "$GITHUB_STEP_SUMMARY"
       - name: Optional reserved-memory schema diagnostics
         if: success()
         continue-on-error: true
