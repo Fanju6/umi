@@ -57,6 +57,16 @@ python scripts/mainline_compare_memory.py --report "$env:USERPROFILE\Desktop\umi
 
 对比工具不连接手机、不需要 Root，也不生成 boot.img；只检查选定范围之间的冲突，**不能替代完整最终 FDT / 固件签收**。已脱敏的关键差异见 [P0b+ 内存分析](P0B_MEMORY_REG_ANALYSIS.md)。
 
+## P0c：34 个节点完整元数据（当前待采集）
+
+```powershell
+cd C:\Users\fanju\umi-p0b
+git pull --ff-only
+python scripts/mainline_full_reserved_probe.py --output "$env:USERPROFILE\Desktop\umi-p0c-memory.json"
+```
+
+34 节点列表来自先前 umi 实机报告。采集器只从只读设备树读取 `reg`、`size`、`alignment`、`alloc-ranges`、`no-map` 和 `reusable`，**不执行 Root 或任何分区写入**。有些 CMA/dynamic pool 可能只有 `size` 而没有固定 `reg`，不应将其判为硬件缺失。对照方案见 [P0c DTS 草案](P0C_DTS_DRAFT.md)。
+
 ## 第二轮需补充的设备事实
 
 - 只读记录当前 umi 的 `ro.boot` 分区布局、FDT 设备树内的面板与触控物料标识（脱敏）。

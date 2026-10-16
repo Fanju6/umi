@@ -4,6 +4,8 @@
 
 **P0b 进展（2026-10-16）：** 已核对 UFS、USB、PMIC 与关键 reserved-memory 公共源码；测试者已提交 umi 的只读实机 JSON，确认实际的 USB 控制器、FTS/充电器/CS35L41 芯片节点和保留内存节点名。见 [真机对照与证据级别](P0B_REAL_DEVICE_FINDINGS.md)、[静态硬件映射](P0B_HARDWARE_MAPPING.md)。**14 个保留内存节点的 `reg` 已通过实机采集验证，0 处内部重叠；主线 SoC 默认 DSP 内存区不适用于 umi**。见 [P0b+ 完整地址对照](P0B_MEMORY_REG_ANALYSIS.md)。Linux 6.12 尚未在 umi 启动。
 
+**P0c 进展（2026-10-16）：** 已建立 [34 节点白名单采集器、Linux 6.12 umi 非刷机 DTS 草案及回归门禁](P0C_DTS_DRAFT.md)。目前 14 个 reg 已真机确认，剩余 20 个节点的属性尚待只读采集；不宣称 DTS 已离线编译通过，也不表示可启动。
+
 ## 已直接核对的源码
 
 | 轨道 | 固定来源 | 可证事实 |

@@ -11,10 +11,13 @@ on:
       - 'scripts/mainline_device_probe.py'
       - 'scripts/mainline_reserved_memory_probe.py'
       - 'scripts/mainline_compare_memory.py'
+      - 'scripts/mainline_full_reserved_probe.py'
+      - 'research/mainline/**'
       - 'tests/test_mainline_inventory.py'
       - 'tests/test_mainline_device_probe.py'
       - 'tests/test_mainline_reserved_memory_probe.py'
       - 'tests/test_mainline_memory_compare.py'
+      - 'tests/test_mainline_p0c.py'
       - '.github/workflows/mainline-research.yml'
   workflow_dispatch:
 
@@ -32,9 +35,9 @@ jobs:
         run: python3 scripts/mainline_inventory.py --manifest config/mainline-research.json
       - name: 执行离线回归测试
         run: |
-          python3 -m py_compile scripts/mainline_inventory.py scripts/mainline_device_probe.py scripts/mainline_reserved_memory_probe.py scripts/mainline_compare_memory.py
+          python3 -m py_compile scripts/mainline_inventory.py scripts/mainline_device_probe.py scripts/mainline_reserved_memory_probe.py scripts/mainline_compare_memory.py scripts/mainline_full_reserved_probe.py
           python3 -m unittest discover -s tests -p 'test_mainline_*.py' -v
       - name: 标记证据边界
         run: |
-          echo 'P0/P0b 静态元数据、非 Root 采集器模拟回归及 DT reg big-endian 解析。既有 umi 实机数据在文档中人工分级记录；该 CI 本身未连接实机。' >> "$GITHUB_STEP_SUMMARY"
+          echo 'P0/P0b/P0c 元数据及采集器回归，验证完整 34 节点白名单与离线 DTS 草案安全标记。此 CI 不连接手机，也不编译高版本 DTS 或 Linux 6.12。' >> "$GITHUB_STEP_SUMMARY"
           echo '不会生成内核 Image、boot.img，也不会执行 ADB/Fastboot。' >> "$GITHUB_STEP_SUMMARY"
