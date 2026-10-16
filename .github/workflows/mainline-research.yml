@@ -5,13 +5,16 @@ on:
     paths:
       - 'config/mainline-research.json'
       - 'config/mainline-p0b-map.json'
+      - 'config/mainline-612-reserved-memory.json'
       - 'docs/mainline-port/**'
       - 'scripts/mainline_inventory.py'
       - 'scripts/mainline_device_probe.py'
       - 'scripts/mainline_reserved_memory_probe.py'
+      - 'scripts/mainline_compare_memory.py'
       - 'tests/test_mainline_inventory.py'
       - 'tests/test_mainline_device_probe.py'
       - 'tests/test_mainline_reserved_memory_probe.py'
+      - 'tests/test_mainline_memory_compare.py'
       - '.github/workflows/mainline-research.yml'
   workflow_dispatch:
 
@@ -29,7 +32,7 @@ jobs:
         run: python3 scripts/mainline_inventory.py --manifest config/mainline-research.json
       - name: 执行离线回归测试
         run: |
-          python3 -m py_compile scripts/mainline_inventory.py scripts/mainline_device_probe.py scripts/mainline_reserved_memory_probe.py
+          python3 -m py_compile scripts/mainline_inventory.py scripts/mainline_device_probe.py scripts/mainline_reserved_memory_probe.py scripts/mainline_compare_memory.py
           python3 -m unittest discover -s tests -p 'test_mainline_*.py' -v
       - name: 标记证据边界
         run: |

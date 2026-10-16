@@ -1,5 +1,8 @@
 # P0b：umi 真机只读报告验收（2026-10-16）
 
+**后续验证：** 14 个节点 `reg` 已全部成功读取，0 个内部重叠；该页的早期“仅节点名、尚未核对 reg”判断以 [P0b+ 最新内存分析](P0B_MEMORY_REG_ANALYSIS.md) 为准。
+
+
 > **证据类型：测试者提供的实机 JSON，来自 `scripts/mainline_device_probe.py` 白名单只读 ADB Shell。** 原始文件由测试者上传用于分析，本仓库只保存下述必要的脱敏技术结论，不提交原始分区清单、完整 JSON 或设备唯一标识。此页的“实测”只指**现有 Linux 4.19.325 下的设备信息**，不能证明 Linux 6.12 可启动。
 
 ## 运行环境与分区
@@ -19,9 +22,9 @@
 | I2C/板级芯片 | `fts`、`bq2597x-standalone`、`ln8282`、`p9415`、`wl_charger_rx1619`、`wl_rx1619_trim`、`cs35l41` | 当前内核枚举了这些名称；FTS 是本机可观察到的触控候选。未观察到 Goodix **不代表所有 umi 硬件版本均不存在 Goodix** |
 | reserved-memory 名称 | 34 个节点（仅名称，没有原始 `reg` 字节） | 能确认该旧内核使用大量板级保留区，**不能依据 `@addr` 后缀推算实际范围与是否重叠** |
 
-## 对 6.12 影响最大的 reserved-memory 差异
+## 对 6.12 影响最大的 reserved-memory 差异（已被后续 reg 实测修正）
 
-以下均为**实机 FDT 节点名称后缀所示地址**，还不是 `reg` 属性验证结果：
+**以下为最初仅根据节点名形成的历史推测，已经失效。** 2026-10-16 测试者随后完成了全部 14 个白名单节点的真实 `reg` 解码，其中 `xbl_aop_region@80700000` 的实际地址是 `0x80600000`，恰好与 elish XBL/AOP 一致；`disp_rdump_region@9c000000` 的真实地址是 `0xB0400000`，并不与 splash 重叠。**目前请以 [P0b+ 真实内存区验证](P0B_MEMORY_REG_ANALYSIS.md) 为准，不可使用下面旧表编写 DTS。**
 
 | 实机 FDT 节点名 | 名称后缀地址 | 主线 6.12 `sm8250.dtsi` 静态默认值 | 阻塞 |
 | --- | --- | --- | --- |
@@ -36,10 +39,10 @@
 
 旧内核的 `pil_*`、reserved-memory 与 secure firmware carveout 尤其重要；盲目复制通用 SM8250 或 elish DTS，有踩占 TrustZone/DSP 固件内存的风险。不要根据节点后缀直接改 DTS 或内核内存参数。
 
-## 下一步：只读核对 `reg` 属性
+## 后续已完成：只读核对 `reg` 属性
 
-后续 P0b+ 的唯一设备操作是从 **14 个固定白名单 reserved-memory 节点**读取设备树中已发布的元数据 `reg`、`#address-cells`、`#size-cells`，由主机 Python 按 **big-endian DT cells** 解码出范围；不读取任何内存内容、boot 分区、IMEI/序列号，亦不提权或写入。若 ADB Shell 权限不足，记录 `unreadable`，不使用破坏性替代方式。
+该 P0b+ 阶段已经完成：测试者从 **14 个固定白名单 reserved-memory 节点**读取设备树中已发布的元数据 `reg`、`#address-cells`、`#size-cells`，由主机 Python 按 **big-endian DT cells** 解码出范围；不读取任何内存内容、boot 分区、IMEI/序列号，亦不提权或写入。若 ADB Shell 权限不足，记录 `unreadable`，不使用破坏性替代方式。
 
 下一阶段必须将上述范围与实际启动时最终 FDT、主线 `sm8250.dtsi` 和 umi bootloader reserved-memory 协议统一核对，确认是否有重叠/遗漏后，才允许构建 **不可刷写的 DTS 草案**。
 
-**状态：`P0B_DEVICE_ID_CONFIRMED`、`P0B_USB_ENUM_OBSERVED`、`P0B_UFS_REGULATORS_OBSERVED`、`P0B_RESERVED_NAMES_OBSERVED`、`P0B_RESERVED_REG_VALUES_PENDING`、`LINUX_612_NOT_BOOTED`、`SAFE_TO_FLASH_FALSE`。**
+**更新状态：`P0B_DEVICE_ID_CONFIRMED`、`P0B_USB_ENUM_OBSERVED`、`P0B_UFS_REGULATORS_OBSERVED`、`P0B_14_REG_OBSERVED`、`P0B_UPSTREAM_LAYOUT_INCOMPATIBLE`、`LINUX_612_NOT_BOOTED`、`SAFE_TO_FLASH_FALSE`。**

@@ -69,7 +69,9 @@
       "upstream_reg_base": "0x80000000",
       "vendor_size": "0x600000",
       "upstream_size": "0x600000",
-      "conclusion": "soc_reference_matches_verify_live_fdt"
+      "conclusion": "soc_reference_matches_verify_live_fdt",
+      "live_reg_base": "0x80000000",
+      "live_reg_size": "0x600000"
     },
     {
       "id": "reserved_xbl_aop",
@@ -82,8 +84,10 @@
       "upstream_reg_base": "0x80700000",
       "vendor_size": "0x160000",
       "upstream_size": "0x160000",
-      "contrasting_elish": "sm8250-xiaomi-elish-common.dtsi:0x80600000/0x260000",
-      "conclusion": "soc_base_matches_elish_override_is_unsafe_for_umi"
+      "contrasting_elish": "sm8250-xiaomi-elish-common.dtsi:0x80600000/0x260000 (same as observed umi reg only)",
+      "conclusion": "live_final_dt_reg_differs_from_node_unit_address_and_soc_default; matches_elish_xbl_aop_override",
+      "live_reg_base": "0x80600000",
+      "live_reg_size": "0x260000"
     },
     {
       "id": "reserved_smem",
@@ -96,7 +100,9 @@
       "upstream_reg_base": "0x80900000",
       "vendor_size": "0x200000",
       "upstream_size": "0x200000",
-      "conclusion": "soc_reference_matches_verify_live_fdt"
+      "conclusion": "soc_reference_matches_verify_live_fdt",
+      "live_reg_base": "0x80900000",
+      "live_reg_size": "0x200000"
     },
     {
       "id": "reserved_xbl_log",
@@ -108,7 +114,9 @@
       "vendor_reg_base": "0x80880000",
       "vendor_size": "0x14000",
       "upstream_reg_base": null,
-      "conclusion": "downstream_extra_region_not_explicit_in_upstream_soc_base"
+      "conclusion": "downstream_extra_region_not_explicit_in_upstream_soc_base",
+      "live_reg_base": "0x80880000",
+      "live_reg_size": "0x14000"
     },
     {
       "id": "pmic_battery",
@@ -148,6 +156,8 @@
     "read_only_evidence": true,
     "flash_allowed": false,
     "linux612_boot_verified": false,
-    "phone_live_fdt_verified": false
+    "phone_live_fdt_verified": false,
+    "live_14_selected_reg_verified": true,
+    "full_live_fdt_checked": false
   }
 }

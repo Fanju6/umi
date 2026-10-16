@@ -1,6 +1,6 @@
 # P0b：umi 4.19 → 主线 6.12 关键硬件映射
 
-**状态：公开源码地址映射已核对，且 umi 真机节点和驱动名称已通过测试者上传的只读 JSON 获得确认。真实保留内存 `reg` 地址/长度及新内核运行状态仍未验证。** 不生成镜像、不修改 `main`、不触碰 Flash/EDL 分区。检查日期：2026-10-16。
+**状态：公开源码地址映射已核对，且 umi 真机节点和驱动名称已通过测试者上传的只读 JSON 获得确认。已读取 14 个实机保留区的 `reg` 地址/大小，最新对照见 [P0b+ 真实内存区分析](P0B_MEMORY_REG_ANALYSIS.md)；Linux 6.12 尚未启动。** 不生成镜像、不修改 `main`、不触碰 Flash/EDL 分区。检查日期：2026-10-16。
 
 ## 公开代码的实际对应
 
@@ -11,9 +11,9 @@
 | UFS Controller | `ufshc_mem`：`0x01d84000`，SPI 265 | `ufs_mem_hc`：同一地址、IRQ | **SoC 地址相同**；需要重建新 binding 和 clocks/interconnect |
 | UFS PHY | `ufsphy_mem`：`0x01d87000` | `ufs_mem_phy`：`0x01d87000` | 基址对应；实际 L5、L9、L17/L6/S4 供电必须重新绑定 |
 | 主 USB DWC3 | `dwc3@a600000`：`0x0a600000`，SPI 133 | `usb_1_dwc3`：同一地址、IRQ，父节点 `usb_1@0x0a6f8800` | DWC3 核心对应，PHY、Type-C、电源、HS/SS 角色需单独验证 |
-| Hypervisor 内存 | `0x80000000 / 0x600000` | 同 | 静态相同，但还需实机最终 FDT 对照 |
-| XBL/AOP 内存 | `0x80700000 / 0x160000` | 同 | **禁止照搬 elish**：elish 改为 `0x80600000 / 0x260000` |
-| SMEM 内存 | `0x80900000 / 0x200000` | 同 | 可作为 SoC 级对照，仍需实机核验 |
+| Hypervisor 内存 | **实机 reg `0x80000000 / 0x600000`** | 同 | 本次白名单实机范围与 SoC 默认一致，仍需全 FDT 检查 |
+| XBL/AOP 内存 | 4.19 静态源码 `0x80700000 / 0x160000`；**umi 实机 reg 为 `0x80600000 / 0x260000`** | 主线 SoC 默认仍是 `0x80700000 / 0x160000` | **必须覆盖主线默认；umi 实机的这一范围恰好与 elish 一致，但不能复制其整棵 DTS** |
+| SMEM 内存 | **实机 reg `0x80900000 / 0x200000`** | 同 | 本次白名单实机范围与 SoC 默认一致 |
 | XBL/UEFI 日志区 | 4.19 单独保留 `0x80880000 / 0x14000` | `sm8250.dtsi` 不单独声明 | **需要特别保留和审查**：不可因主线漏写而直接覆盖 |
 | PMIC/充电 | umi 的 PM8150B、BQ2597x、P9415、RX1619 | PM8150 系列有公共 DTS | 电源域与 regulator 框架可复用，**具体电压/充电策略不可直接移植** |
 | 触控与 GPIO | umi 可能使用 FTS@0x49 或 Goodix@0x5d；IRQ GPIO39、Reset GPIO38 | 没有 umi 板级 DTS | 不能使用 dagu 的 Himax SPI 配置；先查实际 BOM |
@@ -23,6 +23,9 @@
 **重要技术边界：** “寄存器地址与 IRQ 相同”只说明同一 SoC IP 在 DTS 中对应，不证明 regulator、clock、pinctrl、IOMMU、firmware 或 Android HAL 已兼容。主线 SoC DTS 中的 UFS 与 USB 节点默认 `status = "disabled"`，需要正确的 umi 板级配置才能启用。此阶段不能生成可刷 Boot。
 
 ## 真机数据更新
+
+**后续实测确认（2026-10-16）：** 14 个固定白名单 reserved-memory 节点的 `reg` 全部可读，内部没有重叠。旧报告中依据 `@地址` 判断 XBL 与 display dump 的结论已经更正，详情见 [P0b+ 内存区最终分析](P0B_MEMORY_REG_ANALYSIS.md)。
+
 
 首轮 umi 的设备数据已经由测试者上传并完成核对，详见 [P0b 实机观察记录](P0B_REAL_DEVICE_FINDINGS.md)。目前的 `ufs_hosts=[]` 仅代表旧版 sysfs 路径无枚举，**不得推导为 UFS 故障**。实机 reserved-memory 的节点名已经观察到，但尚未读取实际 `reg` 属性，因此不应据此直接编写内存 carveout。
 

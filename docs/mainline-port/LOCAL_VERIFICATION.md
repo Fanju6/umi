@@ -47,6 +47,16 @@ python scripts/mainline_reserved_memory_probe.py --output "$env:USERPROFILE\Desk
 
 程序将 DT 的 `#address-cells` / `#size-cells`、每个白名单节点 `reg` 作为 big-endian 单元解析；若路径不可读则标记 `unreadable`，不会自动切换到 Root 或操作分区。参见 [实机内存布局问题](P0B_REAL_DEVICE_FINDINGS.md)。检查 JSON 后再分享，勿将本地报告自动提交 GitHub。
 
+## P0b+ 内存对照（已经由测试者提交 reg 报告）
+
+从实机生成的 `umi-p0b-memory.json` 已在本阶段被分析，14 个节点全部可读。为避免仅靠节点后缀推导物理地址，新加入固定 6.12 SoC 默认值与真实 `reg` 的 **离线比较器**：
+
+```powershell
+python scripts/mainline_compare_memory.py --report "$env:USERPROFILE\Desktop\umi-p0b-memory.json" --output "$env:USERPROFILE\Desktop\umi-p0b-comparison.json"
+```
+
+对比工具不连接手机、不需要 Root，也不生成 boot.img；只检查选定范围之间的冲突，**不能替代完整最终 FDT / 固件签收**。已脱敏的关键差异见 [P0b+ 内存分析](P0B_MEMORY_REG_ANALYSIS.md)。
+
 ## 第二轮需补充的设备事实
 
 - 只读记录当前 umi 的 `ro.boot` 分区布局、FDT 设备树内的面板与触控物料标识（脱敏）。
