@@ -67,6 +67,19 @@ python scripts/mainline_full_reserved_probe.py --output "$env:USERPROFILE\Deskto
 
 34 节点列表来自先前 umi 实机报告。采集器只从只读设备树读取 `reg`、`size`、`alignment`、`alloc-ranges`、`no-map` 和 `reusable`，**不执行 Root 或任何分区写入**。有些 CMA/dynamic pool 可能只有 `size` 而没有固定 `reg`，不应将其判为硬件缺失。对照方案见 [P0c DTS 草案](P0C_DTS_DRAFT.md)。
 
+## P0c 完整采集完成与离线验证
+
+用户已经完成 34 节点实机采集。后续无需重新采集相同数据。完整内存分析和已经由 CI 真实编译的设备树草案见 [P0c 完整报告](P0C_FULL_MEMORY_AND_DTC.md)。
+
+复现离线内存地图安全验证：
+
+```bash
+python3 scripts/mainline_validate_p0c.py
+python3 -m unittest discover -s tests -p test_mainline_validate_p0c.py -v
+```
+
+真正的 DTS 编译请参见 [GitHub Actions 编译记录](https://github.com/Fanju6/umi/actions/runs/38863644722)，它只产生临时的、不可刷机 DTB，不生成 boot.img。
+
 ## 第二轮需补充的设备事实
 
 - 只读记录当前 umi 的 `ro.boot` 分区布局、FDT 设备树内的面板与触控物料标识（脱敏）。
