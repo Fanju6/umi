@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "stage": "P1d",
+  "device": "umi",
+  "locked": {
+    "upstream": "adc218676eef25575469234709c2d87185ca223a",
+    "vendor": "71b13e62f057a649b77fe4062feb73ee72ad609c"
+  },
+  "vendor_files": [
+    "arch/arm64/boot/dts/vendor/qcom/kona.dtsi",
+    "arch/arm64/boot/dts/vendor/qcom/kona-regulators.dtsi",
+    "arch/arm64/boot/dts/vendor/qcom/xiaomi-sm8250-common.dtsi",
+    "arch/arm64/boot/dts/vendor/qcom/umi-sm8250.dtsi"
+  ],
+  "upstream_files": [
+    "Documentation/devicetree/bindings/regulator/qcom,rpmh-regulator.yaml",
+    "arch/arm64/boot/dts/qcom/sm8250-xiaomi-elish-common.dtsi"
+  ],
+  "provider_identity": {
+    "legacy_resource_suffix": "a",
+    "interpretation": "legacy Kona RPMh VRM uses suffix a for PM8150 S4/L2/L5/L6/L9/L12/L17",
+    "evidence_level": "pinned vendor source, not successful 6.12 hardware probe",
+    "mainline_candidate_pmic_id": "a",
+    "safe_to_enable": false
+  },
+  "rails": [
+    {
+      "legacy": "pm8150_s4",
+      "resource": "smpa4",
+      "mainline_child": "smps4",
+      "parent_property": "vdd-s4-supply",
+      "live_uv": 1800000,
+      "resource_id_suffix": "a",
+      "bsp_resource_verified": true,
+      "mainline_pm_id_boot_verified": false,
+      "parent_supply_phandle": null,
+      "mainline_constraint_uv": null
+    },
+    {
+      "legacy": "pm8150_l2",
+      "resource": "ldoa2",
+      "mainline_child": "ldo2",
+      "parent_property": "vdd-l2-l10-supply",
+      "live_uv": 3072000,
+      "resource_id_suffix": "a",
+      "bsp_resource_verified": true,
+      "mainline_pm_id_boot_verified": false,
+      "parent_supply_phandle": null,
+      "mainline_constraint_uv": null
+    },
+    {
+      "legacy": "pm8150_l5",
+      "resource": "ldoa5",
+      "mainline_child": "ldo5",
+      "parent_property": "vdd-l3-l4-l5-l18-supply",
+      "live_uv": 880000,
+      "resource_id_suffix": "a",
+      "bsp_resource_verified": true,
+      "mainline_pm_id_boot_verified": false,
+      "parent_supply_phandle": null,
+      "mainline_constraint_uv": null
+    },
+    {
+      "legacy": "pm8150_l6",
+      "resource": "ldoa6",
+      "mainline_child": "ldo6",
+      "parent_property": "vdd-l6-l9-supply",
+      "live_uv": 1200000,
+      "resource_id_suffix": "a",
+      "bsp_resource_verified": true,
+      "mainline_pm_id_boot_verified": false,
+      "parent_supply_phandle": null,
+      "mainline_constraint_uv": null
+    },
+    {
+      "legacy": "pm8150_l9",
+      "resource": "ldoa9",
+      "mainline_child": "ldo9",
+      "parent_property": "vdd-l6-l9-supply",
+      "live_uv": 1200000,
+      "resource_id_suffix": "a",
+      "bsp_resource_verified": true,
+      "mainline_pm_id_boot_verified": false,
+      "parent_supply_phandle": null,
+      "mainline_constraint_uv": null
+    },
+    {
+      "legacy": "pm8150_l12",
+      "resource": "ldoa12",
+      "mainline_child": "ldo12",
+      "parent_property": "vdd-l7-l12-l14-l15-supply",
+      "live_uv": 1800000,
+      "resource_id_suffix": "a",
+      "bsp_resource_verified": true,
+      "mainline_pm_id_boot_verified": false,
+      "parent_supply_phandle": null,
+      "mainline_constraint_uv": null
+    },
+    {
+      "legacy": "pm8150_l17",
+      "resource": "ldoa17",
+      "mainline_child": "ldo17",
+      "parent_property": "vdd-l13-l16-l17-supply",
+      "live_uv": 2504000,
+      "resource_id_suffix": "a",
+      "bsp_resource_verified": true,
+      "mainline_pm_id_boot_verified": false,
+      "parent_supply_phandle": null,
+      "mainline_constraint_uv": null
+    }
+  ],
+  "extra_ufs_dependencies": [
+    {
+      "property": "qcom,vddp-ref-clk-supply",
+      "vendor_phandle": "pm8150_l6",
+      "reason": "legacy-only reference-clock power vote; review modern binding",
+      "mainline_binding_verified": false
+    },
+    {
+      "property": "qcom,vccq-parent-supply",
+      "vendor_phandle": "pm8150a_s8",
+      "reason": "legacy-only separate upstream parent from second PMIC; review before migrating VCCQ",
+      "mainline_binding_verified": false
+    }
+  ],
+  "boundaries": {
+    "legacy_mainline_ufs_supply_edges": 5,
+    "legacy_ufs_extra_vendor_edges": 2,
+    "legacy_usb2_phy_supply_edges": 3,
+    "parent_input_properties": 6,
+    "distinct_physical_rails": 7,
+    "board_parent_wiring_verified": false,
+    "regulator_voltage_safety_verified": false,
+    "pmic_id_tested_on_mainline": false,
+    "no_enabled_hardware": true,
+    "safe_to_flash": false,
+    "boot_image_created": false
+  }
+}

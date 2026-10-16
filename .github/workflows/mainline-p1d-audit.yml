@@ -1,0 +1,56 @@
+name: umi P1d RPMh 资源与 UFS 输入依赖审计
+
+on:
+  pull_request:
+    paths:
+      - 'config/mainline-p1d-rpmh-evidence.json'
+      - 'scripts/mainline_p1d_rpmh_audit.py'
+      - 'tests/test_mainline_p1d.py'
+      - '.github/workflows/mainline-p1d-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: P1d 固定版本 DTS 跨源码验证（只读研究）
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Static P1d safety and graph regression
+        run: |
+          set -euo pipefail
+          python3 scripts/mainline_p1d_rpmh_audit.py
+          python3 -m unittest discover -s tests -p test_mainline_p1d.py -v
+      - name: Fetch only six pinned DTS / YAML sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/umi-p1d
+          vendor=71b13e62f057a649b77fe4062feb73ee72ad609c
+          upstream=adc218676eef25575469234709c2d87185ca223a
+          for file in kona.dtsi kona-regulators.dtsi xiaomi-sm8250-common.dtsi umi-sm8250.dtsi; do
+            curl --fail --silent --show-error --retry 3 --location \
+              "https://raw.githubusercontent.com/LineageOS/android_kernel_xiaomi_sm8250/${vendor}/arch/arm64/boot/dts/vendor/qcom/${file}" \
+              -o "/tmp/umi-p1d/${file}"
+            test -s "/tmp/umi-p1d/${file}"
+          done
+          curl --fail --silent --show-error --retry 3 --location \
+            "https://raw.githubusercontent.com/torvalds/linux/${upstream}/Documentation/devicetree/bindings/regulator/qcom,rpmh-regulator.yaml" \
+            -o /tmp/umi-p1d/binding.yaml
+          curl --fail --silent --show-error --retry 3 --location \
+            "https://raw.githubusercontent.com/torvalds/linux/${upstream}/arch/arm64/boot/dts/qcom/sm8250-xiaomi-elish-common.dtsi" \
+            -o /tmp/umi-p1d/elish.dtsi
+      - name: Validate resource names, parent groups, and two hidden UFS edges
+        run: |
+          set -euo pipefail
+          python3 scripts/mainline_p1d_rpmh_audit.py \
+            --kona /tmp/umi-p1d/kona.dtsi \
+            --vrm /tmp/umi-p1d/kona-regulators.dtsi \
+            --common /tmp/umi-p1d/xiaomi-sm8250-common.dtsi \
+            --umi /tmp/umi-p1d/umi-sm8250.dtsi \
+            --binding /tmp/umi-p1d/binding.yaml \
+            --elish /tmp/umi-p1d/elish.dtsi
+          echo 'P1d source evidence only: PMIC ID a is not boot verified; supplies unknown; safe_to_flash=false.' >> "$GITHUB_STEP_SUMMARY"
