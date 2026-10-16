@@ -134,8 +134,23 @@ getenforce: Enforcing
 
 当前设备工作状态正常：继续保持 `/data/adb/ksud` 和可恢复的 boot 备份，不做删除操作；PR #4 继续 Draft，main 与 TEST2 不修改。
 
+## 2026-10-16：首次无 ksud 的官方 Manager 自动安装（用户再次明确确认）
+
+针对上一节的关键歧义，向测试者明确询问：**是否在测试前已经确认 `/data/adb/ksud` 不存在，并且没有使用 `adb root`、手动复制或手动运行 `ksud install`，仅打开 KernelSU v3.3.1 官方 Manager 就成功自动安装 `ksud`，随后 Root 正常**。测试者明确回复：“**对，自动安装了 `ksud`**”。
+
+此回复确认其认可上述完整测试前提和结果，不再仅是“升级旧 ksud 成功”的概括反馈。结合此前的原始终端回显：`uid=0(root)`、`u:r:ksu:s0`、`Enforcing`、`/data/adb/ksud` 标签正确，以及安装后的 `ksud` 与官方 Manager 自带 `libksud.so` SHA-256 一致，**本设备 v3.3.1 的首次自动部署路径可记录为真机用户确认通过**。
+
+**证据分级与技术边界：**
+- `FIRST_INSTALL_PASSED_USER_CONFIRMED`：测试者对无旧 `ksud`、不借助 ADB Root/手动安装、Manager 自动安装、Root 可用的完整链路做了明确确认。
+- `MANAGER_DEPLOYED_KSUD_HASH_MATCH_CONFIRMED`：部署后文件与已安装官方 Manager 内置 ELF 的 SHA-256 有直接终端原始回显。
+- `FD_POSTEXEC_MECHANISM_NOT_ISOLATED`：没有抓取 `task_work`/Manager FD Hook 的内核日志及对照实验，因此不能把观察到的成功**单独归因**于 `post_exec_task_work_419` 补丁。该功能可能还有其他内核/用户空间路径参与。
+- `SECURITY_AUDIT_NOT_SIGNED_OFF`：即使受控真机功能通过，旧版 Linux 4.19 SELinux policydb、策略事务/并发与 Seccomp 兼容审计仍然有待单独消除静态 BLOCK；不能仅因用户反馈而关闭 `selinux-abi`、`manager-handshake` 门禁。
+- 此次没有提供“文件不存在”那一时刻的原始 `ls` 回显，故首装结论的原始证据级别是**用户明确确认**，不是自动化日志完整重放。
+
+本节优先于上一节“测试前提待核实”的暂定状态；**无需也不应再次在当前正常运行的设备上删除 ksud 来复现**。仍保留模块/策略、长期稳定性“测试者报告正常，但尚无详细日志和测试参数”的记录。
+
 ## 发布门禁
 
-当前已由 ADB 和第三方终端原始回显确认 v3.3.1 正常启动、SELinux Enforcing、第三方应用 KernelSU Root、已安装 ksud 标签及其与 Manager 内置 ELF 的 SHA-256 一致；Root 授权撤销/恢复、正常重启后 Root 与 ksud 哈希保持由测试者明确回复全部成功。因此 v3.3.1 **基础 Root 功能验收通过（含用户确认的授权及重启回归）**。此外测试者已反馈首次安装、模块与 SELinux 策略、长期稳定性也正常；这三项暂无操作细节和原始日志，首次安装的无旧 ksud 前置状态尤其尚需核实，故只能列为用户反馈通过，不能列为独立证据充分的最终验收。PR #3、PR #4 仍保持 Draft；特别是 PR #4 的 `manager-handshake`、`selinux-abi` 静态阻塞不能因本次开机成功而自动清除。
+当前已由 ADB 和第三方终端原始回显确认 v3.3.1 正常启动、SELinux Enforcing、第三方应用 KernelSU Root、已安装 ksud 标签及其与 Manager 内置 ELF 的 SHA-256 一致；Root 授权撤销/恢复、正常重启后 Root 与 ksud 哈希保持由测试者明确回复全部成功。因此 v3.3.1 **基础 Root 功能验收通过（含用户确认的授权及重启回归）**。此外测试者已反馈首次安装、模块与 SELinux 策略、长期稳定性也正常；这三项暂无操作细节和原始日志，测试者随后针对完整无旧 ksud 前置条件及无需 ADB Root/人工安装的首次自举问题明确作出肯定确认，因此首装功能记为 `FIRST_INSTALL_PASSED_USER_CONFIRMED`。该结论尚缺测试开始时的原始日志、FD 路径的独立归因，以及静态安全审计签收；模块与长期稳定性同样仍属于用户反馈通过而非完整日志验收。PR #3、PR #4 仍保持 Draft；特别是 PR #4 的 `manager-handshake`、`selinux-abi` 静态阻塞不能因本次开机成功而自动清除。
 
 有关设备备份、回滚、专用首装验证步骤，继续参照 `docs/V331_FIRST_INSTALL_TEST_PROTOCOL.md`。
