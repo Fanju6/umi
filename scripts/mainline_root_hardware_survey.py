@@ -17,7 +17,7 @@ RAILS = {"pm8150_s4", "pm8150_l2", "pm8150_l5", "pm8150_l6",
          "pm8150_l9", "pm8150_l12", "pm8150_l17", "pm8150a_s8",
          "pm8150a_bob"}
 SAFE = re.compile(r"^[A-Za-z0-9_.:+/@ -]{0,160}$")
-SECTIONS = ("ID", "ROOT", "REGULATORS", "SUMMARY", "IOMEM", "UFS", "HEADERS")
+SECTIONS = ("ID", "ROOT", "REGULATORS", "SUMMARY", "DTREE", "IOMEM", "UFS", "HEADERS")
 SCRIPT = r"""
 printf '\n__UMI_ROOT_ID__\n'
 printf '%s|%s|%s|%s\n' "$(getprop ro.product.device)" "$(uname -r)" "$(getprop ro.build.ab_update)" "$(getprop ro.boot.slot_suffix)"
@@ -37,6 +37,18 @@ done
 printf '\n__UMI_ROOT_SUMMARY__\n'
 if [ -r /sys/kernel/debug/regulator/regulator_summary ]; then
   sed -n '1,1500p' /sys/kernel/debug/regulator/regulator_summary
+else echo unavailable; fi
+printf '\n__UMI_ROOT_DTREE__\n'
+if [ -d /sys/firmware/devicetree/base ]; then
+  find /sys/firmware/devicetree/base -name qcom,resource-name -type f 2>/dev/null | head -n 600 | while IFS= read -r item; do
+    value=$(tr -d '\000' < "$item" 2>/dev/null)
+    case "$value" in
+      smpa4|ldoa2|ldoa5|ldoa6|ldoa9|ldoa12|ldoa17|smpc8|bobc1)
+        parent=$(dirname "$item")
+        printf '%s|%s\n' "$(basename "$parent")" "$value"
+      ;;
+    esac
+  done
 else echo unavailable; fi
 printf '\n__UMI_ROOT_IOMEM__\n'
 if [ -r /proc/iomem ]; then sed -n '1,1500p' /proc/iomem; else echo unavailable; fi
@@ -131,6 +143,17 @@ def parse(raw):
                 interesting.append(line)
             if len(interesting) >= 50:
                 break
+    dtree = sections["DTREE"]
+    power_resources = []
+    accepted_resources = {"smpa4", "ldoa2", "ldoa5", "ldoa6", "ldoa9",
+                          "ldoa12", "ldoa17", "smpc8", "bobc1"}
+    if dtree != ["unavailable"]:
+        for line in dtree:
+            pair = line.split("|")
+            if (len(pair) == 2 and
+                    re.fullmatch(r"[A-Za-z0-9_.@-]{1,80}", pair[0]) and
+                    pair[1] in accepted_resources):
+                power_resources.append({"dt_node": pair[0], "resource": pair[1]})
     iomem = sections["IOMEM"]
     intersections = []
     if iomem != ["unavailable"]:
@@ -172,6 +195,11 @@ def parse(raw):
             "available": available, "matching_lines": interesting,
             "physical_parent_wiring_proven": False
         },
+        "runtime_device_tree": {
+            "available": dtree != ["unavailable"],
+            "selected_rpmh_resources": power_resources,
+            "pcb_wiring_verified": False,
+        },
         "ramoops_iomem": {
             "available": iomem != ["unavailable"],
             "intersections": intersections,
@@ -212,6 +240,7 @@ def main():
                 "root_confirmed": True,
                 "regulator_count": len(result["regulators"]),
                 "regulator_summary_available": result["debugfs_regulator_summary"]["available"],
+                "device_tree_rpmh_resources": len(result["runtime_device_tree"]["selected_rpmh_resources"]),
                 "iomem_available": result["ramoops_iomem"]["available"],
                 "iomem_overlap_records": len(result["ramoops_iomem"]["intersections"]),
                 "ufs_count": len(result["ufs_nodes"]),

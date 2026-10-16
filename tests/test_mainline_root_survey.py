@@ -29,6 +29,8 @@ def output():
         "regulator use open bypass",
         "pm8150_l6 1 2 1200000 UFS",
         "private_serial_012345",
+        "__UMI_ROOT_DTREE__", "rpmh-regulator-ldoa6|ldoa6",
+        "rpmh-regulator-smpa4|smpa4", "private-secret-node|nope",
         "__UMI_ROOT_IOMEM__",
         "b0000000-b03fffff : reserved",
         "b0400000-b13fffff : disp_rdump",
@@ -53,6 +55,12 @@ class RootSurveyTests(unittest.TestCase):
         self.assertEqual(len(v["ramoops_iomem"]["intersections"]), 1)
         self.assertFalse(v["safe_to_flash"])
         self.assertFalse(v["recovery_restoration_proven"])
+
+    def test_runtime_dtree_keeps_only_known_resource_ids(self):
+        v = m.parse(output())
+        self.assertEqual(len(v["runtime_device_tree"]["selected_rpmh_resources"]), 2)
+        self.assertFalse(v["runtime_device_tree"]["pcb_wiring_verified"])
+        self.assertNotIn("private-secret-node", json.dumps(v))
 
     def test_root_permission_required(self):
         with self.assertRaisesRegex(ValueError, "root UID"):
