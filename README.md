@@ -1,42 +1,34 @@
-# Xiaomi Mi 10 (umi) · LineageOS 23.2 × 官方 KernelSU
+# KernelSU for Xiaomi Mi 10 (umi)
 
-本仓库用于研究并移植 **[官方 KernelSU](https://github.com/tiann/KernelSU)** 至小米 10（`umi`）的 LineageOS 23.2 内核（Linux 4.19）。**不使用 KernelSU Next**。
+基于 **[官方 KernelSU](https://github.com/tiann/KernelSU)** 的小米 10（`umi`）移植项目，适配 **LineageOS 23.2 / Android 16 / Linux 4.19**。提供固定上游版本、可审查的兼容补丁、自动构建与镜像完整性检查，以及真机验收记录。不使用 KernelSU Next。
 
-> [!WARNING]
-> **实验阶段。已通过官方 KernelSU 3.3.0 + umi Linux 4.19 的完整内核编译与链接，但尚未完成真机启动和功能验证；当前不提供可刷写的 boot.img。**
-> 请勿在此基础上生成的未经验证镜像上直接覆盖手机原始 boot 分区。
+## 支持范围
 
-## 上游
+| 项目 | 当前测试条件 |
+| --- | --- |
+| 设备 | Xiaomi Mi 10（`umi`） |
+| ROM | `LineageOS 23.2-20261004-NIGHTLY-umi` |
+| 内核 | Linux 4.19.325，Clang 18 |
+| KernelSU | 官方 `v3.3.1` 迁移分支；`v3.3.0 TEST2` 回滚基线 |
+| 真机功能 | 启动、SELinux Enforcing、应用 Root、授权隔离、重启保持已通过；Manager 首次自动安装 ksud 由测试者确认 |
+| 发布 | 尚未发布稳定版本，安全审计仍在进行 |
 
-- [LineageOS SM8250 kernel · lineage-23.2](https://github.com/LineageOS/android_kernel_xiaomi_sm8250/tree/lineage-23.2)
-- [LineageOS umi device tree](https://github.com/LineageOS/android_device_xiaomi_umi/tree/lineage-23.2)
-- [LineageOS sm8250-common](https://github.com/LineageOS/android_device_xiaomi_sm8250-common/tree/lineage-23.2)
-- [tiann/KernelSU · v3.3.0](https://github.com/tiann/KernelSU/tree/v3.3.0)
+**分支说明：** 默认 `main` 保存已经真机验证的 **KernelSU v3.3.0 TEST2**。v3.3.1 代码在 [PR #3](https://github.com/Fanju6/umi/pull/3)，首次安装适配在其上的 [PR #4](https://github.com/Fanju6/umi/pull/4)。**不要将未合并的 v3.3.1 功能误认为已包含在 `main`。**
 
-## 已证实的移植阻塞
+## 快速导航
 
-- 旧版 `selinux_state.ss` + `policy_rwlock` 与官方新版 `selinux_state.policy` + `policy_mutex` 不兼容。
-- 旧版 `seccomp_filter` 不包含 `action_cache`；直接沿用新版缓存偏移属于内存破坏风险。
-- 需检查 `MODULE_IMPORT_NS` 等较新内核宏、Kconfig/Kbuild 集成、Clang CFI、ARM64 调用约定以及启动时序。
+- [当前版本与真实验收结果](docs/STATUS.md)
+- [构建指南与 CI 使用](docs/BUILD.md)
+- [源码架构与目录说明](docs/ARCHITECTURE.md)
+- [全部文档索引](docs/README.md)
+- [贡献指南](CONTRIBUTING.md)
 
-## 实施原则
+## 设计与安全
 
-1. 固定上游版本并保留第三方代码来源，所有兼容修改以可审查的补丁/脚本保存。
-2. 首先验证未修改的内核基线，再移植 Root 支持。
-3. CI 静态审查和编译通过 **不代表** 可刷写；只有真机验证以后才允许发布刷机产物。
-4. 不降级 SELinux 到 Permissive，不隐瞒运行时失败，不合并不安全的结构强转。
+使用固定 Git SHA 获取 LineageOS 内核和官方 KernelSU，通过 `scripts/patch_*.py` 施加仅针对 Linux 4.19 的兼容改动；不维护整体复制的内核树，也不修改官方 Manager 的用户空间代码。
 
-后续自动化、源代码改动和检查详见仓库中的 `docs/` 与 `scripts/`。
+仅对表中的 **指定设备和 ROM 构建** 保有真机证据。编译成功不代表镜像可刷；默认不自动刷机、不提供稳定 Release。Linux 4.19 SELinux 事务和 Manager/Seccomp 的部分静态安全门禁仍待正式审查。测试前应保留对应 ROM 的原始 Boot 和恢复方案。
 
-## 重要：已知实验镜像启动失败
+早期曾出现已查明原因的 **v3.3.0 旧实验镜像启动失败**，后续 TEST2 与 v3.3.1 已成功启动。不要使用已知失败的旧镜像，原因及 SHA-256 见[历史故障档案](docs/history/README.md)。
 
-> [!CAUTION]
-> **2026-10-14 真机验证：KernelSU 3.3.0 的实验 boot.img 无法正常启动，用户恢复原版 boot.img 后已重新开机。** 已知失败的 SHA-256：`b5701bb8347ea4d37c584b96eedd00f6e51d867aa9a68ec21d75a16f85ae2aaf`。**不要重复刷入该版本**。编译、镜像结构和 AVB Footer 静态验收均不能排除内核初始化异常。详见 [故障与排查](docs/BOOT_FAILURE_20261014.md)。
-
-## 已完成的 CI 与实机只读预检
-
-- [整核链接、Image、umi DTBO 完整验收](https://github.com/Fanju6/umi/actions/runs/38555215723)：成功，但仍是不可刷写的编译产物。
-- [Windows PowerShell / Linux 真机只读预检](docs/DEVICE_PREFLIGHT.md)：仅获取版本、SELinux、槽位和分区名称，不写入设备。
-- SELinux 策略运行时安全、Manager 授权和真机启动验证均未完成。
-
-设备真机只读检查已确认非 A/B、独立 `boot/recovery/dtbo/vbmeta` 分区布局；版本和内核 Git 后缀与固定源码匹配。详见 [umi 启动镜像验收约束](docs/UMI_BOOT_LAYOUT.md)。这**不意味着现有 boot.img 已被验证或可以刷机**。
+本项目为社区移植，不代表 LineageOS 或 KernelSU 官方发布。
