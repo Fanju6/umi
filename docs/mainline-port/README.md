@@ -8,7 +8,7 @@
 
 **P1a 进展（2026-10-16）：** 已编写 [UFS / USB / PMIC 与 `memory-region` 板级依赖对照](P1A_BOARD_DEPENDENCIES.md)。单独 DTS 草案把六个控制器和 PHY 显式保持 `disabled`，不填写未确认的 regulator 接线；随后将通过锁定源码审计及真实 DTS 编译验证。这并不代表 Linux 6.12 已能开机。
 
-**P1b 进展（2026-10-16）：** 已建立 [PM8150 供电/USB Type-C/USB VBUS 静态核验与非 Root 实机采集](P1B_POWER_TYPEC.md)。未确认的电压和连接器拓扑仍然不进入 DTS；继续保持 `safe_to_flash=false`。
+**P1b 进展（2026-10-16）：** 已建立 [PM8150 供电与 Type-C 源码及实机核验](P1B_POWER_TYPEC.md)，第二份真实 umi P1b 报告观察到 **56 条稳压器记录，其中 UFS/USB2 PHY 所需的 7 条实体电源轨均已启用**。已将七轨脱敏快照与八条旧 DTS 供电关系关联并加入离线回归；安全电压、上游 phandle/供电时序、Type-C/PD 新版驱动仍未验证，`safe_to_flash=false`。
 
 ## 已直接核对的源码
 

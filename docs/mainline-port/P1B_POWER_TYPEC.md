@@ -60,3 +60,41 @@ python scripts/mainline_p1b_probe.py --output "$env:USERPROFILE\Desktop\umi-p1b-
 **已复核的真正采集器 bug：** [umi 锁定 Linux 4.19 的 `drivers/regulator/core.c` 第 4866 行](https://github.com/LineageOS/android_kernel_xiaomi_sm8250/blob/71b13e62f057a649b77fe4062feb73ee72ad609c/drivers/regulator/core.c#L4866) 实际使用 `dev_set_name(&rdev->dev, "regulator.%lu", ...)`；[Linux v6.12](https://github.com/torvalds/linux/blob/adc218676eef25575469234709c2d87185ca223a/drivers/regulator/core.c#L5734) 亦同。最初 P1b 采集脚本只扫描 `regulator[0-9]*`，解析器也只接受 `regulator7`，**漏掉标准的 `regulator.7`**。现已补上带点号的目录模式及严格解析（兼容旧模式），新增针对 `regulator.7` 和异常子目录的回归。此前 Type-C 子设备模式也已收紧。
 
 因此 P1b 的稳压器实机验收仍须在更新后的脚本上**再执行一次**；无需重做 P0c、无需 Root 或修改设备。
+
+## 2026-10-16：第二份实机报告：七条实体 PM8150 供电轨均已观察
+
+最新由普通 ADB Shell 生成的 `umi-p1b-power(1).json` 已人工核对，`regulator=56`、`typec=1`、`usb_supply=3`、`ufs=1`。**仓库不保存整份用户原始 JSON**，只保存 [脱敏的七轨状态快照](../../config/mainline-p1b-observed.json)（无手机唯一 ID、无原始设备文件、无动态 regulator.N 编号）；与八条旧 DTS 供电引用的关系可由 [离线检查器](../../scripts/mainline_p1b_observations.py) 验证。
+
+| 实机稳压器 | 旧 4.19 用途 | sysfs 当前 `microvolts` | sysfs `min/max` | 运行状态 |
+| --- | --- | ---: | --- | --- |
+| `pm8150_l17` | UFS VCC | 2,504,000 μV | 2,496,000–3,008,000 μV | enabled |
+| `pm8150_l6` | UFS VCCQ | 1,200,000 μV | 1,200,000–1,200,000 μV | enabled |
+| `pm8150_s4` | UFS VCCQ2 | 1,800,000 μV | 1,800,000–1,920,000 μV | enabled |
+| `pm8150_l5` | UFS PHY、USB2 PHY | 880,000 μV | 880,000–880,000 μV | enabled |
+| `pm8150_l9` | UFS PLL | 1,200,000 μV | 1,200,000–1,200,000 μV | enabled |
+| `pm8150_l12` | USB2 PHY | 1,800,000 μV | 1,800,000–1,800,000 μV | enabled |
+| `pm8150_l2` | USB2 PHY | 3,072,000 μV | 3,072,000–3,072,000 μV | enabled |
+
+**证据解读**：上述七条是运行中 **Linux 4.19 regulator sysfs** 的值，八条用途来自固定 SHA 的厂商 DTS。不是物理电压测量，也不是可以将这些 min/max 原样写入 Linux v6.12 `regulator-min/max-microvolt` 的证明。特别是 `pm8150_l17` 此刻 2.504V，而旧版 sysfs 报告最大 3.008V，不能自行取最大值。
+
+还观察到 `pm8150_l5_ao`、`pm8150_l12_ao` 等虚拟/投票变体；它们不等于可再创建一个独立物理 LDO。带 `_level` 名称的 QCOM 电源投票有时报告 `microvolts=16/64/256` 等非普通电压量，不能换算成伏特后用于引脚供电。
+
+`ufs_card_gdsc`、`ufs_phy_gdsc` 的 regulator 包装节点都报告为 `disabled`，且没有 `microvolts` 属性；这和已在正常系统下工作的 UFS 控制器并不矛盾。单独的 GDSC wrapper 状态不能判定硬件/存储是否工作，需要分别核对 power-domain runtime 状态和实际 UFS 驱动/块设备。Type-C 保持当时的 device/sink，USB `online=1` / `type=USB_PD`，旧版 USB 框架报告 `voltage_max=5V` / `current_max=1.55A`，这些上限不是独立的电压、电流实时测量，也不能当作已协商的 PD PDO。
+
+### 自动复核与门禁
+
+```powershell
+python scripts/mainline_p1b_observations.py
+# 可选：仅在本地将归纳后的 7 轨状态与原始报告一一比对；不上传或复制原 JSON：
+python scripts/mainline_p1b_observations.py --report "$env:USERPROFILE\Desktop\umi-p1b-power.json"
+```
+
+校验器核对 **七个不同实体轨、八条旧版供电引用、当前状态及快照约束**，拒绝异常、缺失、虚拟变体混入，也始终保留 `safe_to_flash=false`、`safe_board_voltage_ranges_verified=false` 与 `rpmh_binding_verified=false`。若第二条命令使用的文件是旧的零稳压器报告，会正确拒绝；需要选中最新的 `umi-p1b-power(1).json` 路径。这不是可启动电源树或已启用 Linux 6.12 UFS。
+
+### P1c 前真正尚缺的内容
+
+- UFS：PM8150/LDO/SMPS 在主线 `qcom-rpmh-regulator` 的节点地址、SMD/RPMh ID、父供电关系、IOMMU/power-domain/clock、请求负载与启用顺序，不能只凭名称创建 `vreg_l17a` 之类 phandle。
+- USB：PM8150B Type-C PD/角色和 ext_5v_boost 的硬件拓扑、连接器 graph、VBUS source/sink 操作权限与 USB2 PHY 旧版调校。旧内核的 USB_PD 只能证明旧驱动当前工作。
+- 恢复门禁：仍缺可靠的可回滚启动日志通道及统一 Boot/DTBO 分析；P1a 的六个 UFS/USB/PHY 节点继续保持 `disabled`，不能生成可刷写内核镜像。
+
+**阶段更新：`P1B_LEGACY_7_RAILS_OBSERVED`，`P1B_8_SUPPLY_LINKS_ACCOUNTED`，`P1B_VOLTAGE_FOR_MAINLINE_UNVERIFIED`，`NO_612_BOOT`，`SAFE_TO_FLASH_FALSE`。**
