@@ -12,6 +12,7 @@
 | 证据 | [v3.3.1 CI 报告](V331_CI_RESULTS_20261015.md) | 构建、镜像校验和 SHA-256 |
 | 测试 | [首次自动安装验收协议](V331_FIRST_INSTALL_TEST_PROTOCOL.md) | 无预装 ksud 的安全测试与回滚 |
 | 深入 | [SELinux 4.19 移植](SELINUX_419_PORT.md) | 特定 API 和安全风险 |
+| 维护 | [工作流维护](CI_WORKFLOW_MAINTENANCE.md) | CI 触发条件、文档检查与优化路线 |
 | 历史 | [开发历史与故障档案](history/README.md) | TEST2、首版启动失败、Manager 原型 |
 
 **文档状态标记：**“命令回显”有真实设备或 CI 输出，“测试者确认”代表已经报告成功但未必提供原始全流程日志，“静态审计 BLOCK”表示代码安全分析尚未签收。这三类证据不能互相代替。

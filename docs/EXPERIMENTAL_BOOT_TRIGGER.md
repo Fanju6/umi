@@ -1,3 +1,5 @@
+> **历史 TEST2 阶段说明：** 下文记录当时尚未真机验收的阶段。官方 KernelSU v3.3.0 TEST2 此后已完成真机开机、Root、授权隔离与重启测试；本文件仍只用于 TEST2 工作流历史触发，不代表当前 v3.3.1 的使用状态。
+
 # Xiaomi Mi 10 umi · 官方 KernelSU 3.3.0 实验性 boot.img 构建
 
 **实验风险：内核已经编译成功，但从未在当前 Android 16 真机启动。SELinux、SID/AVC、Manager/Seccomp 仍未通过运行时验收。实验可能导致设备无法启动，且无法保证恢复过程没有数据损失。**
