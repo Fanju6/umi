@@ -20,6 +20,9 @@
 
 **P1f 进展（2026-10-16）：** [旧 UFS 特殊 regulator 生命周期审计](P1F_UFS_LIFECYCLE.md) 进一步核对固定 Linux 4.19 UFS driver 的初始化、Link OFF、Hibern8 与恢复：vddp-ref-clk 有实际 enable/disable；vccq-parent 是带 auto BKOPS 条件的负载投票，而非直接 enable。S8C 还被旧 WLAN/BT DTS 消费引用。对比主线 Linux 6.12 的标准 regulator 处理，两个额外 Vendor 投票仍未完成电气等价审查，继续禁止使能硬件。
 
+
+**P1g 进展（2026-10-16）：** [umi 非 A/B 恢复与早期日志安全门禁](P1G_RECOVERY_LOG_GATES.md) 将 P0b 的分区布局观察、旧 DTS UART 控制器启用、XBL/UEFI 保留日志区与真正能用的串口/Pstore 区分开；新增只读可选探针、18 项单测和固定 SHA 跨源码 CI。未验证恢复镜像、Recovery 可用性、实体 UART/earlycon、pstore 跨故障保留。当前仍不允许尝试主线启动或刷机，且不修改既有 DTS。
+
 ## 已直接核对的源码
 
 | 轨道 | 固定来源 | 可证事实 |

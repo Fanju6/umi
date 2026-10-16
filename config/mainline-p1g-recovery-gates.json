@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "stage": "P1g",
+  "device": "umi",
+  "locked": {
+    "vendor": "71b13e62f057a649b77fe4062feb73ee72ad609c",
+    "upstream": "adc218676eef25575469234709c2d87185ca223a"
+  },
+  "legacy_device_evidence": {
+    "ab_update": false,
+    "slot_suffix": null,
+    "partition_names_seen": [
+      "boot",
+      "dtbo",
+      "recovery",
+      "super",
+      "vbmeta"
+    ],
+    "vendor_boot_partition_seen": false,
+    "boot_header_version_reported": 2,
+    "boot_header_image_parsed_in_this_stage": false,
+    "bootloader_unlock_verified": false,
+    "fastboot_boot_supported_verified": false,
+    "recovery_boot_tested": false,
+    "known_good_image_verified": false,
+    "known_good_restore_tested": false
+  },
+  "source_evidence": {
+    "vendor_common_enabled_uarts": [
+      "qupv3_se12_2uart",
+      "qupv3_se6_4uart"
+    ],
+    "uart_pad_mapping_confirmed": false,
+    "uart_connector_confirmed": false,
+    "vendor_xbl_log_region": "res_xbl_uefi_log_region@80880000",
+    "xbl_log_proves_pstore": false,
+    "upstream_sm8250_soc_has_explicit_ramoops": false,
+    "usable_pstore_region_verified": false
+  },
+  "runtime_logging": {
+    "pstore_mount_observed": null,
+    "pstore_record_types_observed": null,
+    "pstore_survived_reboot_or_crash_verified": false,
+    "uart_earlycon_verified": false,
+    "usb_early_boot_logs_verified": false
+  },
+  "gates": {
+    "non_ab_partition_layout_supported": true,
+    "recovery_boot_verified": false,
+    "known_good_restoration_verified": false,
+    "early_error_log_capture_verified": false,
+    "mainline_ufs_pmics_ready": false,
+    "final_dtbo_verified": false,
+    "safe_to_attempt_mainline_boot": false,
+    "safe_to_flash": false
+  }
+}

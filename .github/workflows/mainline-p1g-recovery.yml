@@ -1,0 +1,57 @@
+name: umi P1g recovery and early-log evidence gate
+
+on:
+  pull_request:
+    paths:
+      - 'config/mainline-p1g-recovery-gates.json'
+      - 'scripts/mainline_p1g_recovery_audit.py'
+      - 'scripts/mainline_p1g_log_probe.py'
+      - 'tests/test_mainline_p1g.py'
+      - 'docs/mainline-port/P1G_RECOVERY_LOG_GATES.md'
+      - 'docs/mainline-port/README.md'
+      - '.github/workflows/mainline-p1g-recovery.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  recovery-gate:
+    name: P1g pinned UART/XBL source and offline fail-closed tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run offline P1g/P1f/P1e gates without any device
+        run: |
+          set -euo pipefail
+          python3 scripts/mainline_p1g_recovery_audit.py
+          python3 -m unittest discover -s tests -p test_mainline_p1g.py -v
+          python3 scripts/mainline_p1f_ufs_lifecycle.py
+          python3 -m unittest discover -s tests -p test_mainline_p1f.py -v
+          python3 scripts/mainline_p1e_ufs_audit.py
+      - name: Fetch pinned UART/log device trees only
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/umi-p1g
+          vendor=71b13e62f057a649b77fe4062feb73ee72ad609c
+          upstream=adc218676eef25575469234709c2d87185ca223a
+          getpin() {
+            gh api --header 'Accept: application/vnd.github.raw+json' \
+              "repos/$1/contents/$2?ref=$3" > "/tmp/umi-p1g/$4"
+            test -s "/tmp/umi-p1g/$4"
+          }
+          getpin LineageOS/android_kernel_xiaomi_sm8250 arch/arm64/boot/dts/vendor/qcom/xiaomi-sm8250-common.dtsi "$vendor" vendor-common
+          getpin LineageOS/android_kernel_xiaomi_sm8250 arch/arm64/boot/dts/vendor/qcom/kona.dtsi "$vendor" vendor-kona
+          getpin torvalds/linux arch/arm64/boot/dts/qcom/sm8250.dtsi "$upstream" mainline-soc
+      - name: Cross-check source claims without enabling any hardware
+        run: |
+          set -euo pipefail
+          python3 scripts/mainline_p1g_recovery_audit.py \
+            --vendor-common /tmp/umi-p1g/vendor-common \
+            --vendor-kona /tmp/umi-p1g/vendor-kona \
+            --mainline-soc /tmp/umi-p1g/mainline-soc
+          echo 'P1g is evidence only: UART wiring/ramoops/recovery remain unproven, safe_to_flash=false.' >> "$GITHUB_STEP_SUMMARY"
