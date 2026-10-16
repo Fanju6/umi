@@ -55,7 +55,7 @@ jobs:
           python3 -m pip install --disable-pip-version-check dtschema==2026.9
           export PATH="$HOME/.local/bin:$PATH"
           dt-mk-schema -j upstream/Documentation/devicetree/bindings/reserved-memory/ > /tmp/umi-reserved-schema.json
-          dt-validate -s /tmp/umi-reserved-schema.json /tmp/umi-p0c-offline.dtb
+          dt-validate -l reserved-memory -s /tmp/umi-reserved-schema.json /tmp/umi-p0c-offline.dtb
       - name: Research safety summary
         if: always()
         run: |
