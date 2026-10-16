@@ -30,3 +30,7 @@
 - `experimental-boot.yml` 只有 `main` 上修改 TEST2 触发文件才会自动运行。
 - `experimental-v331-boot.yml` 只有 `experiment/v331-manager-fd-bootstrap` 上修改对应触发文件才会自动运行。
 - 两者继续保留 `workflow_dispatch` 和原有 SHA/分支运行时断言，不能通过换分支绕过源码与 ROM 检查；更不自动刷机。
+
+## 文案与功能状态分离
+
+早期 `prepare_sources.sh` 和 `build_kernel.sh` 仍会打印“SELinux 完全未实现”“尚未经真机验证”等开发初期提示。现只校正文案：源码准备阶段提示后续补丁/审计仍需完成；编译阶段明确只输出内核 Image 而不是 boot.img。**不修改版本锁定、Kbuild/Clang 参数、任何兼容 C 补丁或镜像封装逻辑**。具体设备验收以 `docs/STATUS.md` 为准。

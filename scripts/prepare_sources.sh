@@ -45,7 +45,7 @@ config="$kernel/arch/arm64/configs/vendor/xiaomi/umi.config"
 if ! grep -Eq '^CONFIG_KSU=y$' "$config"; then
   cat >> "$config" <<'EOF'
 
-# Experimental official KernelSU integration for umi (build-time only)
+# Official KernelSU integration for umi (pinned upstream; review required)
 CONFIG_KPROBES=y
 CONFIG_KRETPROBES=y
 CONFIG_KSU=y
@@ -56,4 +56,4 @@ fi
 printf 'LineageOS kernel: %s\n' "$(git -C "$kernel" rev-parse HEAD)"
 printf 'KernelSU:          %s\n' "$(git -C "$ksu" rev-parse HEAD)"
 echo "Integrated sources: $workdir"
-echo "WARNING: SELinux compatibility is not yet implemented; do not flash."
+echo "提示：这是尚未应用全部 4.19 兼容补丁的初始源码；后续必须完成补丁、构建和审计。"
