@@ -1,3 +1,5 @@
+> **历史 v3.3.0 首装问题：** 这份文档保留 TEST2 当时的真实故障和人工补救方法。v3.3.1 Manager 无预装 ksud 的自动安装现已获测试者确认；详见 [真机验收](V331_REAL_DEVICE_ACCEPTANCE.md)。
+
 # KernelSU 3.3.0 on umi: 首次自动部署 ksud 的真实缺口
 
 状态：**TEST2 已成功启动、管理员正常、普通应用 su 授权/拒绝/恢复及跨重启有效**，但首次刷入仅替换 Kernel 时，需要使用 Rooted debugging 运行官方 `ksud install`。不能把此体验包装成完整开箱即用 Root。

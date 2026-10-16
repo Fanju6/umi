@@ -1,4 +1,6 @@
-# umi / KernelSU v3.3.1 首次安装真机验收协议（尚未执行）
+# umi / KernelSU v3.3.1 首次安装真机验收协议
+
+**2026-10-16 现状：**测试者已明确确认官方 v3.3.1 Manager 能在未预装 ksud、无需 adb root 或人工部署时首次完成自动安装并正常提权。此协议保留安全复现和回滚准则；FD Hook 因果归因及安全审计仍未签收。见 [真机验收记录](V331_REAL_DEVICE_ACCEPTANCE.md)。
 
 ## 状态与边界
 
@@ -35,6 +37,6 @@
 | 核查 | 当前判定 |
 | --- | --- |
 | TEST2 v3.3.0 真机 Root | 历史已通过，不可转移结论 |
-| KernelSU v3.3.1 纯官方升级 | 全量 CI 与真机尚需分别验收 |
-| PR #4 post-exec task_work FD 实验 | 静态安全修复已提交，首次自动 ksud 未经真机验证 |
+| KernelSU v3.3.1 升级 | 完整 CI 通过；指定 umi 的基本 Root 真机测试通过 |
+| PR #4 post-exec task_work FD 适配 | 首次自动安装已由测试者确认；FD 具体机制和静态安全审计仍待完善 |
 | v3.3.1 稳定发布 | **阻止** |
