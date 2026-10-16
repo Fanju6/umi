@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "phase": "P1b",
+  "device": "umi",
+  "date": "2026-10-16",
+  "upstream": {
+    "repo": "torvalds/linux",
+    "sha": "adc218676eef25575469234709c2d87185ca223a"
+  },
+  "vendor": {
+    "repo": "LineageOS/android_kernel_xiaomi_sm8250",
+    "sha": "71b13e62f057a649b77fe4062feb73ee72ad609c"
+  },
+  "rails": [
+    {
+      "consumer": "ufs_mem_hc",
+      "property": "vcc-supply",
+      "legacy": "pm8150_l17",
+      "candidate": "pm8150 ldo17",
+      "live_voltage_verified": false
+    },
+    {
+      "consumer": "ufs_mem_hc",
+      "property": "vccq-supply",
+      "legacy": "pm8150_l6",
+      "candidate": "pm8150 ldo6",
+      "live_voltage_verified": false
+    },
+    {
+      "consumer": "ufs_mem_hc",
+      "property": "vccq2-supply",
+      "legacy": "pm8150_s4",
+      "candidate": "pm8150 smps4",
+      "live_voltage_verified": false
+    },
+    {
+      "consumer": "ufs_mem_phy",
+      "property": "vdda-phy-supply",
+      "legacy": "pm8150_l5",
+      "candidate": "pm8150 ldo5",
+      "live_voltage_verified": false
+    },
+    {
+      "consumer": "ufs_mem_phy",
+      "property": "vdda-pll-supply",
+      "legacy": "pm8150_l9",
+      "candidate": "pm8150 ldo9",
+      "live_voltage_verified": false
+    },
+    {
+      "consumer": "usb_1_hsphy",
+      "property": "vdd-supply",
+      "legacy": "pm8150_l5",
+      "candidate": "pm8150 ldo5",
+      "live_voltage_verified": false
+    },
+    {
+      "consumer": "usb_1_hsphy",
+      "property": "vdda18-supply",
+      "legacy": "pm8150_l12",
+      "candidate": "pm8150 ldo12",
+      "live_voltage_verified": false
+    },
+    {
+      "consumer": "usb_1_hsphy",
+      "property": "vdda33-supply",
+      "legacy": "pm8150_l2",
+      "candidate": "pm8150 ldo2",
+      "live_voltage_verified": false
+    }
+  ],
+  "typec": {
+    "legacy": "pm8150b_pdphy + ext_5v_boost + custom charging",
+    "upstream_typec": "pm8150b_typec",
+    "upstream_vbus": "pm8150b_vbus",
+    "upstream_default_disabled": true,
+    "role_graph_verified": false
+  },
+  "evidence": "pinned DTS only; candidates are not measured voltages or verified phandles",
+  "safety": {
+    "read_only": true,
+    "safe_to_flash": false,
+    "ufs_enabled": false,
+    "usb_enabled": false,
+    "regulators_verified": false,
+    "boot_image_available": false
+  }
+}
