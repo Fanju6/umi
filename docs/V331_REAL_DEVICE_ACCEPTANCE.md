@@ -118,8 +118,24 @@ getenforce: Enforcing
 
 **仍未证明**：当前设备本来已有 v3.3.0 `/data/adb/ksud`；此次即便成功更新成 v3.3.1，也不能证明没有 `ksud` 的首次安装能自动完成，尤其不能将实验 `post_exec_task_work_419` 驱动 FD 的运行视为已单独证明。模块挂载、SELinux 策略增量更改、长时间负载稳定性、安全性审计和多轮重启也未验证。不删除现有 `ksud`，不自动刷机，不清除实验 PR 的 Draft 或安全发布阻塞项。
 
+## 2026-10-16：剩余三项由测试者反馈正常（具体前置条件与日志待补）
+
+在此前 `V331_BASIC_ROOT_ACCEPTANCE_PASSED_USER_CONFIRMED` 后，测试者针对剩余三项回复：“剩下的三个问题也正常”。根据紧邻此前的测试清单，这三项分别为：
+
+1. **首次自动初始化**：声称无预装 `ksud` 情况下官方 Manager 能自主安装并完成 Root 初始化，反馈正常。
+2. **模块与 SELinux 策略**：模块安装、挂载/启动脚本与策略修改等功能，反馈正常。
+3. **长期稳定性**：多次重启、正常使用、异常日志检查，反馈正常。
+
+**证据等级：仅有用户对三项的总括性确认**，本轮尚无各项具体步骤、起始状态、模块名称与日志/持续运行时长。务必和前面已有原始命令输出的基础 Root 验收区分；不能写成上述测试已经自动采集日志或经过受控压力测试。
+
+**首装机制仍需一个关键前提证明**：此机曾在 v3.3.0 TEST2 阶段手动安装过 `/data/adb/ksud`。此前观察到 v3.3.1 的 Manager 内置 ELF 和已部署 ksud 哈希一致，只能证明最终状态，不能单凭此事实区分“覆盖升级”与“原本不存在文件的首次自举”。后续只需补充测试**开始前已经验证文件不存在**（以及如何形成并确认独立、可回滚的干净状态），并注明未使用 `adb root`、手动复制或 `ksud install` 等补救操作。没有这些证据时保持 `FIRST_INSTALL_REPORTED_OK_PRECONDITION_UNCONFIRMED`，而非 `FIRST_INSTALL_INDEPENDENTLY_CONFIRMED`。
+
+模块/SELinux 和稳定性可分别标注 `MODULE_SELINUX_USER_REPORTED_OK`、`STABILITY_USER_REPORTED_OK`；当前信息不足以明确具体模块生命周期、策略规则、重启次数、压力条件。鉴于审计仍有 `selinux-abi` / `manager-handshake` 静态 BLOCK，**不可仅凭反馈解除发布安全门禁或宣称整个系统已经达到稳定版标准**。
+
+当前设备工作状态正常：继续保持 `/data/adb/ksud` 和可恢复的 boot 备份，不做删除操作；PR #4 继续 Draft，main 与 TEST2 不修改。
+
 ## 发布门禁
 
-当前已由 ADB 和第三方终端原始回显确认 v3.3.1 正常启动、SELinux Enforcing、第三方应用 KernelSU Root、已安装 ksud 标签及其与 Manager 内置 ELF 的 SHA-256 一致；Root 授权撤销/恢复、正常重启后 Root 与 ksud 哈希保持由测试者明确回复全部成功。因此 v3.3.1 **基础 Root 功能验收通过（含用户确认的授权及重启回归）**。但无预装 ksud 的首次自举、模块、SELinux 策略生命周期及长期稳定性仍未验证。PR #3、PR #4 仍保持 Draft；特别是 PR #4 的 `manager-handshake`、`selinux-abi` 静态阻塞不能因本次开机成功而自动清除。
+当前已由 ADB 和第三方终端原始回显确认 v3.3.1 正常启动、SELinux Enforcing、第三方应用 KernelSU Root、已安装 ksud 标签及其与 Manager 内置 ELF 的 SHA-256 一致；Root 授权撤销/恢复、正常重启后 Root 与 ksud 哈希保持由测试者明确回复全部成功。因此 v3.3.1 **基础 Root 功能验收通过（含用户确认的授权及重启回归）**。此外测试者已反馈首次安装、模块与 SELinux 策略、长期稳定性也正常；这三项暂无操作细节和原始日志，首次安装的无旧 ksud 前置状态尤其尚需核实，故只能列为用户反馈通过，不能列为独立证据充分的最终验收。PR #3、PR #4 仍保持 Draft；特别是 PR #4 的 `manager-handshake`、`selinux-abi` 静态阻塞不能因本次开机成功而自动清除。
 
 有关设备备份、回滚、专用首装验证步骤，继续参照 `docs/V331_FIRST_INSTALL_TEST_PROTOCOL.md`。
