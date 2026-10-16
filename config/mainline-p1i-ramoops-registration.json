@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "stage": "P1i",
+  "device": "umi",
+  "evidence": {
+    "source": "P0c 34-node running-device reserved-memory metadata + user P1h verified report summary",
+    "legacy_419_pstore_mounted": true,
+    "legacy_record_classes_seen": [
+      "console",
+      "pmsg"
+    ],
+    "p0c_fixed_nodes_count": 22,
+    "p0c_dynamic_nodes_count": 12,
+    "p0c_named_ramoops_nodes": 0,
+    "named_ramoops_absence_proves_no_backend": false,
+    "pstore_file_name_proves_physical_layout": false,
+    "physical_address": null,
+    "physical_size": null,
+    "backend_registration_method": null,
+    "crash_retention_verified": false
+  },
+  "next_probe": {
+    "opt_in_required": true,
+    "requires_root": false,
+    "reads_pstore_contents": false,
+    "reads_physical_region": false,
+    "reads_dt_reg_values": false,
+    "checks": [
+      "platform_ramoops_device_name",
+      "ramoops_dt_compatible_candidate",
+      "ramoops_module_parameters_dir"
+    ],
+    "observation_not_proof": true
+  },
+  "gates": {
+    "memory_mapping_verified": false,
+    "legacy_pstore_reuse_in_mainline_verified": false,
+    "early_logging_reliability_verified": false,
+    "recovery_path_verified": false,
+    "ufs_pmics_verified": false,
+    "safe_to_attempt_mainline_boot": false,
+    "safe_to_flash": false
+  }
+}

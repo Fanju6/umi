@@ -26,6 +26,9 @@
 
 **P1h 进展（2026-10-16）：** [umi 实测 Pstore/Ramoops 摘要及 6.12 源码对照](P1H_PSTORE_EVIDENCE.md) 确认现有 4.19 系统可挂载 Pstore，用户只读探针可见 `console-ramoops*` 与 `pmsg-ramoops*` 两类记录，但未验证跨重启/崩溃保留、实际 RAM 后端及内存地址。对比主线 6.12 的 `fs/pstore/ram.c` 与 `ramoops.yaml`，保留所有供电、物理地址、恢复及刷机门禁；新增本地完整脱敏报告校验、负向测试和固定源码 CI。
 
+
+**P1i 进展（2026-10-16）：** [旧 4.19 Pstore 注册路径的只读证据探针](P1I_RAMOOPS_REGISTRATION.md)：P0c 实测的 34 个 reserved-memory 节点里没有名为 `ramoops` 的节点，但 P1g/P1h 已确认当前旧内核挂载 Pstore 并暴露 `console`/`pmsg` 记录。新增不提权、必须显式执行的设备元数据探针及离线回归，只观察 platform device / DT compatible / 内核参数目录存在性，不读取物理地址、日志正文或分区。不改变任何 DTS 与启动/刷机安全门禁。
+
 ## 已直接核对的源码
 
 | 轨道 | 固定来源 | 可证事实 |

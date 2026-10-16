@@ -1,0 +1,33 @@
+name: umi P1i identify ramoops metadata registration path
+
+on:
+  pull_request:
+    paths:
+      - 'config/mainline-p1i-ramoops-registration.json'
+      - 'scripts/mainline_p1i_ramoops_probe.py'
+      - 'scripts/mainline_p1i_ramoops_audit.py'
+      - 'tests/test_mainline_p1i.py'
+      - 'docs/mainline-port/P1I_RAMOOPS_REGISTRATION.md'
+      - 'docs/mainline-port/README.md'
+      - '.github/workflows/mainline-p1i-ramoops.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: P1i 34-node gap and opt-in probe simulation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: P1i offline source-map audit and negative tests
+        run: |
+          set -euo pipefail
+          python3 scripts/mainline_p1i_ramoops_audit.py
+          python3 -m unittest discover -s tests -p 'test_mainline_p1i.py' -v
+          python3 scripts/mainline_p1h_pstore_audit.py
+          python3 -m unittest discover -s tests -p 'test_mainline_p1h.py' -v
+          python3 scripts/mainline_p1g_recovery_audit.py
+          echo 'Only offline checks were run. No hardware/DT reg/pstore data read; safe_to_flash=false.' >> "$GITHUB_STEP_SUMMARY"
