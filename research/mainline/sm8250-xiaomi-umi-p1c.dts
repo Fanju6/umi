@@ -1,0 +1,31 @@
+// SPDX-License-Identifier: BSD-3-Clause
+/*
+ * Xiaomi Mi 10 umi P1c RPMh topology RESEARCH-ONLY / NOT BOOTABLE.
+ *
+ * Builds on P1a. A disabled PM8150 RPMh provider has empty regulator
+ * children only to validate Linux v6.12 binding names and output nodes.
+ *
+ * WARNING: PMIC ID "a" is an unverified elish reference, NOT umi evidence.
+ * NO parent-supply wiring, voltage constraints, regulator boot/always-on,
+ * real consumer phandles, USB/PD or UFS/USB enablement are provided.
+ * DO NOT FLASH. Do not include in production DTS Makefiles.
+ */
+#include "sm8250-xiaomi-umi-p1a.dts"
+
+&apps_rsc {
+	umi_p1c_pm8150: regulators-umi-reference {
+		compatible = "qcom,pm8150-rpmh-regulators";
+		/* Reference from elish only; umi PMIC ID remains unverified. */
+		qcom,pmic-id = "a";
+		status = "disabled";
+
+		/* Empty output nodes: NO voltage or parent phandle claims. */
+		umi_p1c_s4: smps4 {};
+		umi_p1c_l2: ldo2 {};
+		umi_p1c_l5: ldo5 {};
+		umi_p1c_l6: ldo6 {};
+		umi_p1c_l9: ldo9 {};
+		umi_p1c_l12: ldo12 {};
+		umi_p1c_l17: ldo17 {};
+	};
+};
