@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "phase": "P1b-live",
+  "device": "umi",
+  "collected": "2026-10-16",
+  "source": {
+    "origin": "user-provided non-root adb sysfs report",
+    "kernel_family": "Linux 4.19.325",
+    "report_storage": "not committed; derived non-identifying board facts only",
+    "regulator_entries_observed": 56
+  },
+  "rails": [
+    {
+      "name": "pm8150_l2",
+      "regulator_state": "enabled",
+      "observed_microvolts": 3072000,
+      "reported_min_microvolts": 3072000,
+      "reported_max_microvolts": 3072000,
+      "units": "uV",
+      "source": "Linux 4.19 regulator sysfs; regulator_set_voltage/current constraints not validated"
+    },
+    {
+      "name": "pm8150_l5",
+      "regulator_state": "enabled",
+      "observed_microvolts": 880000,
+      "reported_min_microvolts": 880000,
+      "reported_max_microvolts": 880000,
+      "units": "uV",
+      "source": "Linux 4.19 regulator sysfs; regulator_set_voltage/current constraints not validated"
+    },
+    {
+      "name": "pm8150_l6",
+      "regulator_state": "enabled",
+      "observed_microvolts": 1200000,
+      "reported_min_microvolts": 1200000,
+      "reported_max_microvolts": 1200000,
+      "units": "uV",
+      "source": "Linux 4.19 regulator sysfs; regulator_set_voltage/current constraints not validated"
+    },
+    {
+      "name": "pm8150_l9",
+      "regulator_state": "enabled",
+      "observed_microvolts": 1200000,
+      "reported_min_microvolts": 1200000,
+      "reported_max_microvolts": 1200000,
+      "units": "uV",
+      "source": "Linux 4.19 regulator sysfs; regulator_set_voltage/current constraints not validated"
+    },
+    {
+      "name": "pm8150_l12",
+      "regulator_state": "enabled",
+      "observed_microvolts": 1800000,
+      "reported_min_microvolts": 1800000,
+      "reported_max_microvolts": 1800000,
+      "units": "uV",
+      "source": "Linux 4.19 regulator sysfs; regulator_set_voltage/current constraints not validated"
+    },
+    {
+      "name": "pm8150_l17",
+      "regulator_state": "enabled",
+      "observed_microvolts": 2504000,
+      "reported_min_microvolts": 2496000,
+      "reported_max_microvolts": 3008000,
+      "units": "uV",
+      "source": "Linux 4.19 regulator sysfs; regulator_set_voltage/current constraints not validated"
+    },
+    {
+      "name": "pm8150_s4",
+      "regulator_state": "enabled",
+      "observed_microvolts": 1800000,
+      "reported_min_microvolts": 1800000,
+      "reported_max_microvolts": 1920000,
+      "units": "uV",
+      "source": "Linux 4.19 regulator sysfs; regulator_set_voltage/current constraints not validated"
+    }
+  ],
+  "additional_observations": {
+    "typec": {
+      "port": "port0",
+      "data_role": "device",
+      "power_role": "sink",
+      "port_capability": "dual",
+      "preferred_role": "sink"
+    },
+    "usb_power_supply": {
+      "type": "USB_PD",
+      "online": true,
+      "reported_voltage_max_uv": 5000000,
+      "reported_current_max_ua": 1550000,
+      "measurement_kind": "power_supply sysfs reported limits; NOT realtime voltmeter readings or proven negotiated PDO"
+    },
+    "ufs": {
+      "platform_node": "1d84000.ufshc",
+      "platform_status_property": "missing",
+      "ufs_card_gdsc": "disabled",
+      "ufs_phy_gdsc": "disabled",
+      "note": "GDSC regulator wrapper state cannot establish UFS runtime failure"
+    },
+    "virtual_rail_caution": [
+      "pm8150_l5_ao",
+      "pm8150_l12_ao",
+      "pm8150_l5_so",
+      "pm8150_l12_so"
+    ],
+    "level_rail_caution": "*_level values such as 16/64/256 are not conventional uV outputs"
+  },
+  "safety": {
+    "safe_to_flash": false,
+    "ufs_enabled_on_linux612": false,
+    "usb_enabled_on_linux612": false,
+    "safe_board_voltage_ranges_verified": false,
+    "rpmh_binding_verified": false,
+    "typec_connector_graph_verified": false
+  },
+  "limitations": [
+    "Observed 4.19 sysfs voltages are neither independent electrical measurements nor safe mainline regulator constraints.",
+    "Regulator ids (regulator.N) are volatile and intentionally omitted.",
+    "Snapshot USB role may change on cable insertion/removal; current sink/device does not confirm Linux 6.12 PD support."
+  ]
+}
