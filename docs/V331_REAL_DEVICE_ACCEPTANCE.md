@@ -105,8 +105,21 @@ getenforce: Enforcing
 
 **后续最低验收：** 在已备份设备和确认可回滚的条件下，先测试 MT 管理器应用关闭授权后退出所有旧 Root Session 的重新提权结果，恢复授权再测；正常重启后复测 `uid=0`、`Enforcing` 及 `ksud` 哈希。首次无 ksud 的 Manager 自动安装和 SELinux 策略/模块生命周期仍属于单独测试门禁。
 
+## 2026-10-16：Root 授权隔离与重启保持通过（用户确认）
+
+继 v3.3.1 的 `su -c id`、`ksud` SELinux 标签、官方 Manager 内置 ELF SHA-256 与已部署 ELF 一致、`getenforce=Enforcing` 均有原始终端输出之后，测试者按上一轮步骤完成以下两组操作，并回复“全部成功”：
+
+1. **授权隔离**：在官方 KernelSU v3.3.1 Manager 关闭 MT 管理器应用的 Root 权限，退出此前已有的 Root Shell，重新进入终端并尝试提权，未再取得 Root；随后恢复权限，重新取得 Root。
+2. **重启保持**：正常重启后再次验证 Root Shell 可取得 `uid=0(root)`、`getenforce=Enforcing`、`sys.boot_completed=1` 且 `/data/adb/ksud` 的 SHA-256 与重启前一致。
+
+**证据等级**：这两组回归由测试者明确确认“全部成功”，尚未附重启后完整命令原始输出；此前的开机、Root、SELinux 与双 ELF SHA-256 对比则已有原始回显。不要将此用户确认改写为工具自动采集的日志或多轮稳定性测试。
+
+**阶段性结论：`V331_BASIC_ROOT_ACCEPTANCE_PASSED_USER_CONFIRMED`**。已覆盖正常 Android 16 启动、Manager v3.3.1 版本识别、实际第三方应用 KernelSU Root、Enforcing、`ksu_file` 标签、与 Manager 内置同版 `ksud`、授权关闭/恢复及一次完整重启后的 Root 保持。
+
+**仍未证明**：当前设备本来已有 v3.3.0 `/data/adb/ksud`；此次即便成功更新成 v3.3.1，也不能证明没有 `ksud` 的首次安装能自动完成，尤其不能将实验 `post_exec_task_work_419` 驱动 FD 的运行视为已单独证明。模块挂载、SELinux 策略增量更改、长时间负载稳定性、安全性审计和多轮重启也未验证。不删除现有 `ksud`，不自动刷机，不清除实验 PR 的 Draft 或安全发布阻塞项。
+
 ## 发布门禁
 
-当前已由用户的只读 ADB 原始输出验证正常完成 Android 启动、SELinux Enforcing 及官方 Manager APK v3.3.1 安装版本，且已确认第三方应用终端的 KernelSU Root 上下文与 Enforcing；ksud 文件和标签已由真机实测确认；Manager 随包的 arm64 ELF 与已部署 ksud 的 SHA-256 已被真机证实一致；授权撤销、重启后状态以及无预装 ksud 的首次初始化仍待单独验证。PR #3、PR #4 仍保持 Draft；特别是 PR #4 的 `manager-handshake`、`selinux-abi` 静态阻塞不能因本次开机成功而自动清除。
+当前已由 ADB 和第三方终端原始回显确认 v3.3.1 正常启动、SELinux Enforcing、第三方应用 KernelSU Root、已安装 ksud 标签及其与 Manager 内置 ELF 的 SHA-256 一致；Root 授权撤销/恢复、正常重启后 Root 与 ksud 哈希保持由测试者明确回复全部成功。因此 v3.3.1 **基础 Root 功能验收通过（含用户确认的授权及重启回归）**。但无预装 ksud 的首次自举、模块、SELinux 策略生命周期及长期稳定性仍未验证。PR #3、PR #4 仍保持 Draft；特别是 PR #4 的 `manager-handshake`、`selinux-abi` 静态阻塞不能因本次开机成功而自动清除。
 
 有关设备备份、回滚、专用首装验证步骤，继续参照 `docs/V331_FIRST_INSTALL_TEST_PROTOCOL.md`。
