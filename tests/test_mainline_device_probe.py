@@ -80,3 +80,16 @@ class DeviceProbeTests(unittest.TestCase):
         bad = fixture().replace(f"{probe.START}device__", f"{probe.START}device_wrong__")
         with self.assertRaises(ValueError):
             probe.parse_sections(bad)
+
+    def test_static_evidence_map_has_critical_addresses(self):
+        import json
+        d = json.loads((ROOT / "config/mainline-p0b-map.json").read_text(encoding="utf-8"))
+        self.assertEqual(d["device"], "umi")
+        self.assertFalse(d["safety"]["flash_allowed"])
+        self.assertFalse(d["safety"]["phone_live_fdt_verified"])
+        groups = {e["id"]: e for e in d["correlations"]}
+        self.assertEqual(groups["ufs_controller"]["vendor_reg_base"], "0x01d84000")
+        self.assertEqual(groups["ufs_controller"]["vendor_reg_base"], groups["ufs_controller"]["upstream_reg_base"])
+        self.assertEqual(groups["usb_dwc3_0"]["vendor_irq"], "GIC_SPI 133")
+        self.assertEqual(groups["reserved_xbl_aop"]["vendor_reg_base"], "0x80700000")
+        self.assertIn("0x80600000", groups["reserved_xbl_aop"]["contrasting_elish"])

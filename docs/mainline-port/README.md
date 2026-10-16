@@ -2,6 +2,8 @@
 
 > 状态：**静态研究，未移植、未编译内核、未刷机**。日期：2026-10-16。当前 `main` 的 Linux 4.19 + KernelSU v3.3.1 是已验证基线，保持不变。
 
+**P0b 进展（2026-10-16）：** 公开源码已核对 UFS、USB、PMIC 与关键 reserved-memory 对应地址；详见 [P0b 硬件映射表](P0B_HARDWARE_MAPPING.md)。同时新增不使用 Root、不读取私有标识符的 [umi 实机只读采集脚本](../../scripts/mainline_device_probe.py) 与回归测试。**实机数据仍待采集，不是已验证 Linux 6.12 可启动。**
+
 ## 已直接核对的源码
 
 | 轨道 | 固定来源 | 可证事实 |
@@ -32,7 +34,7 @@
 ## 建议的实施顺序
 
 1. **P0a（已完成：源码目录对照）**：固定 4.19、6.12、7.0、dagu 的 Git 提交，完成优先级设备矩阵。矩阵在 [`config/mainline-research.json`](../../config/mainline-research.json)；本页为人工评估。
-2. **P0b（下一步：源码树与设备事实验证）**：本地分别克隆固定提交；使用只读 [`scripts/mainline_inventory.py`](../../scripts/mainline_inventory.py) 检查每棵树的 SHA、必要文件及兼容字符串。再从现有 umi 读取设备树/启动分区信息并脱敏对比，禁止刷写。
+2. **P0b（已完成公开源码静态地址映射；实机待测）**：本地分别克隆固定提交；使用只读 [`scripts/mainline_inventory.py`](../../scripts/mainline_inventory.py) 检查每棵树的 SHA、必要文件及兼容字符串。再从现有 umi 读取设备树/启动分区信息并脱敏对比，禁止刷写。
 3. **P1（有足够证据后）**：单独尝试 Linux 6.12 minimal initramfs + USB 串口日志 + UFS 只读枚举；必须先确认真实 recovery 能力与 Pstore/UART，且仅在可恢复试验机上进行。
 4. **P2（独立）**：评估 Android 16 GKI 6.12 + 既有 umi Vendor/HAL 的兼容性；禁止因为纯 Linux 能启动便宣称 Android 可启动。
 5. **P3**：在新内核能稳定运行 Android 且 SELinux Enforcing 后再重新集成官方 KernelSU；4.19 专属补丁不得直接套用。

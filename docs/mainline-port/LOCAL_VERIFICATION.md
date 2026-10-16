@@ -28,6 +28,15 @@ python3 scripts/mainline_inventory.py --require-all \
 
 若上游的检查结果是 `sha_mismatch` / `file_matrix_mismatch`，任务将失败，必须人工复核，不得“自动补齐”或绕过校验。
 
+## P0b 实机信息（只读、无需 Root）
+
+```powershell
+adb devices
+py -3 scripts/mainline_device_probe.py --output umi-p0b-report.json
+```
+
+程序只记录白名单的属性、DT 节点名、平台 UFS/USB/部分 I2C 和电源组件名称，不包含 serial、IMEI、MAC、Android ID、原始 FDT、敏感配置或 userdata；参见 [P0b 映射说明](P0B_HARDWARE_MAPPING.md)。建议人工复核 JSON 后再分享。
+
 ## 第二轮需补充的设备事实
 
 - 只读记录当前 umi 的 `ro.boot` 分区布局、FDT 设备树内的面板与触控物料标识（脱敏）。
