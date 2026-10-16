@@ -16,6 +16,7 @@
 | 研究 | [SM8250 Linux 6.12 / 7.0 P0 对照](mainline-port/README.md) | 固定源码、驱动差异、风险与只读验证工具 |
 | 研究 | [umi Linux 6.12 P0c DTS 草案](mainline-port/P0C_DTS_DRAFT.md) | 非刷机设备树草稿和 34 节点数据采集说明 |
 | 研究 | [P0c 全 34 节点内存与真实 DTS 编译](mainline-port/P0C_FULL_MEMORY_AND_DTC.md) | 22 固定区间、12 动态池、6.12 DTS 实际编译与安全边界 |
+| 研究 | [P1a UFS/USB/PMIC 板级依赖](mainline-port/P1A_BOARD_DEPENDENCIES.md) | 固定源码对照、禁用态 DTS、供电与内存消费者门禁 |
 | 历史 | [开发历史与故障档案](history/README.md) | TEST2、首版启动失败、Manager 原型 |
 
 **文档状态标记：**“命令回显”有真实设备或 CI 输出，“测试者确认”代表已经报告成功但未必提供原始全流程日志，“静态审计 BLOCK”表示代码安全分析尚未签收。这三类证据不能互相代替。

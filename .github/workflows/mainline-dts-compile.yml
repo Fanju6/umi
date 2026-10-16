@@ -4,6 +4,9 @@ on:
   pull_request:
     paths:
       - 'research/mainline/**'
+      - 'config/mainline-p1a-dependencies.json'
+      - 'scripts/mainline_p1a_audit.py'
+      - 'tests/test_mainline_p1a.py'
       - 'config/mainline-umi-p0c-memory.json'
       - 'scripts/mainline_validate_p0c.py'
       - 'tests/test_mainline_validate_p0c.py'
@@ -24,6 +27,8 @@ jobs:
         run: |
           python3 scripts/mainline_validate_p0c.py
           python3 -m unittest discover -s tests -p test_mainline_validate_p0c.py -v
+          python3 scripts/mainline_p1a_audit.py
+          python3 -m unittest discover -s tests -p test_mainline_p1a.py -v
       - name: Install Device Tree Compiler
         run: sudo apt-get update && sudo apt-get install -y device-tree-compiler
       - name: Fetch locked Torvalds Linux v6.12 DTS headers only
@@ -48,6 +53,40 @@ jobs:
             fdtget -t x /tmp/umi-p0c-offline.dtb "/reserved-memory/$node" reg
           done
           echo 'Only DTS syntax and selected reg values checked. NOT BOOTABLE.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Verify pinned umi source dependencies (UFS, USB, PMIC, memory-region)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/umi-vendor
+          pinned=71b13e62f057a649b77fe4062feb73ee72ad609c
+          for file in xiaomi-sm8250-common.dtsi kona-usb.dtsi umi-sm8250.dtsi; do
+            curl --fail --location --silent --show-error --retry 3 \
+              "https://raw.githubusercontent.com/LineageOS/android_kernel_xiaomi_sm8250/${pinned}/arch/arm64/boot/dts/vendor/qcom/${file}" \
+              --output "/tmp/umi-vendor/${file}"
+            test -s "/tmp/umi-vendor/${file}"
+          done
+          python3 scripts/mainline_p1a_audit.py \
+            --upstream upstream/arch/arm64/boot/dts/qcom/sm8250.dtsi \
+            --vendor-root /tmp/umi-vendor
+      - name: Compile P1a offline-only board DTS; forbid enabled hardware
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp research/mainline/sm8250-xiaomi-umi-p1a.dts upstream/arch/arm64/boot/dts/qcom/
+          cpp -nostdinc -I upstream/include -I upstream/arch/arm64/boot/dts/qcom -undef -D__DTS__ -x assembler-with-cpp \
+            upstream/arch/arm64/boot/dts/qcom/sm8250-xiaomi-umi-p1a.dts /tmp/umi-p1a-preprocessed.dts
+          dtc -@ -I dts -O dtb -o /tmp/umi-p1a-offline.dtb /tmp/umi-p1a-preprocessed.dts
+          test -s /tmp/umi-p1a-offline.dtb
+          for node in /soc@0/ufshc@1d84000 /soc@0/phy@1d87000 \
+                      /soc@0/usb@a6f8800 /soc@0/usb@a6f8800/usb@a600000 \
+                      /soc@0/phy@88e3000 /soc@0/phy@88e8000; do
+            state=$(fdtget -t s /tmp/umi-p1a-offline.dtb "$node" status)
+            if [ "$state" != disabled ]; then
+              echo "Unexpected enabled P1a controller: $node ($state)"
+              exit 1
+            fi
+          done
+          echo 'P1a DTS compiles, 6 hardware nodes disabled; safe_to_flash=false' >> "$GITHUB_STEP_SUMMARY"
       - name: Optional reserved-memory schema diagnostics
         if: success()
         continue-on-error: true

@@ -6,6 +6,8 @@
 
 **P0c 进展（2026-10-16）：** 已建立 [34 节点白名单采集器、Linux 6.12 umi 非刷机 DTS 草案及回归门禁](P0C_DTS_DRAFT.md)。34 个节点的属性已经全部采集并核对：22 个固定区间（341.6875 MiB）与 12 个动态池（请求容量 348.125 MiB）。[最新内存分析与 DTS 验证](P0C_FULL_MEMORY_AND_DTC.md) 已记录真实 CPP/dtc/fdtget 编译通过，但绝不表示可在 umi 上启动。
 
+**P1a 进展（2026-10-16）：** 已编写 [UFS / USB / PMIC 与 `memory-region` 板级依赖对照](P1A_BOARD_DEPENDENCIES.md)。单独 DTS 草案把六个控制器和 PHY 显式保持 `disabled`，不填写未确认的 regulator 接线；随后将通过锁定源码审计及真实 DTS 编译验证。这并不代表 Linux 6.12 已能开机。
+
 ## 已直接核对的源码
 
 | 轨道 | 固定来源 | 可证事实 |
