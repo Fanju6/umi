@@ -1,18 +1,14 @@
 // SPDX-License-Identifier: BSD-3-Clause
 /*
- * Xiaomi Mi 10 umi — Linux 6.12 P0c OFFLINE-ONLY DTS SKELETON.
- *
- * NOT a bootable device-tree, NOT a validated board configuration.
- * No display, touch, PMIC supplies, UFS, USB, modem or charging are enabled.
- * Memory corrections below are real observed umi DT reg values.
- * DO NOT INSTALL, FLASH, or add this DTS to normal kernel Makefile targets.
+ * umi P0c OFFLINE-ONLY Linux 6.12 DTS SKELETON. NOT BOOTABLE / NOT FLASHABLE.
+ * NO BOARD ID, PMIC, UFS, USB, display, touch or charging configuration.
+ * Do NOT include this research DTS in any kernel production Makefile.
  */
-
 /dts-v1/;
 
 #include "sm8250.dtsi"
 
-/* Upstream SoC carveouts conflict with the current umi bootloader layout. */
+/* Replace only the five measured SoC carveouts that differ on umi. */
 /delete-node/ &xbl_aop_mem;
 /delete-node/ &slpi_mem;
 /delete-node/ &adsp_mem;
@@ -20,34 +16,53 @@
 /delete-node/ &cdsp_secure_heap;
 
 / {
-    model = "Xiaomi Mi 10 (umi) — P0c research skeleton, not for boot";
-    compatible = "xiaomi,umi", "qcom,sm8250";
+	model = "Xiaomi Mi 10 (umi) - OFFLINE-ONLY research skeleton";
+	compatible = "xiaomi,umi", "qcom,sm8250";
 
-    reserved-memory {
-        /* P0b+ live FDT reg measurements, not node-name guesses. */
-        xbl_aop_mem: xbl-aop@80600000 {
-            reg = <0x0 0x80600000 0x0 0x260000>;
-            no-map;
-        };
+	reserved-memory {
+		xbl_aop_mem: xbl-aop@80600000 {
+			reg = <0x0 0x80600000 0x0 0x260000>;
+			no-map;
+		};
+		slpi_mem: slpi@88c00000 {
+			reg = <0x0 0x88c00000 0x0 0x2f00000>;
+			no-map;
+		};
+		adsp_mem: adsp@8bb00000 {
+			reg = <0x0 0x8bb00000 0x0 0x2500000>;
+			no-map;
+		};
+		spss_mem: spss@8e000000 {
+			reg = <0x0 0x8e000000 0x0 0x100000>;
+			no-map;
+		};
+		cdsp_secure_heap: cdsp-secure-heap@8e100000 {
+			reg = <0x0 0x8e100000 0x0 0x4600000>;
+			no-map;
+		};
 
-        slpi_mem: slpi@88c00000 {
-            reg = <0x0 0x88c00000 0x0 0x2f00000>;
-            no-map;
-        };
-
-        adsp_mem: adsp@8bb00000 {
-            reg = <0x0 0x8bb00000 0x0 0x2500000>;
-            no-map;
-        };
-
-        spss_mem: spss@8e000000 {
-            reg = <0x0 0x8e000000 0x0 0x100000>;
-            no-map;
-        };
-
-        cdsp_secure_heap: cdsp-secure-heap@8e100000 {
-            reg = <0x0 0x8e100000 0x0 0x4600000>;
-            no-map;
-        };
-    };
+		/* Extra fixed umi DT nodes not present in upstream SoC defaults. */
+		xbl_uefi_log_mem: xbl-uefi-log@80880000 {
+			reg = <0x0 0x80880000 0x0 0x14000>;
+			no-map;
+		};
+		cont_splash_mem: cont-splash@9c000000 {
+			reg = <0x0 0x9c000000 0x0 0x2300000>;
+			/* live umi does not declare no-map here */
+		};
+		dfps_data_mem: dfps-data@9e300000 {
+			reg = <0x0 0x9e300000 0x0 0x100000>;
+			/* live umi does not declare no-map here */
+		};
+		disp_rdump_mem: disp-rdump@b0400000 {
+			reg = <0x0 0xb0400000 0x0 0x1000000>;
+			no-map;
+		};
+	};
 };
+
+/*
+ * The 12 dynamic regions (CMA, QSEE, secure display, modem DSP pools,
+ * etc.) are NOT converted to fixed reg values in this skeleton.
+ * size/alloc-ranges/driver bindings must be reviewed independently.
+ */

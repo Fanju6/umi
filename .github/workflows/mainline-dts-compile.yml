@@ -1,0 +1,60 @@
+name: umi Linux 6.12 DTS 离线编译验证
+
+on:
+  pull_request:
+    paths:
+      - 'research/mainline/**'
+      - 'config/mainline-umi-p0c-memory.json'
+      - 'scripts/mainline_validate_p0c.py'
+      - 'tests/test_mainline_validate_p0c.py'
+      - '.github/workflows/mainline-dts-compile.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compile:
+    name: Linux v6.12 固定源码 / cpp + dtc（不生成 boot.img）
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify umi P0c safety and map
+        run: |
+          python3 scripts/mainline_validate_p0c.py
+          python3 -m unittest discover -s tests -p test_mainline_validate_p0c.py -v
+      - name: Install Device Tree Compiler
+        run: sudo apt-get update && sudo apt-get install -y device-tree-compiler
+      - name: Fetch locked Torvalds Linux v6.12 DTS headers only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --quiet --no-checkout --sparse --filter=blob:none --depth=1 --branch v6.12 https://github.com/torvalds/linux.git upstream
+          git -C upstream sparse-checkout set arch/arm64/boot/dts/qcom include/dt-bindings Documentation/devicetree/bindings/reserved-memory
+          git -C upstream checkout --quiet --detach v6.12
+          actual=$(git -C upstream rev-parse HEAD)
+          expected=adc218676eef25575469234709c2d87185ca223a
+          test "$actual" = "$expected" || { echo "Upstream SHA mismatch $actual"; exit 1; }
+      - name: Compile offline research DTS
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp research/mainline/sm8250-xiaomi-umi-p0c.dts upstream/arch/arm64/boot/dts/qcom/
+          cpp -nostdinc -I upstream/include -I upstream/arch/arm64/boot/dts/qcom -undef -D__DTS__ -x assembler-with-cpp upstream/arch/arm64/boot/dts/qcom/sm8250-xiaomi-umi-p0c.dts /tmp/umi-p0c-preprocessed.dts
+          dtc -@ -I dts -O dtb -o /tmp/umi-p0c-offline.dtb /tmp/umi-p0c-preprocessed.dts
+          test -s /tmp/umi-p0c-offline.dtb
+          for node in xbl-aop@80600000 slpi@88c00000 adsp@8bb00000 spss@8e000000 cdsp-secure-heap@8e100000; do
+            fdtget -t x /tmp/umi-p0c-offline.dtb "/reserved-memory/$node" reg
+          done
+          echo 'Only DTS syntax and selected reg values checked. NOT BOOTABLE.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Optional reserved-memory schema diagnostics
+        if: success()
+        continue-on-error: true
+        run: |
+          python3 -m pip install --disable-pip-version-check dtschema
+          dt-validate -s upstream/Documentation/devicetree/bindings/reserved-memory/reserved-memory.yaml /tmp/umi-p0c-offline.dtb
+      - name: Research safety summary
+        if: always()
+        run: |
+          echo 'safe_to_flash=false; no boot.img or firmware generated; Linux 6.12 not tested on device' >> "$GITHUB_STEP_SUMMARY"
