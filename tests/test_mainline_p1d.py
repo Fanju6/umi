@@ -68,5 +68,5 @@ class P1dEvidenceTests(unittest.TestCase):
         self.assertEqual(self.graph["locked"]["upstream"], m.PIN_UPSTREAM)
 
     def test_source_reference_missing_is_hard_failure(self):
-        with self.assertRaisesRegex(ValueError, "include"):
+        with self.assertRaisesRegex(ValueError, "omits regulator source"):
             m.verify_sources(self.graph, "", "", "", "", "", "")

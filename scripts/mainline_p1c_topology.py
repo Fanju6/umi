@@ -108,8 +108,14 @@ def check_sources(binding, soc, elish):
     end = binding.find("\n  - if:", pos)
     scope = binding[pos:end if end > pos else None]
     for entry in RAILS.values():
-        if entry[1] + ": true" not in scope:
-            raise ValueError("PM8150 regulator parent supply name not in source: " + entry[1])
+        parent = entry[1]
+        # PM8150 smps supplies are authorized by YAML patternProperties,
+        # not enumerated as literal "vdd-s4-supply: true" keys.
+        listed = parent + ": true" in scope
+        s4_pattern = (parent == "vdd-s4-supply" and
+                      '"^vdd-s([1-9]|10)-supply$": true' in scope)
+        if not (listed or s4_pattern):
+            raise ValueError("PM8150 regulator parent supply name not in source: " + parent)
     if 'compatible = "qcom,pm8150-rpmh-regulators";' not in elish or 'qcom,pmic-id = "a";' not in elish:
         raise ValueError("PMIC-ID example not found in locked reference board")
     return True

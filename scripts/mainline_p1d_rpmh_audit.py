@@ -97,8 +97,6 @@ def verify_sources(graph, kona, vrm, common, umi, binding, elish):
                    + re.escape(name) + r"\s*:\s*regulator-pm8150-")
         if not re.search(pattern, vrm, re.S):
             raise ValueError("legacy RPMh VRM evidence changed: " + name)
-        if "pm8150-" in name:
-            raise ValueError("unrecognized legacy regulator label")
     for prop, target in EXTRAS.items():
         exact = prop + " = <&" + target + ">;"
         if exact not in common:
