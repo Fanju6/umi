@@ -62,12 +62,16 @@ def check_source(m, upstream, vendors):
         raise ValueError("required pinned vendor DTS not available")
     for x in m["hardware"]:
         label = x["upstream_label"]
-        if not re.search(r"\b" + re.escape(label) +
-                         r"\s*:\s*[\w,@-]+\s*\{", upstream):
+        match = re.search(r"\b" + re.escape(label) +
+                          r"\s*:\s*[\w,@-]+\s*\{", upstream)
+        if not match:
             raise ValueError("upstream SM8250 label missing: " + label)
+        # Verify address in the local controller header, not anywhere in the SoC file.
         addr = x["address"].lower().replace("0x", "")
-        if not re.search(r"\b0x0*" + re.escape(addr.lstrip("0")) + r"\b", upstream, re.I):
-            raise ValueError("upstream controller address missing: " + label)
+        local = upstream[match.end():match.end() + 450]
+        if not re.search(r"\breg\s*=\s*<[^;]*?\b0x0*" +
+                         re.escape(addr.lstrip("0")) + r"\b", local, re.I | re.S):
+            raise ValueError("upstream controller reg mismatch: " + label)
         vendor = vendors[x["vendor_file"]]
         for needle in x["vendor_pins"]:
             if needle not in vendor:

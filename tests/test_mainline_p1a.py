@@ -39,7 +39,10 @@ class P1aTests(unittest.TestCase):
     def test_detect_missing_controller_label_in_source(self):
         m = self.m
         fake = 'ufs_mem_hc: ufshc@1d84000 { reg = <0x01d84000>; };'
-        vendors = {x["vendor_file"]: "\n".join(x["vendor_pins"]) for x in m["hardware"]}
+        joined = {}
+        for x in m["hardware"]:
+            joined.setdefault(x["vendor_file"], []).extend(x["vendor_pins"])
+        vendors = {name: "\n".join(values) for name, values in joined.items()}
         with self.assertRaisesRegex(ValueError, "label missing"):
             audit.check_source(m, fake, vendors)
 
