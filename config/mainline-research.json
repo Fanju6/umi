@@ -175,6 +175,6 @@
     "boot_image_available": false,
     "mainline_umi_dts_available": false,
     "android_boot_verified": false,
-    "depends_on_vendor_hal": false
+    "depends_on_vendor_hal": true
   }
 }
