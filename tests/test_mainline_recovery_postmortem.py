@@ -129,6 +129,66 @@ class RecoveryPostmortemTests(unittest.TestCase):
             self.assertFalse(report["linux_612_boot_log_found"])
             self.assertIn("last_kmsg", report["not_captured"])
 
+    def test_remote_cat_error_text_is_not_counted_as_last_kmsg(self):
+        import io
+        class FakePopen:
+            def __init__(self, payload):
+                self.stdout = io.BytesIO(payload)
+            def wait(self, timeout):
+                return 0
+            def poll(self):
+                return 0
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td)
+            bogus = b"cat: /proc/last_kmsg: No such file or directory\n"
+            with mock.patch.object(m.subprocess, "Popen",
+                                   return_value=FakePopen(bogus)):
+                with self.assertRaisesRegex(ValueError, "not a kernel log"):
+                    m.read_file("adb", "/proc/last_kmsg", path, "last_kmsg")
+            self.assertFalse((path / "last_kmsg.log").exists())
+
+    def test_legacy_419_console_is_not_612_boot_evidence(self):
+        import io
+        class FakePopen:
+            def __init__(self, payload):
+                self.stdout = io.BytesIO(payload)
+            def wait(self, timeout):
+                return 0
+            def poll(self):
+                return 0
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td)
+            old = (b"[0] Linux version 4.19.325-test\n"
+                   b"[57] reboot: Power down\n[57] Powering off the SoC\n")
+            with mock.patch.object(m.subprocess, "Popen",
+                                   return_value=FakePopen(old)):
+                item = m.read_file("adb", "/sys/fs/pstore/console-ramoops-0",
+                                   p, "console-ramoops-0")
+            self.assertTrue(item["contains_legacy_linux_419_banner"])
+            self.assertFalse(item["contains_linux_612_banner"])
+            self.assertFalse(item["contains_test_init_marker"])
+
+    def test_mainline_612_marker_detectable(self):
+        import io
+        class FakePopen:
+            def __init__(self, payload):
+                self.stdout = io.BytesIO(payload)
+            def wait(self, timeout):
+                return 0
+            def poll(self):
+                return 0
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td)
+            new = (b"Linux version 6.12.0-test\n"
+                   b"UMI612-MINIMAL-INIT: PID1 reached\n")
+            with mock.patch.object(m.subprocess, "Popen",
+                                   return_value=FakePopen(new)):
+                item = m.read_file("adb", "/sys/fs/pstore/console-ramoops-0",
+                                   p, "console-ramoops-0")
+            self.assertTrue(item["contains_linux_612_banner"])
+            self.assertTrue(item["contains_test_init_marker"])
+            self.assertFalse(item["contains_legacy_linux_419_banner"])
+
     def test_safety_paths_in_code(self):
         import inspect
         code = inspect.getsource(m)

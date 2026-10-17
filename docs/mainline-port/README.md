@@ -63,6 +63,8 @@
 
 **离线 Boot v2 首次实验候选（2026-10-17）：** 以已完成 SHA-256 校验的用户本机备份为唯一 Boot 基线，新增 [本地 Linux 6.12 Boot v2 打包方案与失败后的 TWRP ADB 取证](FIRST_BOOT_RAMONLY_TWRP.md)。使用官方系 mkbootimg/unpack_bootimg/avbtool，替换为 ARM64 Image、RAM-only 最小 initramfs 和 umi P1n Ramoops DTB，并验证镜像 header 地址、AVB 与新三部分的 SHA。P1n 临时包含固定厂商 Kona qcom,msm-id=<356 0x10000> 和 umi qcom,board-id=<43 0>；这些标识不能证明 Bootloader 一定接受主线 DTB，因此未将结构验证等同安全启动或可刷机。
 
+**首次 umi Linux 6.12 真机实验的证据（2026-10-17）：** 已用 Fastboot 临时启动 CI Boot v2，并从独立 TWRP/ADB 读取历史 pstore。上传的 console 是 Linux 4.19 正常关机日志，pmsg 为 Android 历史记录，没有任何 6.12 banner/最小 PID1 标记；旧 cat 缺失文件错误被误计数，已修 collector。旧内核真实启动参数出现 androidboot.dtbo_idx=11，确认这次厂商系统启动所选 DTBO overlay 索引。详见 [首次受控启动：Recovery 日志脱敏结论](P1O_FIRSTBOOT_RECOVERY_FINDINGS.md)。尚不能证明主线 Linux 开始执行，下一轮需要早期日志和 DTB/DTBO 兼容性诊断，不重复刷相同镜像。
+
 ## 已直接核对的源码
 
 | 轨道 | 固定来源 | 可证事实 |

@@ -99,8 +99,9 @@ def read_file(adb, fullpath, directory, safe_name):
     p = None
     total = 0
     hash_obj = hashlib.sha256()
-    saw_version = saw_panic = saw_tag = False
+    saw_version = saw_panic = saw_tag = saw_legacy_419 = False
     tail = b""
+    beginning = bytearray()
     try:
         p = subprocess.Popen([adb, "exec-out", "cat", fullpath],
                              stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
@@ -111,10 +112,13 @@ def read_file(adb, fullpath, directory, safe_name):
                     break
                 total += len(data)
                 need(total <= MAX_SINGLE, "log exceeds safe size limit")
+                if len(beginning) < 256:
+                    beginning.extend(data[:256 - len(beginning)])
                 hash_obj.update(data)
                 scan = tail + data
                 low = scan.lower()
                 saw_version |= b"linux version 6.12" in low
+                saw_legacy_419 |= b"linux version 4.19." in low
                 saw_panic |= b"kernel panic" in low or b"oops:" in low
                 saw_tag |= TAG.encode().lower() in low
                 tail = scan[-128:]
@@ -123,10 +127,18 @@ def read_file(adb, fullpath, directory, safe_name):
             os.fsync(stream.fileno())
         need(p.wait(timeout=12) == 0 and total > 0,
              "log missing or inaccessible")
+        # On certain TWRP builds 'adb exec-out cat' can return 0 while
+        # routing the remote cat error text into stdout. It is NOT a log.
+        if beginning.startswith((b"cat: ", b"/system/bin/cat: ", b"/bin/cat: ")):
+            if (b"No such file or directory" in beginning
+                    or b"Permission denied" in beginning
+                    or b"Not a directory" in beginning):
+                raise ValueError("remote cat error is not a kernel log")
         os.replace(tmp, destination)
         return {"filename": destination.name, "size_bytes": total,
                 "sha256": hash_obj.hexdigest(),
                 "contains_linux_612_banner": saw_version,
+                "contains_legacy_linux_419_banner": saw_legacy_419,
                 "contains_kernel_panic_or_oops": saw_panic,
                 "contains_test_init_marker": saw_tag}
     finally:
@@ -159,6 +171,7 @@ def capture(adb, folder, report_path):
          "recovery_metadata": identity, "pstore_filenames_found": names,
          "captured": captured, "not_captured": failed,
          "linux_612_boot_log_found": any(x["contains_linux_612_banner"] for x in captured),
+         "legacy_linux_419_log_found": any(x["contains_legacy_linux_419_banner"] for x in captured),
          "test_init_marker_found": any(x["contains_test_init_marker"] for x in captured),
          "recovery_dmesg_not_confused_with_failed_kernel": True,
          "raw_logs_kept_local": True,
@@ -184,6 +197,7 @@ def main():
             "pstore_files_detected": len(result["pstore_filenames_found"]),
             "logs_saved": len(result["captured"]),
             "linux_612_boot_log_found": result["linux_612_boot_log_found"],
+            "legacy_linux_419_log_found": result["legacy_linux_419_log_found"],
             "test_init_marker_found": result["test_init_marker_found"],
             "share_summary_json": str(a.output),
             "keep_raw_logs_private": str(a.raw_log_dir)
