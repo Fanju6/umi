@@ -35,3 +35,26 @@ python scripts/mainline_recovery_postmortem.py --probe --output "$env:USERPROFIL
 此前多轮 PMIC/UFS/DTBO 的只读取证已经停止。以后聚焦真正的 Linux 6.12 Image、可进入 /init 的最小 ramdisk、可信 Boot v2 包装，以及 TWRP ADB 的实验后证据。若尚未通过本轮编译和 Boot 结构验证，DTS/PID1 产物本身不构成刷机包。
 
 **当前状态：** 尚未完成 6.12 首次真机启动；main 与稳定 4.19+KernelSU 不改变，研究 PR #8 继续独立。不会提前宣称能安全刷入。
+
+
+## Boot v2 实验镜像：本地原始 Boot 打包器（不会向手机写入）
+
+新增 scripts/mainline_pack_boot_v2_local.py。需要四个经过独立检查的输入：
+- 用户 Windows 本地原始 umi-original-images/boot.img 与 umi-preflight.json（必须逐字节 SHA-256 一致，不能使用其他机型 ROM）。
+- 固定 Linux 6.12 Actions 编译后的 Image.generic-arm64.NOT-FLASHABLE。
+- 独立 Actions 生成的 umi612-minimal-initramfs.cpio.gz。
+- 编译并校验后的 umi-P1n-ramoops-DTB-NOT-FLASHABLE 对应 DTB。
+
+还需要本地已有的 LineageOS mkbootimg 工具目录与 avbtool.py。此前仓库 experimental-v331-boot.yml 已实际使用过同族工具的 unpack_bootimg --format mkbootimg --null、mkbootimg 和 avbtool add_hash_footer 工作流。新的工具仅在原始 Header v2 独立 DTB section 可读、Boot SHA 符合 preflight 且原始 AVB 算法可支持时工作；如果原始 Boot v2 的 dtb_size=0，**立即拒绝**，不会自行假定 Bootloader 会接受另一个 DTB 封装模式。工具不在原始 Boot 上覆盖写入、不输出旧 cmdline 或 fingerprint、不访问手机。
+
+在 PowerShell 下载好三个 CI 产物并解压后，假设本地 tools 在 .work/mkbootimg 和 .work/avb，下方是**仅用于本地生成测试候选镜像**的命令。修改 kernel、ramdisk、DTB 三个参数为下载后的实际路径：
+
+~~~powershell
+cd C:\Users\fanju\umi-p0b
+git pull --ff-only
+python scripts/mainline_pack_boot_v2_local.py --stock "$env:USERPROFILE\Desktop\umi-original-images\boot.img" --preflight "$env:USERPROFILE\Desktop\umi-preflight.json" --kernel "$env:USERPROFILE\Desktop\Image.generic-arm64.NOT-FLASHABLE" --ramdisk "$env:USERPROFILE\Desktop\umi612-minimal-initramfs.cpio.gz" --dtb "$env:USERPROFILE\Desktop\umi-p1n-not-bootable.dtb" --mkbootimg-dir ".work\mkbootimg" --avbtool ".work\avb\avbtool.py" --output "$env:USERPROFILE\Desktop\umi612-Boot-only-LAB.img"
+~~~
+
+本脚本会校验 ARM64 Image magic、gzip/newc 里的明确测试 marker、umi P1n FDT identity、Boot 的原始 header 关键地址、输出 section 的 SHA-256 与分区大小。它可在检测到未支持的签名布局或缺失原始 DTB section 时拒绝打包。**打包结构通过与 Bootloader 真正接受主线 DTB 是两回事。** 测试前必须确认 TWRP 能从失败启动独立进入，并有原始 boot.img 的可靠回刷办法。所有 UFS/USB 尚未使能，任何由此生成的镜像不能作为 Android ROM 或日常使用内核。
+
+固定厂商源码 Kona root qcom,msm-id=<356 0x10000> 与 umi overlay root qcom,board-id=<43 0> 已写入仅测试用 P1n DTS；不能借此宣称 Stock DTBO 一定能成功套用到主线 DTB。恢复模式是实验的回退路径，不是启动兼容性的证明。

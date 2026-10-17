@@ -59,6 +59,8 @@
 
 **首轮 TWRP 可恢复实验环境（2026-10-17）：** 用户已确认独立 REC/TWRP、Recovery ADB 的失败后日志路线。新增 [RAM-only PID1 + P1n Ramoops 实验 DTS + TWRP 只读事后日志采集](FIRST_BOOT_RAMONLY_TWRP.md)。静态 AArch64 /init、Linux 6.12 P1n 研究 DTB 分别 CI 构建；ramoops 区间复用此前真机实测的 0xB0000000/4 MiB、console/pmsg 各 2 MiB。未证明日志能在从实验启动切回 Recovery 后幸存；首次 Boot v2 打包还需要核对用户本机原始 Boot 的 DTB 和 AVB 布局。所有 UFS/USB 节点禁用，独立稳定 main 保持不变。
 
+**离线 Boot v2 首次实验候选（2026-10-17）：** 以已完成 SHA-256 校验的用户本机备份为唯一 Boot 基线，新增 [本地 Linux 6.12 Boot v2 打包方案与失败后的 TWRP ADB 取证](FIRST_BOOT_RAMONLY_TWRP.md)。使用官方系 mkbootimg/unpack_bootimg/avbtool，替换为 ARM64 Image、RAM-only 最小 initramfs 和 umi P1n Ramoops DTB，并验证镜像 header 地址、AVB 与新三部分的 SHA。P1n 临时包含固定厂商 Kona qcom,msm-id=<356 0x10000> 和 umi qcom,board-id=<43 0>；这些标识不能证明 Bootloader 一定接受主线 DTB，因此未将结构验证等同安全启动或可刷机。
+
 ## 已直接核对的源码
 
 | 轨道 | 固定来源 | 可证事实 |

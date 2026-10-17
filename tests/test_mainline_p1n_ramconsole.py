@@ -14,6 +14,10 @@ class ExperimentalRAMConsoleTests(unittest.TestCase):
         cls.dts=DTS.read_text(encoding="utf-8")
         cls.p=json.loads(PREFLIGHT.read_text(encoding="utf-8"))
 
+    def test_locked_vendor_bootloader_ids(self):
+        self.assertIn('qcom,msm-id = <356 0x10000>;', self.dts)
+        self.assertIn('qcom,board-id = <43 0>;', self.dts)
+
     def test_inherits_disabled_p1m(self):
         self.assertIn('#include "sm8250-xiaomi-umi-p1m.dts"',self.dts)
 

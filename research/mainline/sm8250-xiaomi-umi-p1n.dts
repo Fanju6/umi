@@ -11,6 +11,11 @@
 
 / {
     model = "Xiaomi Mi 10 (umi) - experimental RAM-console DTS";
+    /* Pinned 4.19 vendor Kona/umi DT metadata for bootloader DT matching.
+     * This does NOT prove the bootloader will accept an upstream DTB.
+     */
+    qcom,msm-id = <356 0x10000>;
+    qcom,board-id = <43 0>;
 
     reserved-memory {
         umi_test_ramoops: ramoops@b0000000 {
