@@ -6,6 +6,7 @@ on:
       - '.github/workflows/mainline-abl-dtbo-audit.yml'
       - 'scripts/mainline_abl_dtbo_audit.py'
       - 'tests/test_mainline_abl_dtbo_audit.py'
+      - 'research/mainline/sm8250-xiaomi-umi-p1q.dts'
   workflow_dispatch:
 
 permissions:
@@ -34,7 +35,7 @@ jobs:
           test "$(git -C upstream rev-parse HEAD)" = adc218676eef25575469234709c2d87185ca223a
           mkdir -p input
           soc=upstream/arch/arm64/boot/dts/qcom
-          for stage in p0c p1a p1c p1m p1n; do
+          for stage in p0c p1a p1c p1m p1n p1q; do
             cp "research/mainline/sm8250-xiaomi-umi-$stage.dts" "$soc/"
           done
           cpp -nostdinc -I upstream/include -I "$soc" -undef -D__DTS__ \
@@ -42,6 +43,19 @@ jobs:
           dtc -@ -I dts -O dtb -o input/umi-p1n.dtb /tmp/umi-p1n.dts
           test "$(fdtget -t x input/umi-p1n.dtb / qcom,board-id)" = "2b 0"
           test "$(fdtget -t x input/umi-p1n.dtb / qcom,msm-id)" = "164 10000"
+          cpp -nostdinc -I upstream/include -I "$soc" -undef -D__DTS__ \
+            -x assembler-with-cpp "$soc/sm8250-xiaomi-umi-p1q.dts" /tmp/umi-p1q.dts
+          dtc -@ -I dts -O dtb -o input/umi-p1q.dtb /tmp/umi-p1q.dts
+          test "$(fdtget -t s input/umi-p1q.dtb /__symbols__ arch_timer)" = "/timer"
+          test "$(fdtget -t s input/umi-p1q.dtb /__symbols__ qcom_tzlog)" = "/tz-log@146bf720"
+          test "$(fdtget -t s input/umi-p1q.dtb /tz-log@146bf720 status)" = disabled
+          test "$(fdtget -t x input/umi-p1q.dtb /timer interrupts)" = \
+               "$(fdtget -t x input/umi-p1n.dtb /timer interrupts)"
+          for node in /soc@0/ufshc@1d84000 /soc@0/phy@1d87000 \
+                      /soc@0/usb@a6f8800 /soc@0/usb@a6f8800/usb@a600000 \
+                      /soc@0/phy@88e3000 /soc@0/phy@88e8000; do
+            test "$(fdtget -t s input/umi-p1q.dtb "$node" status)" = disabled
+          done
       - name: Fetch official original base Boot and public DTBO
         run: |
           set -euo pipefail
@@ -68,6 +82,7 @@ jobs:
             --dtbo public/dtbo.img \
             --public-boot-dtb public/unpacked/dtb \
             --mainline-dtb input/umi-p1n.dtb \
+            --compatibility-dtb input/umi-p1q.dtb \
             --report dist/umi-p1p-abl-overlay-audit.json
           echo 'Only off-device FDT overlay compatibility was tested. No boot image generated.' >> "$GITHUB_STEP_SUMMARY"
       - name: Upload PUBLIC-METADATA-ONLY diagnostic

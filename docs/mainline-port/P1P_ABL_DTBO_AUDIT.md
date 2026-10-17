@@ -20,3 +20,14 @@
 这份 CI 是下一版实验镜像制作前的诊断门：如果 P1n 合并失败，先按真正缺失的符号/目标修复 DTB；如果厂商 base 也失败，则要检查 DTBO 的发布日期与当前设备映像是否匹配。若公版文件布局不一致则报告而不隐瞒。
 
 该流程不构建 boot.img、不写任何手机分区、不碰稳定 main，也不需要用户再运行 root 取证。确认兼容性后，再决定是否云端打包下一版 P1p Boot。
+
+
+## P1q additive bootloader-symbols diagnostic
+
+在固定厂商 kona.dtsi 中确认两个标签:
+- arch_timer: timer，现有 Linux v6.12 sm8250.dtsi 根节点有 timer，但没有 arch_timer 标签。仅为其增加该标签，不覆盖内核的 PPI/interrupts。
+- qcom_tzlog: tz-log@146bf720，固定厂商中该节点的物理基址是 0x146bf720。P1q 添加同名标签和 reserved 映射身份，但 status=disabled，不激活 vendor-specific log driver。
+
+这两个标签亦在 2026 年 Qualcomm ABL / DTBO 引导失败的上游讨论中出现。但其他 SoC 的问题**不是** umi 设备的确定诊断。新 P1q 不能随便宣传已经解决黑屏。
+
+CI 必须同时比较原本 P1n 和额外 shim P1q 的二进制 FDT，通过 fdtget 检验 __symbols__，定时器 interrupts 与 P1n 字节对照一致，全部 UFS/USB disabled，然后分别 fdtoverlay 尝试跟同一个公版 vendor umi DTBO index11 合并。结果如果 P1q 有明确改进，下一步再考虑云端打包新候选镜像。不修改稳定 main 或手机任何分区。

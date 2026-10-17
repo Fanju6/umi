@@ -1,0 +1,29 @@
+// SPDX-License-Identifier: BSD-3-Clause
+/*
+ * umi P1q FIRST-BOOT DIAGNOSTIC ABL/DTBO compatibility shim.
+ *
+ * Both labels below are PRESENT in fixed Xiaomi vendor Kona dtsi 4.19:
+ *   arch_timer: timer { ... };
+ *   qcom_tzlog: tz-log@146bf720 { ... };
+ *
+ * They are ABSENT in Linux 6.12 sm8250.dtsi and may be needed by
+ * Qualcomm ABL / selected DTBO to resolve targets. See source audit.
+ *
+ * No new controller is enabled; timer compatible/interrupts are inherited
+ * UNCHANGED from Linux v6.12, without copying the old vendor IRQ PPI12.
+ * The placeholder is intentionally DISABLED, and the first-boot test
+ * still keeps UFS/USB/regulator reference provider disabled.
+ */
+#include "sm8250-xiaomi-umi-p1n.dts"
+
+/ {
+    /* Adds only a DTS symbol to the existing upstream /timer node. */
+    arch_timer: timer {
+    };
+
+    /* Fixed vendor physical node identity; no active firmware log driver. */
+    qcom_tzlog: tz-log@146bf720 {
+        reg = <0x0 0x146bf720 0x0 0x3000>;
+        status = "disabled";
+    };
+};

@@ -99,7 +99,7 @@ def merge_probe(base, overlay, work, stem):
             "fdt_total_bytes": int.from_bytes(merged[4:8], "big")}
 
 
-def audit(public_dtbo, public_boot_dtb, mainline_dtb):
+def audit(public_dtbo, public_boot_dtb, mainline_dtb, compatibility_dtb=None):
     entries, dtbo = parse_dtbo(public_dtbo.read_bytes())
     boot_sources = find_dtb_segments(public_boot_dtb.read_bytes())
     mainline = mainline_dtb.read_bytes()
@@ -124,6 +124,13 @@ def audit(public_dtbo, public_boot_dtb, mainline_dtb):
                 base, overlay, work, f"official_{i}")
         report["results"]["mainline_p1n"] = merge_probe(
             mainline, overlay, work, "mainline_p1n")
+        if compatibility_dtb is not None:
+            p1q = compatibility_dtb.read_bytes()
+            need(p1q[:4] == b"\xd0\x0d\xfe\xed" and
+                 b"Xiaomi Mi 10 (umi)" in p1q,
+                 "P1q candidate DTB not recognized")
+            report["results"]["mainline_p1q_abl_symbols"] = merge_probe(
+                p1q, overlay, work, "mainline_p1q")
     return report
 
 
@@ -132,10 +139,12 @@ def main():
     p.add_argument("--dtbo", type=Path, required=True)
     p.add_argument("--public-boot-dtb", type=Path, required=True)
     p.add_argument("--mainline-dtb", type=Path, required=True)
+    p.add_argument("--compatibility-dtb", type=Path)
     p.add_argument("--report", type=Path, required=True)
     args = p.parse_args()
     try:
-        report = audit(args.dtbo, args.public_boot_dtb, args.mainline_dtb)
+        report = audit(args.dtbo, args.public_boot_dtb, args.mainline_dtb,
+                       args.compatibility_dtb)
         args.report.parent.mkdir(parents=True, exist_ok=True)
         args.report.write_text(json.dumps(report, indent=2) + "\n",
                                encoding="utf8")

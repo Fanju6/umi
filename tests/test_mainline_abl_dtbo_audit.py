@@ -78,6 +78,22 @@ class ABLDTBOTests(unittest.TestCase):
             self.assertNotIn(banned, text)
             self.assertNotIn(banned, workflow)
 
+    def test_compatibility_shim_only_adds_abl_symbols(self):
+        text = (ROOT / "research/mainline/sm8250-xiaomi-umi-p1q.dts").read_text()
+        self.assertIn('#include "sm8250-xiaomi-umi-p1n.dts"', text)
+        self.assertIn("arch_timer: timer", text)
+        self.assertIn("qcom_tzlog: tz-log@146bf720", text)
+        self.assertIn('status = "disabled";', text)
+        self.assertNotIn("interrupts =", text)
+        self.assertNotIn('status = "okay"', text)
+
+    def test_p1n_p1q_can_be_compared_without_flashing(self):
+        text = (ROOT / ".github/workflows/mainline-abl-dtbo-audit.yml").read_text()
+        self.assertIn("--compatibility-dtb input/umi-p1q.dtb", text)
+        self.assertIn("fdtget -t s input/umi-p1q.dtb /__symbols__ arch_timer", text)
+        self.assertIn("fdtget -t x input/umi-p1q.dtb /timer interrupts", text)
+        self.assertNotIn("fastboot flash", text)
+
     def test_original_and_mainline_separate(self):
         source = (ROOT / "scripts/mainline_abl_dtbo_audit.py").read_text()
         self.assertIn('"mainline_p1n"', source)
