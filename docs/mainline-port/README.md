@@ -47,6 +47,8 @@
 
 **DTBO 实机复核（2026-10-17）：** [已确认标准 Android DT Table v0 与 12 个 overlay](DTBO_OFFLINE_INSPECT.md)，总大小 5,514,578 字节、表头 32 字节、表项 32 字节；旧脚本字节序错误已纠正。debugfs 此时未挂载，暂不把缺少 regulator_summary 解释为硬件故障。新增只读本机内存解码器，用于一次提取 12 个候选 overlay 的表项及 UFS/PMIC 相关属性结构；不写分区、不生成启动包。与具体 Bootloader 选择、PMIC 电气连线和可恢复启动仍须区分。
 
+**12 个 DTBO Overlay 的实测内容（2026-10-17）：** [12 项索引与 umi 唯一候选、共用 UFS 供电属性](DTBO_12_ENTRY_FINDINGS.md) 已核对：索引 0–10 分别对应 alioth、apollo、cas、cmi、dagu、elish、enuma、lmi、munch、psyche、thyme，**索引 11 为 umi**（460,783 字节）。12 项 id/rev/custom 全为 0；每项都含同样 8 个 UFS/PMIC 属性，96 条命中不代表 96 条独立电源轨。旧 DTS 的 `qcom,board-id=<43 0>` 与 DTBO 外层 id 不可混为一谈。尚未还原 phandle 所指目标和 Bootloader 最终选择，硬件门禁保持关闭。
+
 ## 已直接核对的源码
 
 | 轨道 | 固定来源 | 可证事实 |

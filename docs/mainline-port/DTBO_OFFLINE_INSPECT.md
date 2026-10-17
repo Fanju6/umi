@@ -42,3 +42,7 @@ python scripts/mainline_dtbo_offline_inspect.py --probe --output "$env:USERPROFI
 - 旧 4.19 overlay 供电属性不能照搬成新 6.12 的 PMIC input source，也不能证明硬件 PCB 实际连线。
 - Recovery Header v2 已确认，不等于恢复分区能引导或已有验证过的 rollback 机制。
 - 当前 safe_to_attempt_mainline_boot=false、safe_to_flash=false，不修改 main 或启用研究 DTS 中禁用的 PMIC/UFS。
+
+## 2026-10-17：完整 12 项实机报告已分析
+
+已收到用户生成的脱敏 JSON，报告 `fdt_parsed=12`、`power_property_hits=96`。其中 umi 唯一的 `root_model` 位于索引 11；其他索引属于 11 款不同机型。全部 12 项的 DTBO 外层 `id`/`rev`/四个 `custom` 都为 0，96 处命中为 12 × 同样 8 个 UFS 供电属性。`fragment_target_paths=[]` 只是当前解析器没有命中 `target-path`，不能据此认为 fragment 无目标或已经解析了 phandle。完整尺寸、供电关系、旧 DTS `qcom,board-id` 来源与证据边界见 [DTBO_12_ENTRY_FINDINGS.md](DTBO_12_ENTRY_FINDINGS.md)。无需重新扫描分区；接下来应只针对旧系统**最终合成的 FDT**提取 UFS consumer phandle 及 regulator provider 的对应关系。

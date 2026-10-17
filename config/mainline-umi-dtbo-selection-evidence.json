@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "device": "umi",
+  "source": "user-shared sanitized umi-dtbo-overlays.json; fixed vendor DTS cross-check",
+  "fixed_vendor": {
+    "repository": "LineageOS/android_kernel_xiaomi_sm8250",
+    "sha": "71b13e62f057a649b77fe4062feb73ee72ad609c",
+    "file": "arch/arm64/boot/dts/vendor/qcom/umi-sm8250-overlay.dts",
+    "board_id_from_vendor_source": [
+      43,
+      0
+    ],
+    "board_id_measured_from_running_fdt": false
+  },
+  "table": {
+    "format": "android_dt_table",
+    "version": 0,
+    "total_size_bytes": 5514578,
+    "entry_count": 12,
+    "entry_sizes_bytes": [
+      458105,
+      459753,
+      467393,
+      460176,
+      454590,
+      462995,
+      461319,
+      451884,
+      462317,
+      456050,
+      458797,
+      460783
+    ],
+    "index_models": [
+      "alioth",
+      "apollo",
+      "cas",
+      "cmi",
+      "dagu",
+      "elish",
+      "enuma",
+      "lmi",
+      "munch",
+      "psyche",
+      "thyme",
+      "umi"
+    ],
+    "index_ids_all_zero": true,
+    "index_revisions_all_zero": true,
+    "index_custom_fields_all_zero": true,
+    "all_fdt_structurally_parsed": true
+  },
+  "umi_candidate": {
+    "entry_index": 11,
+    "root_model": "Qualcomm Technologies, Inc. xiaomi umi",
+    "root_compatible": [
+      "qcom,kona-mtp",
+      "qcom,kona",
+      "qcom,mtp"
+    ],
+    "fdt_size_bytes": 460783,
+    "offset_bytes": 5053795,
+    "fragment_ids_with_ufs_supply_names": [
+      "fragment@74",
+      "fragment@75"
+    ],
+    "fragment_target_paths": [],
+    "target_phandles_resolved": false,
+    "model_is_unique_in_table": true
+  },
+  "ufs": {
+    "power_properties_identical_across_all_12_entries": true,
+    "per_entry_property_count": 8,
+    "all_entries_total_property_count": 96,
+    "properties": [
+      "vdda-phy-supply",
+      "vdda-pll-supply",
+      "vdd-hba-supply",
+      "vcc-supply",
+      "vccq-supply",
+      "vccq2-supply",
+      "qcom,vddp-ref-clk-supply",
+      "qcom,vccq-parent-supply"
+    ],
+    "per_entry_uv_properties_do_not_disclose_phandle_values": true,
+    "properties_from_shared_vendor_dtsi": "arch/arm64/boot/dts/vendor/qcom/xiaomi-sm8250-common.dtsi"
+  },
+  "uncertainty": {
+    "bootloader_selected_entry_verified": false,
+    "final_runtime_fdt_verified": false,
+    "board_parent_wiring_verified": false,
+    "mainline_ufs_power_transition_verified": false,
+    "recovery_restore_verified": false
+  },
+  "safety": {
+    "safe_to_attempt_mainline_boot": false,
+    "safe_to_flash": false,
+    "boot_image_created": false,
+    "hardware_nodes_enabled": false
+  }
+}
