@@ -106,7 +106,9 @@ def mkboot_args(unpack_tool, tools_dir, original, working):
 
 def parse_avb_info(text):
     def get(field):
-        match = re.search(r"^" + re.escape(field) + r":\s*(\S+)\s*$",
+        # AVB descriptors indent Hash Algorithm / Partition Name, while
+        # the VBMeta header Algorithm field is usually at column zero.
+        match = re.search(r"^[ \t]*" + re.escape(field) + r":[ \t]*(\S+)[ \t]*$",
                           text, re.M)
         return match.group(1) if match else None
     need(get("Algorithm") == "NONE" and

@@ -88,8 +88,8 @@ class FirstbootPackingTests(unittest.TestCase):
 
     def test_unsigned_avb_hash_props(self):
         info = ("Algorithm:                NONE\n"
-                "Partition Name:        boot\n"
-                "Hash Algorithm:        sha256\n"
+                "      Partition Name:        boot\n"
+                "      Hash Algorithm:        sha256\n"
                 "Prop: com.android.build.boot.os_version -> '16'\n"
                 "Prop: com.android.build.boot.fingerprint -> 'test'\n")
         p=m.parse_avb_info(info)
