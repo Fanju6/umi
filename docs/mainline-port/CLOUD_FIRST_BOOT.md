@@ -8,7 +8,7 @@
 2. 同一个 job 使用该 Linux 6.12 DTS headers 编译 umi P1n 实验 DTB，检查 qcom,msm-id=<356 0x10000>、qcom,board-id=<43 0>、Ramoops 0xB0000000/4MiB，以及 UFS/USB 和未完全验证的 PMIC provider 继续 disabled。
 3. 下游 boot job 下载同一 workflow 的 Image/DTB artifact，静态交叉编译 ARM64 最小 PID1、构造 RAM-only cpio.gz，生成有 UMI612-MINIMAL-INIT 日志标记的 initramfs。
 4. **CI 自动下载固定原版 Boot**：https://mirrorbits.lineageos.org/full/umi/20261004/boot.img；用既有旧 KernelSU CI 锁定的 SHA-256 ce4a917a9233921b03e748b1fffc7b5ecea613c7ddf72208f26c77189f31a693 校验。如果链接无效或 hash 不匹配，CI 必须失败；不能悄悄换另一版 ROM。
-5. 从 upstream LineageOS lineage-23.0 mkbootimg/unpack_bootimg 与 avbtool 解包 / 重新封装 Android Boot Header v2。将 kernel、ramdisk、DTB 一次性替换；保留原始地址、board、OS version、必要的原始 cmdline（增加 rdinit=/init）；如原版含 unsigned AVB hash footer，则使用原属性生成新的 NONE/sha256 footer。
+5. 从 upstream LineageOS lineage-23.0 mkbootimg/unpack_bootimg 与 avbtool 解包 / 重新封装 Android Boot Header v2。将 kernel、ramdisk、DTB 一次性替换；保留原始地址、board、OS version；由于原 Android cmdline 过长可能产生 Header v2 截断，明确替换为短 Linux RAM-only 启动参数（rdinit=/init、loglevel=8、ignore_loglevel、console、printk.time），不再宣称保留原始 Android cmdline；如原版含 unsigned AVB hash footer，则使用原属性生成新的 NONE/sha256 footer。
 6. 实际重新解析输出 boot.img，核查 size <= 134217728 B、header v2、page 4096、boot load address 五项、各 section SHA-256、AVB props、cmdline 和输出文件 SHA256。
 7. 成功后统一上传 artifact：**umi-Linux612-CLOUD-Boot-v2-LAB-UNVERIFIED**；包括 cloud candidate boot.img、initramfs、boot-validation.json、SHA256SUMS、README-FIRST.txt。另一 artifact 保存内核和 DTB 源产物以便定位。
 

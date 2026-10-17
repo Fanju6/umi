@@ -32,6 +32,12 @@ class CloudPackerTests(unittest.TestCase):
         for banned in ("fastboot flash", "adb shell", "dd of=", "reboot bootloader"):
             self.assertNotIn(banned, src)
 
+    def test_short_bootargs_for_ram_only_pid1(self):
+        self.assertIn("rdinit=/init", m.RAM_ONLY_BOOTARGS)
+        self.assertIn("ignore_loglevel", m.RAM_ONLY_BOOTARGS)
+        self.assertLess(len(m.RAM_ONLY_BOOTARGS), 256)
+        self.assertNotIn("androidboot.", m.RAM_ONLY_BOOTARGS)
+
     def test_original_addresses_and_payload_hash_are_checked(self):
         src = (ROOT / "scripts/mainline_cloud_pack_umi.py").read_text()
         for token in ("kernel_addr", "ramdisk_addr", "dtb_addr",

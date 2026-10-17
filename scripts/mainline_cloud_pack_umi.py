@@ -18,6 +18,7 @@ from mainline_pack_boot_v2_local import (
 )
 
 PUBLIC_ROM_SHA256 = "ce4a917a9233921b03e748b1fffc7b5ecea613c7ddf72208f26c77189f31a693"
+RAM_ONLY_BOOTARGS = "rdinit=/init loglevel=8 ignore_loglevel console=ttyMSM0,115200n8 printk.time=1"
 PRIVATE_DEVICE_SHA256 = "2bb0cabcd7bf996cc0053ce9f44248d1ec59c3b583b3259a0343f2ef6544c3b7"
 
 def require(cond, message):
@@ -70,15 +71,15 @@ def run(stock, kernel, initrd, dtb, mktools, avbtool, output, report):
         work = Path(tmp)
         raw_args, pairs = mkboot_args(
             mktools / "unpack_bootimg.py", mktools, stock, work / "unpacked")
-        cmdline = pairs.get("--cmdline")
-        require(cmdline is not None and "skip_initramfs" not in cmdline and
-                len(cmdline.encode()) + len(CMD_ADD) + 1 <= 1536,
-                "stock cmdline can't be safely adapted for RAM-only PID1")
+        # This is NOT Android. Do not append to the long stock Android
+        # cmdline (which may be split/truncated between v2 header fields).
+        # Use a short, explicit, reproducible kernel-only command line.
+        require("--cmdline" in pairs, "stock boot lacks a cmdline field")
         replacements = {
             "--kernel": str(kernel.resolve()),
             "--ramdisk": str(initrd.resolve()),
             "--dtb": str(dtb.resolve()),
-            "--cmdline": (cmdline + " " + CMD_ADD).strip(),
+            "--cmdline": RAM_ONLY_BOOTARGS,
         }
         args = [replacements.get(x, x) if i % 2 else x
                 for i, x in enumerate(raw_args)]
@@ -113,7 +114,7 @@ def run(stock, kernel, initrd, dtb, mktools, avbtool, output, report):
             "page_size": new["page_size"] == original["page_size"],
             "partition_capacity": new["image_size_bytes"] <= MAX_BOOT,
             "avb_footer": bool(new["avb_footer_magic_at_file_end"]),
-            "ramonly_cmdline": CMD_ADD in new["cmdline"],
+            "ramonly_cmdline": new["cmdline"] == RAM_ONLY_BOOTARGS,
             "board_name": new["board_name"] == original["board_name"],
             "os_version_packed": new["os_version_packed"] == original["os_version_packed"],
         }
