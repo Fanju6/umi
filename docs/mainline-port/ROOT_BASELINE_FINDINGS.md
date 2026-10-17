@@ -51,3 +51,7 @@ python scripts/mainline_root_targeted_followup.py --probe --output "$env:USERPRO
 脚本读取 DTBO 头部 64 字节，在主机内解析官方大端 DT 表、QCDT/FDT 候选或未知签名；只检查已有 debugfs summary 路径是否可读，不挂载、不提取正文。结果保存在本地，不自动上传。
 
 后续重点是确认最终运行 DT / 电源网络与 Linux 6.12 UFS 依赖，再以独立证据验证无风险恢复条件，避免无限地增加重复的非 Root 探针。当前 safe_to_attempt_mainline_boot=false、safe_to_flash=false。
+
+## 2026-10-17 已取得真机补充证据
+
+已收到用户执行 Root 定向探针的完整脱敏输出，确认 DTBO magic=d7b7ab1e、format=android_dt_table、total_size=5514578、header_size=32、entry_size=32、entry_count=12、entries_offset=32、version=0、basic_structure_plausible=true。旧版 unidentified 是实际存在的解析字节序错误。debugfs.already_mounted=false 且 /d、/sys/kernel/debug 的 regulator_summary 均不可用，不证明驱动异常。下一步不需要再反复读 64 字节表头，改为一次性只读解析全部 12 个候选 overlay 的结构，详见 [DTBO 离线分析](DTBO_OFFLINE_INSPECT.md)。所有启动/恢复/刷机门禁不变。

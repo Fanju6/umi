@@ -44,6 +44,9 @@
 
 **Root 报告实测结果（2026-10-17）：** [九轨 UFS/PMIC 元数据与 DTBO 字节序复核](ROOT_BASELINE_FINDINGS.md) 确认 9 个目标电源轨均 enabled、9 个对应 RPMh 资源在运行时设备树存在、UFS Host runtime active、/proc/iomem 有与 4 MiB Ramoops 完全一致的 reserved 子区间；Boot/Recovery Header v2 已读取。原 Root 工具 DTBO magic 判断字节序错误，已改为 AOSP 标准大端解析，添加精简只读后续探针及回归测试。**仍未知真实上游电路连线和 Recovery 可逆性，不能试启动/刷机。**
 
+
+**DTBO 实机复核（2026-10-17）：** [已确认标准 Android DT Table v0 与 12 个 overlay](DTBO_OFFLINE_INSPECT.md)，总大小 5,514,578 字节、表头 32 字节、表项 32 字节；旧脚本字节序错误已纠正。debugfs 此时未挂载，暂不把缺少 regulator_summary 解释为硬件故障。新增只读本机内存解码器，用于一次提取 12 个候选 overlay 的表项及 UFS/PMIC 相关属性结构；不写分区、不生成启动包。与具体 Bootloader 选择、PMIC 电气连线和可恢复启动仍须区分。
+
 ## 已直接核对的源码
 
 | 轨道 | 固定来源 | 可证事实 |
