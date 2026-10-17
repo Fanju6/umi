@@ -106,14 +106,19 @@ def run(stock, kernel, initrd, dtb, mktools, avbtool, output, report):
             command += ["--prop", p]
         subprocess.run(command, check=True, capture_output=True, timeout=180)
         new = audit_boot(candidate)
-        require(new["boot_header_version"] == 2
-                and new["page_size"] == original["page_size"]
-                and new["image_size_bytes"] <= MAX_BOOT
-                and new["avb_footer_magic_at_file_end"]
-                and CMD_ADD in new["cmdline"]
-                and new["board_name"] == original["board_name"]
-                and new["os_version_packed"] == original["os_version_packed"],
-                "repacked boot header or AVB differs unexpectedly")
+        # Distinguish actual structural regressions from lossy mkbootimg
+        # header reserialization; report just field names, never cmdline data.
+        checks = {
+            "header_version_v2": new["boot_header_version"] == 2,
+            "page_size": new["page_size"] == original["page_size"],
+            "partition_capacity": new["image_size_bytes"] <= MAX_BOOT,
+            "avb_footer": bool(new["avb_footer_magic_at_file_end"]),
+            "ramonly_cmdline": CMD_ADD in new["cmdline"],
+            "board_name": new["board_name"] == original["board_name"],
+            "os_version_packed": new["os_version_packed"] == original["os_version_packed"],
+        }
+        require(all(checks.values()), "repacked boot validation failed: " +
+                ", ".join(key for key, ok in checks.items() if not ok))
         for field in ("kernel_addr", "ramdisk_addr", "second_addr",
                       "tags_addr", "dtb_addr"):
             require(new[field] == original[field],
