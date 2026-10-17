@@ -18,7 +18,7 @@ from mainline_pack_boot_v2_local import (
 )
 
 PUBLIC_ROM_SHA256 = "ce4a917a9233921b03e748b1fffc7b5ecea613c7ddf72208f26c77189f31a693"
-RAM_ONLY_BOOTARGS = "rdinit=/init loglevel=8 ignore_loglevel console=ttyMSM0,115200n8 printk.time=1"
+RAM_ONLY_BOOTARGS = "rdinit=/init loglevel=8 ignore_loglevel earlycon keep_bootcon initcall_debug printk.time=1 log_buf_len=4M"
 PRIVATE_DEVICE_SHA256 = "2bb0cabcd7bf996cc0053ce9f44248d1ec59c3b583b3259a0343f2ef6544c3b7"
 
 def require(cond, message):
@@ -50,7 +50,7 @@ def validate_data(stock, kernel, initrd, dtb):
     require(40 <= len(d) < 8 * 1024 * 1024
             and d[:4] == bytes.fromhex("d00dfeed")
             and 40 <= int.from_bytes(d[4:8], "big") <= len(d)
-            and b"Xiaomi Mi 10 (umi)" in d
+            and b"Xiaomi Mi 10 (umi) - P1p early diagnostic lab" in d
             and b"ramoops@b0000000" in d,
             "not approved umi P1n DTB")
     return orig
@@ -135,7 +135,7 @@ def run(stock, kernel, initrd, dtb, mktools, avbtool, output, report):
 
     result = {
         "device": "umi",
-        "purpose": "experimental Linux 6.12 RAM-only first-boot laboratory image",
+        "purpose": "P1p Linux 6.12 RAM-only early diagnostics experiment",
         "baseline_rom": "LineageOS 23.2 2026-10-04 umi official public boot",
         "baseline_sha256": PUBLIC_ROM_SHA256,
         "actual_user_device_boot_sha256": PRIVATE_DEVICE_SHA256,

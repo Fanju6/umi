@@ -1,4 +1,4 @@
-name: umi Linux 6.12 CLOUD first boot.img candidate (TWRP LAB)
+name: umi Linux 6.12 P1p early-boot diagnostics (TWRP LAB)
 
 on:
   pull_request:
@@ -9,6 +9,7 @@ on:
       - 'tests/test_mainline_pack_boot_v2_local.py'
       - 'research/mainline/mini-init.c'
       - 'research/mainline/sm8250-xiaomi-umi-p1n.dts'
+      - 'research/mainline/sm8250-xiaomi-umi-p1p.dts'
       - 'tests/test_mainline_cloud_pack_umi.py'
   workflow_dispatch:
 
@@ -17,7 +18,7 @@ permissions:
 
 jobs:
   kernel:
-    name: Compile pinned Linux 6.12 Image and umi P1n research DTB
+    name: Compile pinned Linux 6.12 debug Image and umi P1p DTB
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
@@ -40,7 +41,10 @@ jobs:
             -e BLK_DEV_INITRD -e DEVTMPFS -e DEVTMPFS_MOUNT \
             -e SCSI_UFS_QCOM -e PHY_QCOM_QMP_UFS \
             -e PSTORE -e PSTORE_RAM -e PSTORE_CONSOLE -e PSTORE_PMSG \
-            -e SERIAL_QCOM_GENI -e SERIAL_QCOM_GENI_CONSOLE
+            -e SERIAL_QCOM_GENI -e SERIAL_QCOM_GENI_CONSOLE \
+            -e PRINTK_TIME -e KALLSYMS -e KALLSYMS_ALL \
+            -e DEBUG_KERNEL -e DEBUG_INFO_NONE \
+            -e PSTORE_DEFAULT_KMSG_BYTES
           make O="$GITHUB_WORKSPACE/out" ARCH=arm64 LLVM=1 olddefconfig
           for name in BLK_DEV_INITRD DEVTMPFS DEVTMPFS_MOUNT \
                       SCSI_UFSHCD SCSI_UFS_QCOM REGULATOR_QCOM_RPMH \
@@ -60,13 +64,13 @@ jobs:
         run: |
           set -euo pipefail
           soc=upstream/arch/arm64/boot/dts/qcom
-          for stage in p0c p1a p1c p1m p1n; do
+          for stage in p0c p1a p1c p1m p1n p1p; do
             cp "research/mainline/sm8250-xiaomi-umi-$stage.dts" "$soc/"
           done
           cpp -nostdinc -I upstream/include -I "$soc" -undef -D__DTS__ \
-            -x assembler-with-cpp "$soc/sm8250-xiaomi-umi-p1n.dts" /tmp/umi-p1n.dts
-          dtc -@ -I dts -O dtb -o dist/umi-p1n.dtb /tmp/umi-p1n.dts
-          d=dist/umi-p1n.dtb
+            -x assembler-with-cpp "$soc/sm8250-xiaomi-umi-p1p.dts" /tmp/umi-p1p.dts
+          dtc -@ -I dts -O dtb -o dist/umi-p1p.dtb /tmp/umi-p1p.dts
+          d=dist/umi-p1p.dtb
           test "$(fdtget -t x "$d" / qcom,msm-id)" = "164 10000"
           test "$(fdtget -t x "$d" / qcom,board-id)" = "2b 0"
           test "$(fdtget -t x "$d" /reserved-memory/ramoops@b0000000 reg)" = "0 b0000000 0 400000"
@@ -76,10 +80,10 @@ jobs:
                       /soc@0/phy@88e3000 /soc@0/phy@88e8000; do
             test "$(fdtget -t s "$d" "$node" status)" = disabled
           done
-          sha256sum dist/Image dist/umi-p1n.dtb > dist/SHA256SUMS
+          sha256sum dist/Image dist/umi-p1p.dtb > dist/SHA256SUMS
       - uses: actions/upload-artifact@v4
         with:
-          name: umi612-cloud-kernel-dtb-COMPILE-ONLY
+          name: umi612-P1p-debug-kernel-dtb
           path: dist/
           retention-days: 7
           compression-level: 1
@@ -94,7 +98,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: umi612-cloud-kernel-dtb-COMPILE-ONLY
+          name: umi612-P1p-debug-kernel-dtb
           path: input
       - name: Install AArch64 static compiler and boot image tools
         run: |
@@ -138,7 +142,7 @@ jobs:
             --stock vendor/official-umi-20261004-boot.img \
             --kernel input/Image \
             --ramdisk dist/umi612-initramfs.cpio.gz \
-            --dtb input/umi-p1n.dtb \
+            --dtb input/umi-p1p.dtb \
             --mkbootimg-dir upstream-tools/mkbootimg \
             --avbtool upstream-tools/avb/avbtool.py \
             --output dist/umi-Linux612-RAM-ONLY-CLOUD-CANDIDATE.img \
@@ -159,7 +163,7 @@ jobs:
           echo 'Cloud Boot v2 image assembled; unsigned AVB hash layout preserved, hardware boot not tested.' >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:
-          name: umi-Linux612-CLOUD-Boot-v2-LAB-UNVERIFIED
+          name: umi-Linux612-P1p-EARLY-DIAGNOSTIC-Boot-v2
           path: |
             dist/umi-Linux612-RAM-ONLY-CLOUD-CANDIDATE.img
             dist/umi612-initramfs.cpio.gz
