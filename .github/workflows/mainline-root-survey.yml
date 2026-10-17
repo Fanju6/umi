@@ -4,6 +4,10 @@ on:
   pull_request:
     paths:
       - 'scripts/mainline_root_hardware_survey.py'
+      - 'scripts/mainline_root_targeted_followup.py'
+      - 'tests/test_mainline_root_targeted_followup.py'
+      - 'docs/mainline-port/ROOT_BASELINE_FINDINGS.md'
+      - 'config/mainline-umi-root-baseline-observed.json'
       - 'tests/test_mainline_root_survey.py'
       - 'docs/mainline-port/ROOT_HARDWARE_SURVEY.md'
       - '.github/workflows/mainline-root-survey.yml'
@@ -23,5 +27,6 @@ jobs:
         run: |
           set -euo pipefail
           python3 -m unittest discover -s tests -p 'test_mainline_root_survey.py' -v
+          python3 -m unittest discover -s tests -p 'test_mainline_root_targeted_followup.py' -v
           python3 scripts/mainline_p1l_regulator_parent_audit.py
           echo 'No device accessed. su would only be used on an explicitly opted-in local umi. No writes/boots/flashes.' >> "$GITHUB_STEP_SUMMARY"

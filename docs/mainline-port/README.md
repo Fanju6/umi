@@ -41,6 +41,9 @@
 
 **Root 快速基线（2026-10-16）：** 用户明确允许通过 Root 加快 umi 旧系统硬件取证，新增 [一次性 Root 只读硬件采集](ROOT_HARDWARE_SURVEY.md)：集中检查 PMIC regulator、已有的 debugfs 供电层级、运行时设备树的受限 RPMh 资源标识、`/proc/iomem` 中 Ramoops 相交区间、UFS runtime PM 和 Boot/Recovery/DTBO 最前 64 字节的头部元数据。脚本不重启、不刷机、不写分区，不挂载 debugfs，也不采集私人数据；仅将过滤后的 JSON 保存在本地。旧系统 Root 元数据依然不足以证明 Linux 6.12 的供电接线和恢复能力，所有安全门禁不变。今后优先集中验证实际阻塞项，不再为同类非 Root 属性逐个拆阶段。
 
+
+**Root 报告实测结果（2026-10-17）：** [九轨 UFS/PMIC 元数据与 DTBO 字节序复核](ROOT_BASELINE_FINDINGS.md) 确认 9 个目标电源轨均 enabled、9 个对应 RPMh 资源在运行时设备树存在、UFS Host runtime active、/proc/iomem 有与 4 MiB Ramoops 完全一致的 reserved 子区间；Boot/Recovery Header v2 已读取。原 Root 工具 DTBO magic 判断字节序错误，已改为 AOSP 标准大端解析，添加精简只读后续探针及回归测试。**仍未知真实上游电路连线和 Recovery 可逆性，不能试启动/刷机。**
+
 ## 已直接核对的源码
 
 | 轨道 | 固定来源 | 可证事实 |

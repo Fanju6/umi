@@ -40,7 +40,7 @@ def output():
         "__UMI_ROOT_HEADERS__",
         "boot|" + hdr(b"ANDROID!", 2),
         "recovery|" + hdr(b"ANDROID!", 2),
-        "dtbo|" + hdr(bytes.fromhex("1eabb7d7")),
+        "dtbo|" + hdr(bytes.fromhex("d7b7ab1e")),
         "__UMI_ROOT_END__", "",
     ])
 
@@ -95,7 +95,7 @@ class RootSurveyTests(unittest.TestCase):
         self.assertFalse(v["debugfs_regulator_summary"]["available"])
 
     def test_unknown_header_is_reported_not_guessed(self):
-        s = output().replace("dtbo|" + hdr(bytes.fromhex("1eabb7d7")),
+        s = output().replace("dtbo|" + hdr(bytes.fromhex("d7b7ab1e")),
                              "dtbo|unavailable")
         self.assertFalse(m.parse(s)["partition_headers"]["dtbo"]["readable"])
 

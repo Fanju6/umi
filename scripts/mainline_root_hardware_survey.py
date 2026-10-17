@@ -95,7 +95,7 @@ def header(value):
         version = int.from_bytes(raw[40:44], "little")
         return {"readable": True, "kind": "android_boot",
                 "header_version": version if version in range(5) else None}
-    if raw[:4] == bytes.fromhex("1eabb7d7"):
+    if raw[:4] == bytes.fromhex("d7b7ab1e"):
         return {"readable": True, "kind": "android_dtbo", "header_version": None}
     return {"readable": True, "kind": "unidentified", "header_version": None}
 

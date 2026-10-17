@@ -28,6 +28,10 @@ python scripts/mainline_root_hardware_survey.py --probe --output "$env:USERPROFI
 
 执行时如果 KernelSU、Magisk、APatch 弹出 Root 授权，请允许 ADB Shell。提供过滤后的 JSON 或命令输出，下一步重点解决实际 UFS/PMIC 阻塞；不再反复新增几乎相同的非 Root Probe。
 
+## Root 报告确认后的更正
+
+用户上传的过滤报告已经确认 9 条实体轨以及 9 个对应运行时 RPMh resource 全部存在；UFS Host runtime active；旧版 4 MiB Ramoops 亦可在 iomem reserved 区间观察。初版 DTBO Header 检查有大端序识别 bug，已修复；原始 unidentified 不能证明分区损坏。详见 [Root 基线实测结果](ROOT_BASELINE_FINDINGS.md)。新增 `scripts/mainline_root_targeted_followup.py` 可选择性只读补查 DTBO 64 字节头和当前 debugfs 路径，不写设备。
+
 ## 未解除的门禁
 
 safe_to_flash=false；safe_to_attempt_mainline_boot=false；未证明恢复分区可启动、已知恢复路径可逆、早期串口/UART 可用、真实主线 UFS 供电时序安全。稳定 main 的 4.19 + KernelSU 不动，研究 PR #8 继续 Open。
