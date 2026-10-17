@@ -104,6 +104,20 @@ def mkboot_args(unpack_tool, tools_dir, original, working):
          "unpack_bootimg changed header/page")
     return raw, pairs
 
+def replace_mkbootimg_values(raw, replacements):
+    """Replace option VALUES by option NAME; preserve empty values and order."""
+    need(len(raw) % 2 == 0, "invalid mkbootimg option/value count")
+    opts = raw[::2]
+    need(len(set(opts)) == len(opts) and all(x.startswith("--") for x in opts),
+         "invalid or duplicate mkbootimg option")
+    need(set(replacements).issubset(set(opts)),
+         "missing required mkbootimg replacement option")
+    args = []
+    for i in range(0, len(raw), 2):
+        option, original_value = raw[i:i + 2]
+        args.extend((option, replacements.get(option, original_value)))
+    return args
+
 def parse_avb_info(text):
     def get(field):
         # AVB descriptors indent Hash Algorithm / Partition Name, while
@@ -153,7 +167,7 @@ def run_pack(stock, preflight, kernel, initramfs, dtb, mktools, avbtool, output)
             replace["--cmdline"] = (oldline + " " + CMD_ADD).strip()
         else:
             raise ValueError("original boot has no --cmdline args; refuse guessing")
-        args = [replace.get(x, x) if i % 2 else x for i, x in enumerate(args)]
+        args = replace_mkbootimg_values(args, replace)
         draft = tempdir / "experiment-unsigned.img"
         subprocess.run([sys.executable, str(mktools / "mkbootimg.py"),
                         *args, "--output", str(draft)],

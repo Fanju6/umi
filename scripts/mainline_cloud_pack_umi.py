@@ -14,7 +14,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from inspect_stock_boot import audit_boot
 from mainline_pack_boot_v2_local import (
-    CMD_ADD, MAX_BOOT, MAX_INITRD, mkboot_args, parse_avb_info, sha256,
+    CMD_ADD, MAX_BOOT, MAX_INITRD, mkboot_args, parse_avb_info, replace_mkbootimg_values, sha256,
 )
 
 PUBLIC_ROM_SHA256 = "ce4a917a9233921b03e748b1fffc7b5ecea613c7ddf72208f26c77189f31a693"
@@ -81,8 +81,7 @@ def run(stock, kernel, initrd, dtb, mktools, avbtool, output, report):
             "--dtb": str(dtb.resolve()),
             "--cmdline": RAM_ONLY_BOOTARGS,
         }
-        args = [replacements.get(x, x) if i % 2 else x
-                for i, x in enumerate(raw_args)]
+        args = replace_mkbootimg_values(raw_args, replacements)
         candidate = work / "umi612-cloud-experimental.img"
         subprocess.run([sys.executable, str(mktools / "mkbootimg.py"), *args,
                         "--output", str(candidate)],

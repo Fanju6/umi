@@ -86,6 +86,31 @@ class FirstbootPackingTests(unittest.TestCase):
         self.assertEqual(pairs["--board"], "")
         self.assertEqual(pairs["--cmdline"], "console=ttyMSM0")
 
+    def test_replaces_values_by_option_not_the_old_value(self):
+        original = ["--header_version", "2", "--kernel", "old-kernel",
+                    "--ramdisk", "old-ramdisk", "--dtb", "old-dtb",
+                    "--pagesize", "4096", "--board", "",
+                    "--cmdline", "old androidboot.cmdline"]
+        changes = {"--kernel": "NEW-ARM64-IMAGE",
+                   "--ramdisk": "NEW-STATIC-INITRD",
+                   "--dtb": "NEW-UMI-P1N-DTB",
+                   "--cmdline": "rdinit=/init loglevel=8"}
+        actual = m.replace_mkbootimg_values(original, changes)
+        pairs = dict(zip(actual[::2], actual[1::2]))
+        for name, value in changes.items():
+            self.assertEqual(pairs[name], value)
+        self.assertEqual(pairs["--board"], "")
+        self.assertEqual(pairs["--header_version"], "2")
+        self.assertNotIn("old-kernel", actual)
+        self.assertNotIn("old-ramdisk", actual)
+        self.assertNotIn("old-dtb", actual)
+        self.assertNotIn("old androidboot.cmdline", actual)
+
+    def test_replacement_requires_all_named_switches(self):
+        with self.assertRaisesRegex(ValueError, "missing required"):
+            m.replace_mkbootimg_values(
+                ["--kernel", "old"], {"--dtb": "new"})
+
     def test_unsigned_avb_hash_props(self):
         info = ("Algorithm:                NONE\n"
                 "      Partition Name:        boot\n"
