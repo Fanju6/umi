@@ -70,6 +70,22 @@ class FirstbootPackingTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError,"invalid FDT DTB size"):
                     m.validate_inputs(stock,pre,kernel,ramdisk,dtb)
 
+    def test_lineage_null_arg_list_preserves_empty_board_value(self):
+        tokens = ["--header_version", "2", "--kernel", "kernel",
+                  "--ramdisk", "ramdisk", "--dtb", "dtb",
+                  "--pagesize", "0x00001000", "--board", "",
+                  "--cmdline", "console=ttyMSM0"]
+        binary = b"\0".join(s.encode("utf8") for s in tokens) + b"\0"
+        with tempfile.TemporaryDirectory() as td, mock.patch.object(
+                m.subprocess, "run", return_value=m.subprocess.CompletedProcess(
+                    ["python"], 0, binary, b"")):
+            args, pairs = m.mkboot_args(Path(td) / "unpack_bootimg.py",
+                                        Path(td), Path(td) / "stock.img",
+                                        Path(td) / "unpacked")
+        self.assertEqual(args, tokens)
+        self.assertEqual(pairs["--board"], "")
+        self.assertEqual(pairs["--cmdline"], "console=ttyMSM0")
+
     def test_unsigned_avb_hash_props(self):
         info = ("Algorithm:                NONE\n"
                 "Partition Name:        boot\n"

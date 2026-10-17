@@ -6,6 +6,8 @@ on:
       - '.github/workflows/mainline-cloud-repack.yml'
       - 'scripts/mainline_cloud_pack_umi.py'
       - 'tests/test_mainline_cloud_pack_umi.py'
+      - 'tests/test_mainline_pack_boot_v2_local.py'
+      - 'scripts/mainline_pack_boot_v2_local.py'
   workflow_dispatch:
 
 permissions:
@@ -40,6 +42,7 @@ jobs:
           set -euo pipefail
           python3 -m unittest discover -s tests -p test_mainline_mininit.py -v
           python3 -m unittest discover -s tests -p test_mainline_cloud_pack_umi.py -v
+          python3 -m unittest discover -s tests -p test_mainline_pack_boot_v2_local.py -v
           mkdir -p initroot/{dev,proc,sys} dist
           aarch64-linux-gnu-gcc -O2 -s -static -Wall -Wextra -Werror \
             -o initroot/init research/mainline/mini-init.c

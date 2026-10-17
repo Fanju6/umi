@@ -86,8 +86,15 @@ def mkboot_args(unpack_tool, tools_dir, original, working):
            "--format", "mkbootimg", "--null"]
     p = subprocess.run(cmd, stdout=subprocess.PIPE,
                        stderr=subprocess.PIPE, check=True, timeout=180)
-    raw = [os.fsdecode(x) for x in p.stdout.split(b"\0") if x]
+    # Lineage unpack_bootimg --null uses one NUL per token, and some
+    # arguments (notably --board) legitimately have an EMPTY value.
+    # Filtering empty tokens shifts all subsequent option/value pairs.
+    need(p.stdout.endswith(b"\0"), "non-terminated mkbootimg arg list")
+    parts = p.stdout.split(b"\0")[:-1]
+    raw = [os.fsdecode(part) for part in parts]
     need(len(raw) >= 8 and len(raw) % 2 == 0, "unexpected mkbootimg arg-list shape")
+    need(all(raw[i].startswith("--") and raw[i] != "--output"
+             for i in range(0, len(raw), 2)), "invalid mkbootimg option list")
     pairs = dict(zip(raw[::2], raw[1::2]))
     need(len(pairs) * 2 == len(raw), "duplicate mkbootimg argument")
     for required in ("--kernel", "--ramdisk", "--dtb", "--header_version",
