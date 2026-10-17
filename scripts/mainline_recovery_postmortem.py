@@ -44,37 +44,48 @@ def adb_transport_state(adb):
     return transports[0]
 
 
+def adb_shell_read(adb, *arguments):
+    """ADB shell direct argv commands without nested sh -c quoting."""
+    command = [adb, "shell", *arguments]
+    p = subprocess.run(command, capture_output=True, text=True,
+                       errors="replace", timeout=20, check=False)
+    need(p.returncode == 0,
+         "adb shell " + arguments[0] + " returned exit " + str(p.returncode) +
+         " (check TWRP ADB connection)")
+    return p.stdout.strip()
+
+
 def check_recovery(adb):
     transport = adb_transport_state(adb)
-    probe = subprocess.run(
-        [adb, "shell", "sh", "-c",
-         "printf 'MODE='; getprop ro.bootmode; "
-         "printf 'TWRP='; getprop ro.twrp.version; "
-         "printf 'UID='; id -u;"],
-        capture_output=True, text=True, errors="replace", timeout=20,
-        check=True)
-    lines = probe.stdout.replace("\r", "").splitlines()
-    values = {}
-    for line in lines:
-        name, sep, val = line.partition("=")
-        if sep and name in ("MODE", "TWRP", "UID") and name not in values:
-            values[name] = val.strip()
-    need(values.get("UID") == "0", "recovery ADB is not root")
-    need(transport == "recovery" or values.get("MODE") == "recovery"
-         or bool(values.get("TWRP")),
+    # TWRP getprop can be blank or 'unknown'. Only check what is available.
+    uid = adb_shell_read(adb, "id", "-u")
+    need(uid == "0", "recovery ADB is not root (id -u=" + uid[:8] + ")")
+    mode = adb_shell_read(adb, "getprop", "ro.bootmode")
+    twrp = adb_shell_read(adb, "getprop", "ro.twrp.version")
+    need(transport == "recovery" or mode == "recovery" or bool(twrp),
          "ADB transport, ro.bootmode and TWRP property do not confirm recovery")
-    return {"mode": values.get("MODE", ""), "adb_transport": transport,
-            "twrp_version_present": bool(values.get("TWRP"))}
+    return {"mode": mode, "adb_transport": transport,
+            "twrp_version_present": bool(twrp)}
+
 
 def enumerate_pstore(adb):
-    cmd = ('for f in /sys/fs/pstore/*; do [ -f "$f" ] || continue; '
-           'basename "$f"; done')
-    p = subprocess.run([adb, "shell", "sh", "-c", cmd],
+    # Nested sh -c arg quoting is not portable through Windows platform-tools.
+    # Use direct, read-only ls argv instead. Not-mounted pstore is expected
+    # on some TWRP builds: still try /proc/last_kmsg.
+    p = subprocess.run([adb, "shell", "ls", "-1", "/sys/fs/pstore"],
                        capture_output=True, text=True, errors="replace",
-                       timeout=20, check=True)
+                       timeout=20, check=False)
+    if p.returncode != 0:
+        # Differentiate a missing pstore mount from a dropped ADB connection.
+        need(adb_shell_read(adb, "id", "-u") == "0",
+             "pstore inaccessible and Recovery ADB is no longer root")
+        print("Note: /sys/fs/pstore not readable/listable in this recovery; "
+              "trying /proc/last_kmsg only.", file=sys.stderr)
+        return []
     names = p.stdout.replace("\r", "").splitlines()
     need(len(names) <= 128, "unexpectedly many pstore filenames")
     return sorted(set(n for n in names if ALLOW.fullmatch(n)))[:MAX_FILES]
+
 
 def read_file(adb, fullpath, directory, safe_name):
     need(safe_name == "last_kmsg" or ALLOW.fullmatch(safe_name),

@@ -16,24 +16,30 @@ def result(text):
 
 class RecoveryPostmortemTests(unittest.TestCase):
     def test_twrp_mode_and_root(self):
-        responses = [result("List of devices attached\nexampledevice\trecovery\n\n"),
-                     result("MODE=recovery\nTWRP=3.7.1\nUID=0\n")]
+        responses = [
+            result("List of devices attached\nexampledevice\trecovery\n\n"),
+            result("0\n"), result("recovery\n"), result("3.7.1\n")]
         with mock.patch.object(m.subprocess, "run", side_effect=responses) as run:
             o = m.check_recovery("adb")
         self.assertEqual(o["mode"], "recovery")
         self.assertEqual(o["adb_transport"], "recovery")
         self.assertTrue(o["twrp_version_present"])
-        self.assertEqual(run.call_count, 2)
+        self.assertEqual(run.call_count, 4)
+        self.assertEqual(run.call_args_list[1].args[0], ["adb", "shell", "id", "-u"])
+        self.assertEqual(run.call_args_list[2].args[0],
+                         ["adb", "shell", "getprop", "ro.bootmode"])
 
     def test_twrp_version_accepts_missing_bootmode(self):
-        responses = [result("List of devices attached\nexampledevice\tdevice\n"),
-                     result("MODE=\nTWRP=3.7.1\nUID=0\n")]
+        responses = [
+            result("List of devices attached\nexampledevice\tdevice\n"),
+            result("0\n"), result("\n"), result("3.7.1\n")]
         with mock.patch.object(m.subprocess, "run", side_effect=responses):
             self.assertTrue(m.check_recovery("adb")["twrp_version_present"])
 
     def test_unknown_bootmode_accepted_when_adb_reports_recovery(self):
-        responses = [result("List of devices attached\r\nexampledevice\trecovery\r\n\r\n"),
-                     result("MODE=unknown\nTWRP=\nUID=0\n")]
+        responses = [
+            result("List of devices attached\r\nexampledevice\trecovery\r\n\r\n"),
+            result("0\n"), result("unknown\n"), result("\n")]
         with mock.patch.object(m.subprocess, "run", side_effect=responses):
             check = m.check_recovery("adb")
         self.assertEqual(check["mode"], "unknown")
@@ -41,15 +47,17 @@ class RecoveryPostmortemTests(unittest.TestCase):
         self.assertFalse(check["twrp_version_present"])
 
     def test_regular_android_rejected(self):
-        responses = [result("List of devices attached\nexampledevice\tdevice\n"),
-                     result("MODE=normal\nTWRP=\nUID=0\n")]
+        responses = [
+            result("List of devices attached\nexampledevice\tdevice\n"),
+            result("0\n"), result("normal\n"), result("\n")]
         with mock.patch.object(m.subprocess, "run", side_effect=responses):
             with self.assertRaisesRegex(ValueError, "do not confirm recovery"):
                 m.check_recovery("adb")
 
     def test_non_root_rejected(self):
-        responses = [result("List of devices attached\nexampledevice\trecovery\n"),
-                     result("MODE=unknown\nTWRP=\nUID=2000\n")]
+        responses = [
+            result("List of devices attached\nexampledevice\trecovery\n"),
+            result("2000\n")]
         with mock.patch.object(m.subprocess, "run", side_effect=responses):
             with self.assertRaisesRegex(ValueError, "not root"):
                 m.check_recovery("adb")
@@ -67,6 +75,15 @@ class RecoveryPostmortemTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "exactly one"):
                 m.check_recovery("adb")
 
+    def test_getprop_failure_identifies_command(self):
+        responses = [
+            result("List of devices attached\nexampledevice\trecovery\n"),
+            result("0\n"),
+            m.subprocess.CompletedProcess(["adb", "shell", "getprop"], 1, "", "offline")]
+        with mock.patch.object(m.subprocess, "run", side_effect=responses):
+            with self.assertRaisesRegex(ValueError, "adb shell getprop returned exit 1"):
+                m.check_recovery("adb")
+
     def test_whitelist_not_private_filenames(self):
         self.assertTrue(m.ALLOW.fullmatch("console-ramoops-0"))
         self.assertTrue(m.ALLOW.fullmatch("pmsg-ramoops-0"))
@@ -80,6 +97,23 @@ class RecoveryPostmortemTests(unittest.TestCase):
             values = m.enumerate_pstore("adb")
         self.assertEqual(values, ["console-ramoops-0", "dmesg-ramoops-0",
                                   "pmsg-ramoops-0"])
+
+    def test_missing_pstore_still_allows_last_kmsg(self):
+        responses = [
+            m.subprocess.CompletedProcess(["adb", "shell", "ls"], 1, "", "No such file"),
+            result("0\n")]
+        with mock.patch.object(m.subprocess, "run", side_effect=responses) as run:
+            self.assertEqual(m.enumerate_pstore("adb"), [])
+        self.assertEqual(run.call_args_list[0].args[0],
+                         ["adb", "shell", "ls", "-1", "/sys/fs/pstore"])
+
+    def test_pstore_list_does_not_use_nested_shell(self):
+        with mock.patch.object(m.subprocess, "run",
+                               return_value=result("console-ramoops-0\n")) as run:
+            self.assertEqual(m.enumerate_pstore("adb"), ["console-ramoops-0"])
+        self.assertEqual(run.call_args.args[0],
+                         ["adb", "shell", "ls", "-1", "/sys/fs/pstore"])
+
 
     def test_capture_recovery_no_logs(self):
         with tempfile.TemporaryDirectory() as td, \
