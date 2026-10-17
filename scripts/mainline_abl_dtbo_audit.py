@@ -168,6 +168,55 @@ def merge_probe(base, overlay, work, stem):
             "fdt_total_bytes": int.from_bytes(merged[4:8], "big")}
 
 
+def fdt_strings(path, node, mode="properties", key=None):
+    """Read public DTB metadata through fdtdump companion fdtget."""
+    command = ["fdtget"]
+    if mode == "properties":
+        command.append("-p")
+    elif mode == "children":
+        command.append("-l")
+    elif mode == "value":
+        command.extend(["-t", "s"])
+    else:
+        raise ValueError("invalid fdtget mode")
+    command.extend((str(path), node))
+    if key is not None:
+        command.append(key)
+    p = subprocess.run(command, capture_output=True, text=True, timeout=30,
+                       check=False)
+    return p.stdout.split() if p.returncode == 0 else []
+
+
+def overlay_linkage_diagnostics(base, overlay, work, stem):
+    """Identify which public overlay dependencies are absent from base.
+
+    This does not assert whether ABL applies the overlay or if Linux will boot.
+    """
+    b = work / (stem + "-link-base.dtb")
+    b.write_bytes(base)
+    required = set(fdt_strings(overlay, "/__fixups__"))
+    provided = set(fdt_strings(b, "/__symbols__"))
+    missing = sorted(required - provided)
+    # Some vendor DTBO fragment targets are fixed absolute paths rather
+    # than __fixups__ symbols. Record those separately.
+    fragment_paths = []
+    for fragment in fdt_strings(overlay, "/", "children"):
+        if not fragment.startswith("fragment@"):
+            continue
+        location = "/" + fragment
+        target = fdt_strings(overlay, location, "value", "target-path")
+        if target:
+            fragment_paths.append(target[0])
+    return {
+        "overlay_fixup_count": len(required),
+        "base_symbol_count": len(provided),
+        "missing_overlay_symbols_count": len(missing),
+        "missing_overlay_symbols": missing[:120],
+        "fixed_target_paths": sorted(set(fragment_paths))[:50],
+        "note": "Missing symbols are a host-only dependency diagnosis; not a bootloader trace",
+    }
+
+
 def audit(public_dtbo, public_boot_dtb, mainline_dtb, compatibility_dtb=None):
     entries, dtbo = parse_dtbo(public_dtbo.read_bytes())
     boot_sources = find_dtb_segments(public_boot_dtb.read_bytes())
@@ -190,10 +239,17 @@ def audit(public_dtbo, public_boot_dtb, mainline_dtb, compatibility_dtb=None):
         work = Path(temporary)
         overlay = work / "vendor-umi-index11.dtbo"
         overlay.write_bytes(entries[EXPECTED_UMI_INDEX]["data"])
+        report["overlay_linkage"] = {}
         for i, base in enumerate(boot_sources[:16]):
-            report["results"][f"official_base_{i}"] = merge_probe(
+            name = f"official_base_{i}"
+            report["results"][name] = merge_probe(
                 base, overlay, work, f"official_{i}")
+            if i == 0:
+                report["overlay_linkage"][name] = overlay_linkage_diagnostics(
+                    base, overlay, work, name)
         report["results"]["mainline_p1n"] = merge_probe(
+            mainline, overlay, work, "mainline_p1n")
+        report["overlay_linkage"]["mainline_p1n"] = overlay_linkage_diagnostics(
             mainline, overlay, work, "mainline_p1n")
         if compatibility_dtb is not None:
             p1q = compatibility_dtb.read_bytes()
@@ -201,6 +257,8 @@ def audit(public_dtbo, public_boot_dtb, mainline_dtb, compatibility_dtb=None):
                  b"Xiaomi Mi 10 (umi)" in p1q,
                  "P1q candidate DTB not recognized")
             report["results"]["mainline_p1q_abl_symbols"] = merge_probe(
+                p1q, overlay, work, "mainline_p1q")
+            report["overlay_linkage"]["mainline_p1q"] = overlay_linkage_diagnostics(
                 p1q, overlay, work, "mainline_p1q")
     return report
 
