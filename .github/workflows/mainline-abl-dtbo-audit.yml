@@ -1,0 +1,76 @@
+name: umi P1p ABL/DTBO 11 cloud compatibility audit (NO FLASH)
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/mainline-abl-dtbo-audit.yml'
+      - 'scripts/mainline_abl_dtbo_audit.py'
+      - 'tests/test_mainline_abl_dtbo_audit.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  audit:
+    name: Test official umi DTBO[11] applying to original and Mainline P1n DTBs
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate DTBO parser/merge audit without phone
+        run: python3 -m unittest discover -s tests -p test_mainline_abl_dtbo_audit.py -v
+      - name: Install DT / unpack utilities
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends device-tree-compiler curl git
+      - name: Download proven kernel and DTB from successful Image build
+        uses: actions/download-artifact@v4
+        with:
+          name: umi612-cloud-kernel-dtb-COMPILE-ONLY
+          run-id: 39006200229
+          repository: Fanju6/umi
+          github-token: \${{ secrets.GITHUB_TOKEN }}
+          path: input
+      - name: Check original compiled Mainline DTB SHA
+        run: |
+          set -euo pipefail
+          test -s input/Image && test -s input/umi-p1n.dtb
+          (cd input && sed 's#dist/##g' SHA256SUMS | sha256sum -c -)
+      - name: Fetch official original base Boot and public DTBO
+        run: |
+          set -euo pipefail
+          mkdir -p public bin
+          curl -fLSs --retry 3 --connect-timeout 20 --max-time 600 \
+            https://mirrorbits.lineageos.org/full/umi/20261004/boot.img \
+            -o public/boot.img
+          echo 'ce4a917a9233921b03e748b1fffc7b5ecea613c7ddf72208f26c77189f31a693  public/boot.img' | sha256sum -c -
+          curl -fLSs --retry 3 --connect-timeout 20 --max-time 600 \
+            https://mirrorbits.lineageos.org/full/umi/20261004/dtbo.img \
+            -o public/dtbo.img
+          git clone --quiet --depth 1 --branch lineage-23.0 \
+            https://github.com/LineageOS/android_system_tools_mkbootimg.git \
+            bin/mkbootimg
+          python3 bin/mkbootimg/unpack_bootimg.py --boot_img public/boot.img \
+            --out public/unpacked --format mkbootimg --null >/dev/null
+          test -s public/unpacked/dtb
+          test -s public/dtbo.img
+      - name: Offline merge official umi DTBO index 11 with both base DTB kinds
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          python3 scripts/mainline_abl_dtbo_audit.py \
+            --dtbo public/dtbo.img \
+            --public-boot-dtb public/unpacked/dtb \
+            --mainline-dtb input/umi-p1n.dtb \
+            --report dist/umi-p1p-abl-overlay-audit.json
+          echo 'Only off-device FDT overlay compatibility was tested. No boot image generated.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload PUBLIC-METADATA-ONLY diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: umi-P1p-DTBO11-vs-mainline-compat-ANALYSIS-ONLY
+          path: dist/umi-p1p-abl-overlay-audit.json
+          retention-days: 7
+          if-no-files-found: warn
