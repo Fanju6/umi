@@ -55,6 +55,8 @@
 
 **一次性启动前取证（2026-10-17）：** [Root 集中式采集 + 本地 Boot/Recovery/DTBO 只读备份](ONE_SHOT_PREFLIGHT.md) 已准备，避免重复 P1a~P1m 已采集的 DTBO 和 UFS phandle。一次用户命令获取分区大小、Kernel config/pstore/boot security 等可读资料，并把原始镜像仅存到电脑私有目录、SHA-256 校验；不能自动证明恢复可启动或 Linux 6.12 已可安全刷入。任何研究门禁不变。
 
+**一次性真实启动证据 → ARM64 Image 编译（2026-10-17）：** 已收到成功的 Boot、Recovery、DTBO 私有本地备份与分区大小、v2/v0 镜像头、pstore/ramoops 配置。详见 [P1n 启动前资料及实际编译阶段](P1N_PREFLIGHT_TO_KERNEL_BUILD.md)。研究分支已加入独立的固定 Linux 6.12 ARM64 Image 编译 CI，并与仍全部 disabled 的 P1m UFS/PMIC DTS 离线校验绑定。生成的通用 Image 不属于可刷机包，Recovery 可逆性未验证；不再要求反复采集已经确认的 DTBO/UFS/PMIC 元数据。
+
 ## 已直接核对的源码
 
 | 轨道 | 固定来源 | 可证事实 |

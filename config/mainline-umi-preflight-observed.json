@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "device": "umi",
+  "phase": "preflight-observed-2026-10-17",
+  "provenance": "user-supplied sanitized Root report; boot/recovery/dtbo backups confirmed LOCAL ONLY; hashes deliberately not committed",
+  "legacy_kernel": "4.19.325-cip131-st15-perf-g71b13e62f057-dirty",
+  "partitions": {
+    "boot": {
+      "size_bytes": 134217728,
+      "header_version": 2,
+      "page_size_bytes": 4096,
+      "kernel_size_bytes": 55560208,
+      "ramdisk_size_bytes": 1494000,
+      "second_size_bytes": 0,
+      "local_backup_verified_by_capture": true
+    },
+    "recovery": {
+      "size_bytes": 134217728,
+      "header_version": 2,
+      "page_size_bytes": 4096,
+      "kernel_size_bytes": 54837264,
+      "ramdisk_size_bytes": 48962397,
+      "second_size_bytes": 0,
+      "local_backup_verified_by_capture": true
+    },
+    "dtbo": {
+      "size_bytes": 33554432,
+      "dt_table_version": 0,
+      "dt_table_declared_bytes": 5514578,
+      "entry_count": 12,
+      "local_backup_verified_by_capture": true
+    },
+    "vbmeta": {
+      "size_bytes": 131072,
+      "present": true
+    },
+    "vbmeta_system": {
+      "size_bytes": 131072,
+      "present": true
+    },
+    "vendor_boot": {
+      "present": false
+    },
+    "super": {
+      "size_bytes": 9126805504,
+      "present": true
+    }
+  },
+  "security": {
+    "verifiedbootstate": "orange",
+    "vbmeta_device_state": "unavailable",
+    "flash_locked": "unavailable",
+    "bootloader_unlock_verified_separately": false
+  },
+  "pstore": {
+    "filesystem_mounted": true,
+    "record_types": [
+      "console",
+      "pmsg"
+    ],
+    "memory_base": "0xb0000000",
+    "memory_size_bytes": 4194304,
+    "record_size_bytes": 0,
+    "console_size_bytes": 2097152,
+    "pmsg_size_bytes": 2097152,
+    "ftrace_size_bytes": 0,
+    "linux_612_early_boot_crash_capture_verified": false
+  },
+  "recoverability": {
+    "local_partition_backups_exist": true,
+    "independent_recovery_boot_verified": false,
+    "independent_restore_verified": false,
+    "temporary_fastboot_boot_supported_verified": false
+  },
+  "next_phase": "compile pinned Linux 6.12 ARM64 kernel Image offline and check disabled umi P1m DTB",
+  "safety": {
+    "safe_to_attempt_mainline_boot": false,
+    "safe_to_flash": false,
+    "linux_612_runtime_tested": false,
+    "partition_writes_performed": false
+  }
+}
