@@ -91,6 +91,8 @@ def parse(raw):
               "ramoops": {}, "kernel_config": {}, "selected_cmdline": {}}
     identity = security = ended = False
     for row in raw.replace("\r", "").splitlines():
+        if not row:
+            continue
         if row == "END":
             need(not ended, "duplicate end marker")
             ended = True
