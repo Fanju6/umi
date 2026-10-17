@@ -100,7 +100,7 @@ class MergedTests(unittest.TestCase):
             m.inspect_fdt(bytes(data))
 
     def test_fdt_truncated(self):
-        with self.assertRaisesRegex(ValueError, "header"):
+        with self.assertRaisesRegex(ValueError, "too small/large"):
             m.inspect_fdt(sample_fdt()[:38])
 
     def test_unsupported_property_is_filtered(self):
