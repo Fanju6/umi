@@ -57,6 +57,8 @@
 
 **一次性真实启动证据 → ARM64 Image 编译（2026-10-17）：** 已收到成功的 Boot、Recovery、DTBO 私有本地备份与分区大小、v2/v0 镜像头、pstore/ramoops 配置。详见 [P1n 启动前资料及实际编译阶段](P1N_PREFLIGHT_TO_KERNEL_BUILD.md)。研究分支已加入独立的固定 Linux 6.12 ARM64 Image 编译 CI，并与仍全部 disabled 的 P1m UFS/PMIC DTS 离线校验绑定。生成的通用 Image 不属于可刷机包，Recovery 可逆性未验证；不再要求反复采集已经确认的 DTBO/UFS/PMIC 元数据。
 
+**首轮 TWRP 可恢复实验环境（2026-10-17）：** 用户已确认独立 REC/TWRP、Recovery ADB 的失败后日志路线。新增 [RAM-only PID1 + P1n Ramoops 实验 DTS + TWRP 只读事后日志采集](FIRST_BOOT_RAMONLY_TWRP.md)。静态 AArch64 /init、Linux 6.12 P1n 研究 DTB 分别 CI 构建；ramoops 区间复用此前真机实测的 0xB0000000/4 MiB、console/pmsg 各 2 MiB。未证明日志能在从实验启动切回 Recovery 后幸存；首次 Boot v2 打包还需要核对用户本机原始 Boot 的 DTB 和 AVB 布局。所有 UFS/USB 节点禁用，独立稳定 main 保持不变。
+
 ## 已直接核对的源码
 
 | 轨道 | 固定来源 | 可证事实 |

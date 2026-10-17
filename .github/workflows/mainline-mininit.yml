@@ -1,0 +1,64 @@
+name: umi Linux 6.12 RAM-only PID1 initramfs (NO FLASH)
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/mainline-mininit.yml'
+      - 'research/mainline/mini-init.c'
+      - 'tests/test_mainline_mininit.py'
+      - 'scripts/mainline_recovery_postmortem.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  initramfs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install AArch64 GCC and initramfs tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu cpio gzip file
+      - name: Validate ROM-independent initramfs safety contract
+        run: python3 -m unittest discover -s tests -p test_mainline_mininit.py -v
+      - name: Compile standalone static ARM64 PID1
+        run: |
+          set -euo pipefail
+          mkdir -p dist/rootfs/{dev,proc,sys}
+          aarch64-linux-gnu-gcc -O2 -s -static -Wall -Wextra -Werror \
+            -o dist/rootfs/init research/mainline/mini-init.c
+          test -s dist/rootfs/init
+          file dist/rootfs/init | grep -E 'ELF 64-bit LSB executable, ARM aarch64'
+          aarch64-linux-gnu-readelf -h dist/rootfs/init | grep -F 'AArch64'
+          if aarch64-linux-gnu-readelf -l dist/rootfs/init | grep -q INTERP; then
+            echo 'Found dynamic loader: refusing initramfs package.' >&2
+            exit 1
+          fi
+      - name: Assemble reproducible newc initramfs (RAM ONLY)
+        run: |
+          set -euo pipefail
+          sudo mknod dist/rootfs/dev/console c 5 1
+          sudo mknod dist/rootfs/dev/null c 1 3
+          (
+            cd dist/rootfs
+            find . -print0 | LC_ALL=C sort -z | \
+              cpio -o --null -H newc --reproducible --owner=0:0 2>/dev/null | \
+              gzip -n -9 > ../umi612-minimal-initramfs.cpio.gz
+          )
+          test -s dist/umi612-minimal-initramfs.cpio.gz
+          gzip -dc dist/umi612-minimal-initramfs.cpio.gz | cpio -it 2>/dev/null | grep -Fx init
+          grep -F 'UMI612-MINIMAL-INIT' research/mainline/mini-init.c
+          sha256sum dist/umi612-minimal-initramfs.cpio.gz > dist/SHA256SUMS
+          echo 'ARM64 RAM-only /init built. This artifact is NOT a flashable boot image and has no mobile OS.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload development-only rootfs
+        uses: actions/upload-artifact@v4
+        with:
+          name: umi612-static-pid1-initramfs-NOT-FLASHABLE
+          path: |
+            dist/umi612-minimal-initramfs.cpio.gz
+            dist/SHA256SUMS
+          retention-days: 5
+          if-no-files-found: error

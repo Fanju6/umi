@@ -10,6 +10,7 @@ on:
       - 'config/mainline-p1c-rpmh-topology.json'
       - 'config/mainline-p1m-ufs-runtime-links.json'
       - 'tests/test_mainline_p1m.py'
+      - 'tests/test_mainline_p1n_ramconsole.py'
       - 'scripts/mainline_p1a_audit.py'
       - 'scripts/mainline_p1b_sources.py'
       - 'scripts/mainline_p1b_probe.py'
@@ -46,6 +47,7 @@ jobs:
           python3 scripts/mainline_p1c_topology.py
           python3 -m unittest discover -s tests -p test_mainline_p1c.py -v
           python3 -m unittest discover -s tests -p test_mainline_p1m.py -v
+          python3 -m unittest discover -s tests -p test_mainline_p1n_ramconsole.py -v
           python3 -m unittest discover -s tests -p test_mainline_p1b.py -v
       - name: Install Device Tree Compiler
         run: sudo apt-get update && sudo apt-get install -y device-tree-compiler
@@ -202,6 +204,37 @@ jobs:
             test "$(fdtget -t s "$dtb" "$node" status)" = disabled
           done
           echo 'P1m: five observed standard UFS supply links compiled and resolved; PM8150 provider + UFS/USB remain disabled. No parent wiring, vendor vote equivalence or boot readiness claimed.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Validate optional umi P1n persistent-console lab DTB (NO UFS/USB)
+        shell: bash
+        run: |
+          set -euo pipefail
+          soc=upstream/arch/arm64/boot/dts/qcom
+          cp research/mainline/sm8250-xiaomi-umi-p1n.dts "$soc/"
+          cpp -nostdinc -I upstream/include -I "$soc" -undef -D__DTS__ \
+            -x assembler-with-cpp "$soc/sm8250-xiaomi-umi-p1n.dts" \
+            /tmp/umi-p1n-preprocessed.dts
+          dtc -@ -I dts -O dtb -o /tmp/umi-p1n-not-bootable.dtb \
+            /tmp/umi-p1n-preprocessed.dts
+          dtb=/tmp/umi-p1n-not-bootable.dtb
+          region=/reserved-memory/ramoops@b0000000
+          test "$(fdtget -t s "$dtb" "$region" compatible)" = ramoops
+          test "$(fdtget -t x "$dtb" "$region" reg)" = "0 b0000000 0 400000"
+          test "$(fdtget -t x "$dtb" "$region" console-size)" = 200000
+          test "$(fdtget -t x "$dtb" "$region" pmsg-size)" = 200000
+          test "$(fdtget -t s "$dtb" /soc@0/rsc@18200000/regulators-umi-reference status)" = disabled
+          for node in /soc@0/ufshc@1d84000 /soc@0/phy@1d87000 \
+                      /soc@0/usb@a6f8800 /soc@0/usb@a6f8800/usb@a600000 \
+                      /soc@0/phy@88e3000 /soc@0/phy@88e8000; do
+            test "$(fdtget -t s "$dtb" "$node" status)" = disabled
+          done
+          echo 'P1n console lab DTS builds. Persistent log survival over TWRP reboot is NOT verified; cannot flash.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Publish P1n RAM-console research DTB (NOT FLASHABLE)
+        uses: actions/upload-artifact@v4
+        with:
+          name: umi-P1n-ramoops-DTB-NOT-FLASHABLE
+          path: /tmp/umi-p1n-not-bootable.dtb
+          retention-days: 5
+          if-no-files-found: error
       - name: Optional reserved-memory schema diagnostics
         if: success()
         continue-on-error: true
