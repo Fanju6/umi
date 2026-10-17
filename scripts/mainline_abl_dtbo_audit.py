@@ -15,6 +15,7 @@ from pathlib import Path
 MAGIC_DTBO = 0xD7B7AB1E
 MAGIC_FDT = 0xD00DFEED
 MAX_IMAGE = 8 * 1024 * 1024
+MAX_DTBO_PARTITION = 34 * 1024 * 1024  # umi dtbo partition is 32 MiB
 EXPECTED_COUNT = 12
 EXPECTED_UMI_INDEX = 11
 EXPECTED_UMI_MODEL = b"Qualcomm Technologies, Inc. xiaomi umi"
@@ -26,14 +27,21 @@ def need(ok, message):
 
 
 def parse_dtbo(blob):
-    need(32 <= len(blob) < MAX_IMAGE, "unexpected DTBO image length")
+    need(32 <= len(blob) <= MAX_DTBO_PARTITION,
+         "unexpected DTBO partition/image length")
     magic, total, hsize, esize, count, offset, page_size, version = struct.unpack_from(
         ">8I", blob)
     need(magic == MAGIC_DTBO and hsize == 32 and esize == 32 and
          count == EXPECTED_COUNT and version == 0 and
-         0 < total <= len(blob) and offset >= 32 and
+         0 < total <= min(len(blob), MAX_IMAGE) and offset >= 32 and
          offset + count * 32 <= total,
          "not the expected 12-entry Android DT table v0")
+    # Published dtbo.img can contain a complete padded 32 MiB partition.
+    # Entries remain bounded by the DT header declared total_size.
+    suffix = blob[total:]
+    need(not suffix or all(b == 0 for b in suffix) or
+         all(b == 0xff for b in suffix),
+         "nonempty unexpected bytes after declared DTBO table")
     entries = []
     for index in range(count):
         pos = offset + index * esize
@@ -50,6 +58,8 @@ def parse_dtbo(blob):
     need(EXPECTED_UMI_MODEL in entries[EXPECTED_UMI_INDEX]["data"],
          "index 11 lacks verified umi model")
     return entries, {"entry_count": count, "declared_size_bytes": total,
+                     "downloaded_partition_bytes": len(blob),
+                     "trailing_padding_bytes": len(blob) - total,
                      "selected_index": EXPECTED_UMI_INDEX,
                      "selected_size_bytes": entries[11]["size"],
                      "umi_model_matched": True}

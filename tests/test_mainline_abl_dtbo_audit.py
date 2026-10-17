@@ -41,6 +41,18 @@ class ABLDTBOTests(unittest.TestCase):
         self.assertEqual(len(entries), 12)
         self.assertTrue(report["umi_model_matched"])
 
+    def test_padded_dtbo_partition_accepted(self):
+        raw = synthetic_dtbo()
+        _, info = m.parse_dtbo(raw + bytes(4096))
+        self.assertEqual(info["downloaded_partition_bytes"], len(raw) + 4096)
+        self.assertEqual(info["trailing_padding_bytes"], 4096)
+        self.assertEqual(info["selected_index"], 11)
+
+    def test_nonzero_padding_rejected(self):
+        raw = synthetic_dtbo()
+        with self.assertRaisesRegex(ValueError, "unexpected bytes"):
+            m.parse_dtbo(raw + b"UNEXPECTED")
+
     def test_wrong_board_model_rejected(self):
         blob = bytearray(synthetic_dtbo())
         start = blob.find(m.EXPECTED_UMI_MODEL)
