@@ -1,0 +1,65 @@
+name: SM8250 主线移植 P0 静态检查
+
+on:
+  pull_request:
+    paths:
+      - 'config/mainline-research.json'
+      - 'config/mainline-p0b-map.json'
+      - 'config/mainline-612-reserved-memory.json'
+      - 'config/mainline-p1a-dependencies.json'
+      - 'config/mainline-p1b-power.json'
+      - 'config/mainline-p1b-observed.json'
+      - 'config/mainline-p1c-rpmh-topology.json'
+      - 'config/mainline-p1d-rpmh-evidence.json'
+      - 'docs/mainline-port/**'
+      - 'scripts/mainline_inventory.py'
+      - 'scripts/mainline_device_probe.py'
+      - 'scripts/mainline_reserved_memory_probe.py'
+      - 'scripts/mainline_compare_memory.py'
+      - 'scripts/mainline_p1a_audit.py'
+      - 'scripts/mainline_p1b_sources.py'
+      - 'scripts/mainline_p1b_probe.py'
+      - 'scripts/mainline_p1b_observations.py'
+      - 'scripts/mainline_p1c_topology.py scripts/mainline_p1d_rpmh_audit.py'
+      - 'scripts/mainline_p1d_rpmh_audit.py'
+      - 'scripts/mainline_full_reserved_probe.py'
+      - 'research/mainline/**'
+      - 'tests/test_mainline_inventory.py'
+      - 'tests/test_mainline_device_probe.py'
+      - 'tests/test_mainline_reserved_memory_probe.py'
+      - 'tests/test_mainline_memory_compare.py'
+      - 'tests/test_mainline_p0c.py'
+      - 'tests/test_mainline_p1a.py'
+      - 'tests/test_mainline_p1b.py'
+      - 'tests/test_mainline_p1b_observations.py'
+      - 'tests/test_mainline_p1c.py'
+      - 'tests/test_mainline_p1d.py'
+      - '.github/workflows/mainline-research.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  manifest:
+    name: 核对 umi 6.12/7.0 源码清单和安全门禁（不编译/刷机）
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: 校验固定版本清单
+        run: python3 scripts/mainline_inventory.py --manifest config/mainline-research.json
+      - name: 执行离线回归测试
+        run: |
+          python3 -m py_compile scripts/mainline_inventory.py scripts/mainline_device_probe.py scripts/mainline_reserved_memory_probe.py scripts/mainline_compare_memory.py scripts/mainline_full_reserved_probe.py scripts/mainline_p1a_audit.py scripts/mainline_p1b_sources.py scripts/mainline_p1b_probe.py scripts/mainline_p1b_observations.py scripts/mainline_p1c_topology.py
+          python3 -m unittest discover -s tests -p 'test_mainline_*.py' -v
+          python3 scripts/mainline_p1a_audit.py
+          python3 scripts/mainline_p1b_sources.py
+          python3 scripts/mainline_p1b_observations.py
+          python3 scripts/mainline_p1c_topology.py
+          python3 scripts/mainline_p1d_rpmh_audit.py
+          python3 -m unittest discover -s tests -p test_mainline_p1b.py -v
+      - name: 标记证据边界
+        run: |
+          echo 'P0/P0b/P0c 元数据及采集器回归，验证完整 34 节点白名单与离线 DTS 草案安全标记。此 CI 不连接手机，也不编译高版本 DTS 或 Linux 6.12。' >> "$GITHUB_STEP_SUMMARY"
+          echo '不会生成内核 Image、boot.img，也不会执行 ADB/Fastboot。' >> "$GITHUB_STEP_SUMMARY"

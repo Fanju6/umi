@@ -1,0 +1,180 @@
+{
+  "schema_version": 1,
+  "target": {
+    "device": "Xiaomi Mi 10",
+    "codename": "umi",
+    "soc": "Qualcomm SM8250",
+    "android": "LineageOS 23.2 Android 16",
+    "base": "Linux 4.19.325"
+  },
+  "created": "2026-10-16",
+  "sources": {
+    "vendor_419": {
+      "url": "https://github.com/LineageOS/android_kernel_xiaomi_sm8250",
+      "sha": "71b13e62f057a649b77fe4062feb73ee72ad609c",
+      "required": [
+        "arch/arm64/boot/dts/vendor/qcom/umi-sm8250-overlay.dts",
+        "arch/arm64/boot/dts/vendor/qcom/umi-sm8250.dtsi",
+        "arch/arm64/boot/dts/vendor/qcom/umi-pinctrl.dtsi",
+        "arch/arm64/boot/dts/vendor/qcom/umi-audio-overlay.dtsi",
+        "arch/arm64/boot/dts/vendor/qcom/umi-sm8250-camera-sensor-mtp.dtsi",
+        "arch/arm64/boot/dts/vendor/qcom/xiaomi-sm8250-common.dtsi",
+        "arch/arm64/configs/vendor/xiaomi/umi.config"
+      ]
+    },
+    "mainline_612": {
+      "url": "https://github.com/torvalds/linux",
+      "tag": "v6.12",
+      "sha": "adc218676eef25575469234709c2d87185ca223a",
+      "required": [
+        "arch/arm64/boot/dts/qcom/sm8250.dtsi",
+        "arch/arm64/boot/dts/qcom/sm8250-xiaomi-elish-common.dtsi",
+        "arch/arm64/boot/dts/qcom/sm8250-xiaomi-elish-boe.dts",
+        "arch/arm64/boot/dts/qcom/pm8150.dtsi",
+        "arch/arm64/boot/dts/qcom/pm8150b.dtsi"
+      ],
+      "absent": [
+        "arch/arm64/boot/dts/qcom/sm8250-xiaomi-umi.dts"
+      ]
+    },
+    "mainline_70": {
+      "url": "https://github.com/torvalds/linux",
+      "tag": "v7.0",
+      "sha": "028ef9c96e96197026887c0f092424679298aae8",
+      "required": [
+        "arch/arm64/boot/dts/qcom/sm8250.dtsi",
+        "arch/arm64/boot/dts/qcom/sm8250-xiaomi-elish-common.dtsi"
+      ],
+      "absent": [
+        "arch/arm64/boot/dts/qcom/sm8250-xiaomi-umi.dts"
+      ]
+    },
+    "dagu_reference": {
+      "url": "https://github.com/Huabin1010/dagu-mainline-linux",
+      "sha": "7cd802c3daacb0e22ed98a66db08d97dc3dd3855",
+      "required": [
+        "linux-mainline/dts/sm8250-xiaomi-dagu.dts",
+        "linux-mainline/dts/sm8250-xiaomi-dagu-full.dts",
+        "linux-mainline/docs/dagu-adaptation-status.md",
+        "linux-mainline/scripts/setup-kernel.sh"
+      ]
+    }
+  },
+  "observations": [
+    {
+      "id": "soc",
+      "tier": "P0",
+      "area": "SM8250 基础时钟/中断/总线",
+      "classification": "SoC 公共源码参考",
+      "vendor": "kona.dtsi + xiaomi-sm8250-common.dtsi",
+      "mainline": "sm8250.dtsi",
+      "work": "核对 CPU、RPMh、GCC、TLMM、SMMU 与 reserved-memory 差异；先取得最小启动日志"
+    },
+    {
+      "id": "boot",
+      "tier": "P0",
+      "area": "Boot / DTBO / Recovery",
+      "classification": "umi 专属，不能复用 dagu",
+      "vendor": "umi-sm8250-overlay.dts: qcom,kona-mtp, board-id <43 0>",
+      "mainline": "尚无 umi 主线 DTS",
+      "work": "确认 umi 非 A/B、Header v2、boot/dtbo 分区及原版镜像；不得照搬 dagu slot B/vendor_boot 布局"
+    },
+    {
+      "id": "storage",
+      "tier": "P0",
+      "area": "UFS/PHY/存储",
+      "classification": "SoC 驱动可参考，板级供电待复核",
+      "vendor": "xiaomi-sm8250-common.dtsi: ufshc_mem / ufsphy_mem",
+      "mainline": "sm8250.dtsi: UFS 控制器；dagu Linux 7.0 已报告可用",
+      "work": "最小内核先验 UFS probe 与 LUN，只读；禁止写 userdata"
+    },
+    {
+      "id": "usb",
+      "tier": "P0",
+      "area": "USB Device / 串口恢复",
+      "classification": "SoC 驱动可参考，板级 PHY/Type-C 待复核",
+      "vendor": "umi-sm8250.dtsi: usb2_phy0 overrides",
+      "mainline": "sm8250.dtsi DWC3/PHY；dagu 项目报告 USB gadget",
+      "work": "优先只读日志通道，避免误用其它设备 Recovery/EDL/刷写教程"
+    },
+    {
+      "id": "power",
+      "tier": "P0",
+      "area": "PMIC/RPMh/电源域",
+      "classification": "公共 PM8150 框架 + umi 独有供电图",
+      "vendor": "xiaomi-sm8250-common.dtsi; umi-sm8250.dtsi: pm8150b_charger",
+      "mainline": "pm8150*.dtsi; elish 与 dagu 仅为参考",
+      "work": "先核对 regulator、GPIO、panel 供电、reserved-memory，禁止照抄电压"
+    },
+    {
+      "id": "display",
+      "tier": "P1",
+      "area": "显示/AMOLED/DSI",
+      "classification": "umi 专属显示面板驱动缺口",
+      "vendor": "xiaomi-sm8250-common.dtsi: kona-sde-display.dtsi; umi-sm8250.dtsi: sde_dsi",
+      "mainline": "DRM/MSM DSI 存在；dagu L81A 平板面板不适用于 umi",
+      "work": "先识别 umi panel compatible/上电序列、背光、ESD，不复制 dagu L81A"
+    },
+    {
+      "id": "touch",
+      "tier": "P1",
+      "area": "触控/屏下指纹",
+      "classification": "umi 独有旧驱动和固件",
+      "vendor": "umi-sm8250.dtsi: st,fts @49 / goodix,gt9889 @5d; umi.config FTS/Goodix/FOD",
+      "mainline": "dagu Himax SPI 完全不同",
+      "work": "确认实际面板/触控 BOM，需独立 STM/Goodix 驱动与 FOD 协议"
+    },
+    {
+      "id": "wifi_bt",
+      "tier": "P1",
+      "area": "Wi-Fi/蓝牙",
+      "classification": "同系列器件参考，板级固件与 bus 待核实",
+      "vendor": "xiaomi-sm8250-common.dtsi: bt_qca6390",
+      "mainline": "dagu: ath11k/QCA6390 蓝牙报告正常，非 umi 验收",
+      "work": "检查 QCA6390 bus、pinctrl、WLAN 固件、board data 和 NVMEM 地址"
+    },
+    {
+      "id": "charge",
+      "tier": "P1",
+      "area": "有线/无线充电",
+      "classification": "umi 专属，高风险电源管理",
+      "vendor": "umi-sm8250.dtsi: bq2597x, idt,p9415, rx1619, ln8282",
+      "mainline": "dagu 使用 P9418 笔充，不等于 umi Qi 无线充电",
+      "work": "核对电芯与热限制，P0 阶段不启用快充、反向无线充电或动态电压"
+    },
+    {
+      "id": "audio",
+      "tier": "P2",
+      "area": "音频/ADSP",
+      "classification": "共用 SoC 通道但板级拓扑不同",
+      "vendor": "umi-sm8250.dtsi: 双 CS35L41; umi-audio-overlay.dtsi",
+      "mainline": "dagu Linux7 有四颗 CS35L41 和 Q6；不能直接移植拓扑",
+      "work": "逐项确认 MI2S/SLIMbus、拓扑 firmware、麦克风和音频 HAL"
+    },
+    {
+      "id": "camera",
+      "tier": "P2",
+      "area": "摄像头/CAMSS/ISP",
+      "classification": "板级多传感器与 Android Camera HAL 高难度",
+      "vendor": "umi-sm8250-camera-sensor-mtp.dtsi: CCI/actuator/eeprom/cam-sensor",
+      "mainline": "dagu 有 Linux 7.0 部分 camera preview 实测但型号不同",
+      "work": "先核对 umi sensor IDs、CCI、CSI lane、供电，后研究 Vendor CamX"
+    },
+    {
+      "id": "android",
+      "tier": "P2",
+      "area": "Android 16 / GKI / Vendor HAL",
+      "classification": "跨内核 ABI，不可由 Linux 主线启动替代",
+      "vendor": "当前 LineageOS 23.2 的内核/Vendor API 是 4.19 BSP",
+      "mainline": "AOSP android16-6.12 GKI 是独立源码/配置轨道",
+      "work": "单独审计 Binder、DMA-BUF/ION、SELinux、f2fs/加密、供应商 HAL/KMI；再决定 Android 路线"
+    }
+  ],
+  "safety": {
+    "safe_to_flash": false,
+    "boot_image_available": false,
+    "mainline_umi_dts_available": false,
+    "android_boot_verified": false,
+    "depends_on_vendor_hal": true
+  }
+}

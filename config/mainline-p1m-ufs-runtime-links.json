@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "stage": "P1m",
+  "device": "umi",
+  "locked": {
+    "vendor": "71b13e62f057a649b77fe4062feb73ee72ad609c",
+    "upstream": "adc218676eef25575469234709c2d87185ca223a"
+  },
+  "root_runtime": {
+    "model": "Qualcomm Technologies, Inc. xiaomi umi",
+    "board_id": [
+      43,
+      0
+    ],
+    "compatible": [
+      "qcom,kona-mtp",
+      "qcom,kona",
+      "qcom,mtp"
+    ]
+  },
+  "runtime_links": [
+    {
+      "consumer": "ufs_mem_phy",
+      "property": "vdda-phy-supply",
+      "observed_runtime_phandle": "0x0000007f",
+      "legacy_provider": "pm8150_l5",
+      "kind": "regulator",
+      "mainline_research_provider_label": "umi_p1c_l5",
+      "old_phandle_is_not_reusable_for_mainline": true
+    },
+    {
+      "consumer": "ufs_mem_phy",
+      "property": "vdda-pll-supply",
+      "observed_runtime_phandle": "0x00000080",
+      "legacy_provider": "pm8150_l9",
+      "kind": "regulator",
+      "mainline_research_provider_label": "umi_p1c_l9",
+      "old_phandle_is_not_reusable_for_mainline": true
+    },
+    {
+      "consumer": "ufs_mem_hc",
+      "property": "vdd-hba-supply",
+      "observed_runtime_phandle": "0x00000076",
+      "legacy_provider": null,
+      "kind": "legacy_gdsc_regulator",
+      "mainline_research_provider_label": null,
+      "old_phandle_is_not_reusable_for_mainline": true
+    },
+    {
+      "consumer": "ufs_mem_hc",
+      "property": "vcc-supply",
+      "observed_runtime_phandle": "0x000002d4",
+      "legacy_provider": "pm8150_l17",
+      "kind": "regulator",
+      "mainline_research_provider_label": "umi_p1c_l17",
+      "old_phandle_is_not_reusable_for_mainline": true
+    },
+    {
+      "consumer": "ufs_mem_hc",
+      "property": "vccq-supply",
+      "observed_runtime_phandle": "0x000002cf",
+      "legacy_provider": "pm8150_l6",
+      "kind": "regulator",
+      "mainline_research_provider_label": "umi_p1c_l6",
+      "old_phandle_is_not_reusable_for_mainline": true
+    },
+    {
+      "consumer": "ufs_mem_hc",
+      "property": "vccq2-supply",
+      "observed_runtime_phandle": "0x000000ac",
+      "legacy_provider": "pm8150_s4",
+      "kind": "regulator",
+      "mainline_research_provider_label": "umi_p1c_s4",
+      "old_phandle_is_not_reusable_for_mainline": true
+    },
+    {
+      "consumer": "ufs_mem_hc",
+      "property": "qcom,vddp-ref-clk-supply",
+      "observed_runtime_phandle": "0x000002cf",
+      "legacy_provider": "pm8150_l6",
+      "kind": "vendor_only_vote",
+      "mainline_research_provider_label": null,
+      "old_phandle_is_not_reusable_for_mainline": true
+    },
+    {
+      "consumer": "ufs_mem_hc",
+      "property": "qcom,vccq-parent-supply",
+      "observed_runtime_phandle": "0x000000ae",
+      "legacy_provider": "pm8150a_s8",
+      "kind": "vendor_only_vote",
+      "mainline_research_provider_label": null,
+      "old_phandle_is_not_reusable_for_mainline": true
+    }
+  ],
+  "legacy_vdd_hba": {
+    "consumer": "ufs_mem_hc",
+    "property": "vdd-hba-supply",
+    "observed_runtime_phandle": "0x00000076",
+    "phandle_found_in_runtime_fdt": true,
+    "runtime_provider_identity_classified": false,
+    "vendor_label": "ufs_phy_gdsc",
+    "vendor_gdsc_resource_address": "0x177004",
+    "source": "arch/arm64/boot/dts/vendor/qcom/kona.dtsi and xiaomi-sm8250-common.dtsi",
+    "mainline_612_power_domain": "<&gcc UFS_PHY_GDSC>",
+    "source_equivalence_is_not_electrical_or_runtime_proof": true
+  },
+  "mainline_draft": {
+    "name": "research/mainline/sm8250-xiaomi-umi-p1m.dts",
+    "standard_supplies_only": [
+      "vdda-phy-supply",
+      "vdda-pll-supply",
+      "vcc-supply",
+      "vccq-supply",
+      "vccq2-supply"
+    ],
+    "vendor_votes_unmapped": [
+      "qcom,vddp-ref-clk-supply",
+      "qcom,vccq-parent-supply"
+    ],
+    "vdd_hba_legacy_regulator_not_copied": true,
+    "pm8150_input_parents_verified": false,
+    "regulator_voltages_for_612_verified": false,
+    "provider_enabled": false,
+    "ufs_enabled": false,
+    "usb_enabled": false
+  },
+  "safety": {
+    "safe_to_attempt_mainline_boot": false,
+    "safe_to_flash": false,
+    "boot_image_created": false,
+    "mainline_runtime_tested": false
+  }
+}

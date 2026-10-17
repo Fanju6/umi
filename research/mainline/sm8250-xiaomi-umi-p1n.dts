@@ -1,0 +1,38 @@
+// SPDX-License-Identifier: BSD-3-Clause
+/*
+ * umi P1n PRE-BOOT LAB DTB: Linux v6.12 persistent-console experiment.
+ *
+ * Board-only 4MiB region is grounded in live 4.19 /proc/iomem and
+ * /sys/module/ramoops/parameters. This region was a reserved subrange
+ * of System RAM. Its persistence across a Linux 6.12->TWRP reboot
+ * has NOT been proved. This is a research DTS: NO UFS / USB.
+ */
+#include "sm8250-xiaomi-umi-p1m.dts"
+
+/ {
+    model = "Xiaomi Mi 10 (umi) - experimental RAM-console DTS";
+    /* Pinned 4.19 vendor Kona/umi DT metadata for bootloader DT matching.
+     * This does NOT prove the bootloader will accept an upstream DTB.
+     */
+    qcom,msm-id = <356 0x10000>;
+    qcom,board-id = <43 0>;
+
+    reserved-memory {
+        umi_test_ramoops: ramoops@b0000000 {
+            compatible = "ramoops";
+            reg = <0x0 0xb0000000 0x0 0x400000>;
+            /* Matches live 4.19 module settings; no panic ring yet. */
+            record-size = <0x0>;
+            console-size = <0x200000>;
+            pmsg-size = <0x200000>;
+        };
+    };
+};
+
+/* These are intentionally redundant guards to catch accidental enablement. */
+&ufs_mem_hc { status = "disabled"; };
+&ufs_mem_phy { status = "disabled"; };
+&usb_1 { status = "disabled"; };
+&usb_1_dwc3 { status = "disabled"; };
+&usb_1_hsphy { status = "disabled"; };
+&usb_1_qmpphy { status = "disabled"; };

@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "stage": "P1c",
+  "device": "umi",
+  "date": "2026-10-16",
+  "sources": {
+    "upstream": {
+      "repo": "torvalds/linux",
+      "sha": "adc218676eef25575469234709c2d87185ca223a",
+      "binding": "Documentation/devicetree/bindings/regulator/qcom,rpmh-regulator.yaml",
+      "soc": "arch/arm64/boot/dts/qcom/sm8250.dtsi",
+      "reference_board": "arch/arm64/boot/dts/qcom/sm8250-xiaomi-elish-common.dtsi"
+    },
+    "vendor": {
+      "repo": "LineageOS/android_kernel_xiaomi_sm8250",
+      "sha": "71b13e62f057a649b77fe4062feb73ee72ad609c"
+    }
+  },
+  "source_verified_on_device": "Linux 4.19.325 regulator sysfs; mainline hardware remains untested",
+  "provider": {
+    "compatible": "qcom,pm8150-rpmh-regulators",
+    "dts_parent_label": "apps_rsc",
+    "reference_pmic_id": "a",
+    "pmic_id_evidence": "upstream elish example only, not verified for umi",
+    "pmic_id_verified_on_umi": false,
+    "node_name": "regulators-umi-reference",
+    "status": "disabled",
+    "input_supplies_assigned": false,
+    "output_voltages_assigned": false,
+    "consumer_phandles_connected": false
+  },
+  "outputs": [
+    {
+      "legacy": "pm8150_s4",
+      "child": "smps4",
+      "parent_supply_property": "vdd-s4-supply",
+      "legacy_observed_microvolts": 1800000,
+      "confidence": "property_name_from_upstream_binding_and_output_state_from_legacy_umi_only",
+      "parent_phandle": null,
+      "mainline_voltage_range": null
+    },
+    {
+      "legacy": "pm8150_l2",
+      "child": "ldo2",
+      "parent_supply_property": "vdd-l2-l10-supply",
+      "legacy_observed_microvolts": 3072000,
+      "confidence": "property_name_from_upstream_binding_and_output_state_from_legacy_umi_only",
+      "parent_phandle": null,
+      "mainline_voltage_range": null
+    },
+    {
+      "legacy": "pm8150_l5",
+      "child": "ldo5",
+      "parent_supply_property": "vdd-l3-l4-l5-l18-supply",
+      "legacy_observed_microvolts": 880000,
+      "confidence": "property_name_from_upstream_binding_and_output_state_from_legacy_umi_only",
+      "parent_phandle": null,
+      "mainline_voltage_range": null
+    },
+    {
+      "legacy": "pm8150_l6",
+      "child": "ldo6",
+      "parent_supply_property": "vdd-l6-l9-supply",
+      "legacy_observed_microvolts": 1200000,
+      "confidence": "property_name_from_upstream_binding_and_output_state_from_legacy_umi_only",
+      "parent_phandle": null,
+      "mainline_voltage_range": null
+    },
+    {
+      "legacy": "pm8150_l9",
+      "child": "ldo9",
+      "parent_supply_property": "vdd-l6-l9-supply",
+      "legacy_observed_microvolts": 1200000,
+      "confidence": "property_name_from_upstream_binding_and_output_state_from_legacy_umi_only",
+      "parent_phandle": null,
+      "mainline_voltage_range": null
+    },
+    {
+      "legacy": "pm8150_l12",
+      "child": "ldo12",
+      "parent_supply_property": "vdd-l7-l12-l14-l15-supply",
+      "legacy_observed_microvolts": 1800000,
+      "confidence": "property_name_from_upstream_binding_and_output_state_from_legacy_umi_only",
+      "parent_phandle": null,
+      "mainline_voltage_range": null
+    },
+    {
+      "legacy": "pm8150_l17",
+      "child": "ldo17",
+      "parent_supply_property": "vdd-l13-l16-l17-supply",
+      "legacy_observed_microvolts": 2504000,
+      "confidence": "property_name_from_upstream_binding_and_output_state_from_legacy_umi_only",
+      "parent_phandle": null,
+      "mainline_voltage_range": null
+    }
+  ],
+  "blockers": [
+    "Exact umi RPMh PMIC IDs and parent rails (VPH_PWR, SMPS/BOB) unresolved",
+    "No confirmed umi SPMI/PMIC topology and incoming regulator graph",
+    "No Linux 6.12 UFS/USB PHY bring-up and regulator voltage validation",
+    "No proven recovery/serial diagnostics path for boot experiments"
+  ],
+  "safety": {
+    "safe_to_flash": false,
+    "mainline_board_ready": false,
+    "mainline_kernel_built": false,
+    "provider_enabled": false,
+    "consumer_nodes_enabled": false,
+    "boot_image_generated": false
+  }
+}

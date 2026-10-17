@@ -1,0 +1,334 @@
+{
+  "schema_version": 1,
+  "phase": "P0c",
+  "device": "umi",
+  "source": "2026-10-16 umi 4.19 running DT metadata; derived from user-reviewed JSON; no unique device IDs",
+  "address_cells": 2,
+  "size_cells": 2,
+  "regions": {
+    "fixed": [
+      {
+        "node": "hyp_region@80000000",
+        "base": "0x80000000",
+        "size": "0x600000",
+        "no_map": true,
+        "reusable": false
+      },
+      {
+        "node": "xbl_aop_region@80700000",
+        "base": "0x80600000",
+        "size": "0x260000",
+        "no_map": true,
+        "reusable": false
+      },
+      {
+        "node": "reserved-memory@80860000",
+        "base": "0x80860000",
+        "size": "0x20000",
+        "no_map": true,
+        "reusable": false
+      },
+      {
+        "node": "res_xbl_uefi_log_region@80880000",
+        "base": "0x80880000",
+        "size": "0x14000",
+        "no_map": true,
+        "reusable": false
+      },
+      {
+        "node": "smem_region@80900000",
+        "base": "0x80900000",
+        "size": "0x200000",
+        "no_map": true,
+        "reusable": false
+      },
+      {
+        "node": "removed_region@80b00000",
+        "base": "0x80b00000",
+        "size": "0x5300000",
+        "no_map": true,
+        "reusable": false
+      },
+      {
+        "node": "pil_camera_region@86200000",
+        "base": "0x86200000",
+        "size": "0x500000",
+        "no_map": true,
+        "reusable": false
+      },
+      {
+        "node": "pil_wlan_fw_region@86700000",
+        "base": "0x86700000",
+        "size": "0x100000",
+        "no_map": true,
+        "reusable": false
+      },
+      {
+        "node": "pil_ipa_fw_region@86800000",
+        "base": "0x86800000",
+        "size": "0x10000",
+        "no_map": true,
+        "reusable": false
+      },
+      {
+        "node": "pil_ipa_gsi_region@86810000",
+        "base": "0x86810000",
+        "size": "0xa000",
+        "no_map": true,
+        "reusable": false
+      },
+      {
+        "node": "pil_gpu_region@8681a000",
+        "base": "0x8681a000",
+        "size": "0x2000",
+        "no_map": true,
+        "reusable": false
+      },
+      {
+        "node": "pil_npu_region@86900000",
+        "base": "0x86900000",
+        "size": "0x500000",
+        "no_map": true,
+        "reusable": false
+      },
+      {
+        "node": "pil_video_region@86e00000",
+        "base": "0x86e00000",
+        "size": "0x500000",
+        "no_map": true,
+        "reusable": false
+      },
+      {
+        "node": "pil_cvp_region@87300000",
+        "base": "0x87300000",
+        "size": "0x500000",
+        "no_map": true,
+        "reusable": false
+      },
+      {
+        "node": "pil_cdsp_region@87800000",
+        "base": "0x87800000",
+        "size": "0x1400000",
+        "no_map": true,
+        "reusable": false
+      },
+      {
+        "node": "pil_slpi_region@88c00000",
+        "base": "0x88c00000",
+        "size": "0x2f00000",
+        "no_map": true,
+        "reusable": false
+      },
+      {
+        "node": "pil_adsp_region@8bb00000",
+        "base": "0x8bb00000",
+        "size": "0x2500000",
+        "no_map": true,
+        "reusable": false
+      },
+      {
+        "node": "pil_spss_region@8e000000",
+        "base": "0x8e000000",
+        "size": "0x100000",
+        "no_map": true,
+        "reusable": false
+      },
+      {
+        "node": "cdsp_secure_heap@8e100000",
+        "base": "0x8e100000",
+        "size": "0x4600000",
+        "no_map": true,
+        "reusable": false
+      },
+      {
+        "node": "cont_splash_region@9c000000",
+        "base": "0x9c000000",
+        "size": "0x2300000",
+        "no_map": false,
+        "reusable": false
+      },
+      {
+        "node": "dfps_data_region@9e300000",
+        "base": "0x9e300000",
+        "size": "0x100000",
+        "no_map": false,
+        "reusable": false
+      },
+      {
+        "node": "disp_rdump_region@9c000000",
+        "base": "0xb0400000",
+        "size": "0x1000000",
+        "no_map": true,
+        "reusable": false
+      }
+    ],
+    "dynamic": [
+      {
+        "node": "adsp_region",
+        "size": "0xc00000",
+        "alignment": "0x400000",
+        "alloc_ranges": [
+          {
+            "base": "0x0",
+            "size": "0xffffffff"
+          }
+        ],
+        "reusable": true,
+        "no_map": false
+      },
+      {
+        "node": "cdsp_region",
+        "size": "0x400000",
+        "alignment": "0x400000",
+        "alloc_ranges": [
+          {
+            "base": "0x0",
+            "size": "0xffffffff"
+          }
+        ],
+        "reusable": true,
+        "no_map": false
+      },
+      {
+        "node": "cnss_wlan_region",
+        "size": "0x1400000",
+        "alignment": "0x400000",
+        "alloc_ranges": [
+          {
+            "base": "0x0",
+            "size": "0xffffffff"
+          }
+        ],
+        "reusable": true,
+        "no_map": false
+      },
+      {
+        "node": "linux,cma",
+        "size": "0x2000000",
+        "alignment": "0x400000",
+        "alloc_ranges": [
+          {
+            "base": "0x0",
+            "size": "0xffffffff"
+          }
+        ],
+        "reusable": true,
+        "no_map": false
+      },
+      {
+        "node": "mailbox_region",
+        "size": "0x20000",
+        "alignment": "0x400000",
+        "alloc_ranges": [
+          {
+            "base": "0x0",
+            "size": "0xffffffff"
+          }
+        ],
+        "reusable": false,
+        "no_map": true
+      },
+      {
+        "node": "mem_dump_region",
+        "size": "0x2800000",
+        "alignment": null,
+        "alloc_ranges": [
+          {
+            "base": "0x0",
+            "size": "0xffffffff"
+          }
+        ],
+        "reusable": true,
+        "no_map": false
+      },
+      {
+        "node": "qseecom_region",
+        "size": "0x1400000",
+        "alignment": "0x400000",
+        "alloc_ranges": [
+          {
+            "base": "0x0",
+            "size": "0xffffffff"
+          }
+        ],
+        "reusable": true,
+        "no_map": false
+      },
+      {
+        "node": "qseecom_ta_region",
+        "size": "0x1000000",
+        "alignment": "0x400000",
+        "alloc_ranges": [
+          {
+            "base": "0x0",
+            "size": "0xffffffff"
+          }
+        ],
+        "reusable": true,
+        "no_map": false
+      },
+      {
+        "node": "sdsp_region",
+        "size": "0x800000",
+        "alignment": "0x400000",
+        "alloc_ranges": [
+          {
+            "base": "0x0",
+            "size": "0xffffffff"
+          }
+        ],
+        "reusable": true,
+        "no_map": false
+      },
+      {
+        "node": "secure_display_region",
+        "size": "0xa400000",
+        "alignment": "0x400000",
+        "alloc_ranges": [
+          {
+            "base": "0x0",
+            "size": "0xffffffff"
+          }
+        ],
+        "reusable": true,
+        "no_map": false
+      },
+      {
+        "node": "sp_region",
+        "size": "0x1000000",
+        "alignment": "0x400000",
+        "alloc_ranges": [
+          {
+            "base": "0x0",
+            "size": "0xffffffff"
+          }
+        ],
+        "reusable": true,
+        "no_map": false
+      },
+      {
+        "node": "user_contig_region",
+        "size": "0x1000000",
+        "alignment": "0x400000",
+        "alloc_ranges": [
+          {
+            "base": "0x0",
+            "size": "0xffffffff"
+          }
+        ],
+        "reusable": true,
+        "no_map": false
+      }
+    ]
+  },
+  "safety": {
+    "safe_to_flash": false,
+    "bootable": false,
+    "android_612_verified": false,
+    "complete_memory_map": false
+  },
+  "limitations": [
+    "Fixed 22 reg ranges total 341.6875 MiB; 12 dynamic pools request 348.125 MiB but their base addresses and actual consumption are unknown.",
+    "No boot/vendor/firmware readiness implied. Not a full compiled and bootloader-merged FDT; do not flash."
+  ]
+}

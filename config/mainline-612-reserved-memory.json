@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "source": {
+    "repository": "torvalds/linux",
+    "commit": "adc218676eef25575469234709c2d87185ca223a",
+    "path": "arch/arm64/boot/dts/qcom/sm8250.dtsi",
+    "scope": "upstream SoC DTS defaults only; not final compiled umi DT"
+  },
+  "regions": [
+    {
+      "name": "hyp_mem",
+      "base": "0x80000000",
+      "size": "0x600000",
+      "observed_node": "hyp_region@80000000"
+    },
+    {
+      "name": "xbl_aop_mem",
+      "base": "0x80700000",
+      "size": "0x160000",
+      "observed_node": "xbl_aop_region@80700000"
+    },
+    {
+      "name": "cmd_db",
+      "base": "0x80860000",
+      "size": "0x20000",
+      "observed_node": "reserved-memory@80860000"
+    },
+    {
+      "name": "smem_mem",
+      "base": "0x80900000",
+      "size": "0x200000",
+      "observed_node": "smem_region@80900000"
+    },
+    {
+      "name": "removed_mem",
+      "base": "0x80b00000",
+      "size": "0x5300000",
+      "observed_node": "removed_region@80b00000"
+    },
+    {
+      "name": "camera_mem",
+      "base": "0x86200000",
+      "size": "0x500000",
+      "observed_node": "pil_camera_region@86200000"
+    },
+    {
+      "name": "wlan_mem",
+      "base": "0x86700000",
+      "size": "0x100000",
+      "observed_node": "pil_wlan_fw_region@86700000"
+    },
+    {
+      "name": "ipa_fw_mem",
+      "base": "0x86800000",
+      "size": "0x10000",
+      "observed_node": null
+    },
+    {
+      "name": "ipa_gsi_mem",
+      "base": "0x86810000",
+      "size": "0xa000",
+      "observed_node": null
+    },
+    {
+      "name": "gpu_mem",
+      "base": "0x8681a000",
+      "size": "0x2000",
+      "observed_node": null
+    },
+    {
+      "name": "npu_mem",
+      "base": "0x86900000",
+      "size": "0x500000",
+      "observed_node": null
+    },
+    {
+      "name": "video_mem",
+      "base": "0x86e00000",
+      "size": "0x500000",
+      "observed_node": null
+    },
+    {
+      "name": "cvp_mem",
+      "base": "0x87300000",
+      "size": "0x500000",
+      "observed_node": null
+    },
+    {
+      "name": "cdsp_mem",
+      "base": "0x87800000",
+      "size": "0x1400000",
+      "observed_node": null
+    },
+    {
+      "name": "slpi_mem",
+      "base": "0x88c00000",
+      "size": "0x1500000",
+      "observed_node": "pil_slpi_region@88c00000"
+    },
+    {
+      "name": "adsp_mem",
+      "base": "0x8a100000",
+      "size": "0x1d00000",
+      "observed_node": "pil_adsp_region@8bb00000"
+    },
+    {
+      "name": "spss_mem",
+      "base": "0x8be00000",
+      "size": "0x100000",
+      "observed_node": "pil_spss_region@8e000000"
+    },
+    {
+      "name": "cdsp_secure_heap",
+      "base": "0x8bf00000",
+      "size": "0x4600000",
+      "observed_node": "cdsp_secure_heap@8e100000"
+    }
+  ],
+  "safety": {
+    "read_only": true,
+    "safe_to_flash": false,
+    "does_not_describe_umi_board": true
+  }
+}

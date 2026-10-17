@@ -1,0 +1,44 @@
+// SPDX-License-Identifier: BSD-3-Clause
+/*
+ * Xiaomi Mi 10 umi / P1a source-mapping DTS. OFFLINE-ONLY / NOT BOOTABLE.
+ * Includes measured P0c carveouts. Does not define regulators or enable ports.
+ * Do not add to any kernel production dtb targets; no boot or flash artifacts.
+ */
+#include "sm8250-xiaomi-umi-p0c.dts"
+
+/*
+ * Linux v6.12 controller labels and addresses match the SM8250 SoC baseline,
+ * but their power supplies and board connections do not follow automatically.
+ * Explicitly keep them disabled until regulator, DT binding and bootloader
+ * requirements have been verified on umi, NOT copied from elish or dagu.
+ */
+
+/* UFS 0x01d84000 / GIC SPI 265. Legacy: L17=VCC, L6=VCCQ, S4=VCCQ2. */
+&ufs_mem_hc {
+	status = "disabled";
+};
+
+/* UFS PHY 0x01d87000. Legacy: L5=vdda-phy, L9=vdda-pll. */
+&ufs_mem_phy {
+	status = "disabled";
+};
+
+/* USB primary wrapper 0x0a6f8800; no VBUS/Type-C/PD configuration yet. */
+&usb_1 {
+	status = "disabled";
+};
+
+/* USB DWC3 0x0a600000 / GIC SPI 133. Old umi limits to high-speed. */
+&usb_1_dwc3 {
+	status = "disabled";
+};
+
+/* USB2 HS PHY 0x088e3000, vendor PHY tuning not ported. */
+&usb_1_hsphy {
+	status = "disabled";
+};
+
+/* USB3/QMP PHY remains disabled in old umi common DTS. */
+&usb_1_qmpphy {
+	status = "disabled";
+};

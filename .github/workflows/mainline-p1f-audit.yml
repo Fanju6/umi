@@ -1,0 +1,63 @@
+name: umi P1f UFS regulator lifecycle audit
+
+on:
+  pull_request:
+    paths:
+      - 'config/mainline-p1f-ufs-lifecycle.json'
+      - 'scripts/mainline_p1f_ufs_lifecycle.py'
+      - 'tests/test_mainline_p1f.py'
+      - 'docs/mainline-port/P1F_UFS_LIFECYCLE.md'
+      - 'docs/mainline-port/README.md'
+      - '.github/workflows/mainline-p1f-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: P1f fixed SHA UFS driver and power vote audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Static P1f/P1e audit and safety regression
+        run: |
+          set -euo pipefail
+          python3 scripts/mainline_p1f_ufs_lifecycle.py
+          python3 -m unittest discover -s tests -p test_mainline_p1f.py -v
+          python3 scripts/mainline_p1e_ufs_audit.py
+          python3 -m unittest discover -s tests -p test_mainline_p1e.py -v
+      - name: Fetch pinned old and new UFS source through authenticated GitHub API
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/umi-p1f
+          old=71b13e62f057a649b77fe4062feb73ee72ad609c
+          new=adc218676eef25575469234709c2d87185ca223a
+          getpin() {
+            gh api --header 'Accept: application/vnd.github.raw+json' \
+              "repos/$1/contents/$2?ref=$3" > "/tmp/umi-p1f/$4"
+            test -s "/tmp/umi-p1f/$4"
+          }
+          getpin LineageOS/android_kernel_xiaomi_sm8250 drivers/scsi/ufs/ufs-qcom.c "$old" legacy-ufs
+          getpin LineageOS/android_kernel_xiaomi_sm8250 arch/arm64/boot/dts/vendor/qcom/xiaomi-sm8250-common.dtsi "$old" legacy-common
+          getpin LineageOS/android_kernel_xiaomi_sm8250 arch/arm64/boot/dts/vendor/qcom/kona.dtsi "$old" legacy-kona
+          getpin torvalds/linux drivers/ufs/host/ufs-qcom.c "$new" new-ufs
+          getpin torvalds/linux drivers/ufs/host/ufshcd-pltfrm.c "$new" new-platform
+          getpin torvalds/linux Documentation/devicetree/bindings/ufs/qcom,ufs.yaml "$new" new-ufs-binding
+          getpin torvalds/linux Documentation/devicetree/bindings/ufs/ufs-common.yaml "$new" new-common-binding
+      - name: Assert legacy enable/load vote and mainline difference
+        run: |
+          set -euo pipefail
+          python3 scripts/mainline_p1f_ufs_lifecycle.py \
+            --legacy-ufs /tmp/umi-p1f/legacy-ufs \
+            --legacy-common /tmp/umi-p1f/legacy-common \
+            --legacy-kona /tmp/umi-p1f/legacy-kona \
+            --new-ufs /tmp/umi-p1f/new-ufs \
+            --new-platform /tmp/umi-p1f/new-platform \
+            --new-ufs-binding /tmp/umi-p1f/new-ufs-binding \
+            --new-common-binding /tmp/umi-p1f/new-common-binding
+          echo 'P1f source evidence only: unknown board parent wiring, safe_to_flash=false.' >> "$GITHUB_STEP_SUMMARY"

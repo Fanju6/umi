@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "stage": "P1k",
+  "device": "umi",
+  "locked": {
+    "vendor": "71b13e62f057a649b77fe4062feb73ee72ad609c",
+    "upstream": "adc218676eef25575469234709c2d87185ca223a"
+  },
+  "runtime_evidence": {
+    "origin": "user-shared sanitized P1j CLI output with local_report_verified true",
+    "local_user_report_validated": true,
+    "raw_p1j_file_inspected_by_assistant": false,
+    "legacy_kernel_family": "4.19",
+    "sysfs_four_parameters_readable": true,
+    "sysfs_four_parameters_match_vendor": true,
+    "observed_parameters": {
+      "mem_address": 2952790016,
+      "mem_size": 4194304,
+      "console_size": 2097152,
+      "pmsg_size": 2097152
+    },
+    "source_memory_range_end_exclusive": "0xB0400000",
+    "verified_reported_parameter_values": true,
+    "actual_physical_ram_owner_proven": false
+  },
+  "fixed_memory_audit": {
+    "p0c_fixed_regions_count": 22,
+    "p0c_fixed_overlap_count": 0,
+    "p0c_dynamic_regions_count": 12,
+    "p0c_dynamic_actual_locations_verified": false,
+    "non_dt_memory_owners_completely_known": false,
+    "adjacent_reserved_region_name": "disp_rdump_region@9c000000",
+    "adjacent_region_start": "0xB0400000"
+  },
+  "mainline_612_migration": {
+    "vendor_early_param_supported_as_is": false,
+    "driver": "fs/pstore/ram.c",
+    "binding": "Documentation/devicetree/bindings/reserved-memory/ramoops.yaml",
+    "candidate_reserved_memory_resource_registered": false,
+    "ramoops_dts_node_added": false,
+    "ready_to_enable_ramoops": false,
+    "ramoops_crash_retention_tested": false,
+    "android_612_boot_tested": false
+  },
+  "gates": {
+    "runtime_metadata_matches_4_19_source": true,
+    "complete_physical_memory_ownership_verified": false,
+    "safe_to_copy_4_19_ram_region_to_612": false,
+    "recovery_and_earlycon_proven": false,
+    "ufs_parent_and_power_verified": false,
+    "safe_to_attempt_mainline_boot": false,
+    "safe_to_flash": false
+  }
+}

@@ -1,0 +1,102 @@
+name: umi Linux 6.12 ARM64 Image offline build (NOT FLASHABLE)
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/mainline-arm64-image.yml'
+      - 'config/mainline-umi-preflight-observed.json'
+      - 'research/mainline/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  kernel:
+    name: Build pinned generic Linux v6.12 Image and disabled umi P1m DTB
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends clang lld llvm make bc flex bison libssl-dev libelf-dev device-tree-compiler
+      - name: Fetch exact Linux v6.12 source commit
+        run: |
+          set -euo pipefail
+          git clone --quiet --depth 1 --filter=blob:none --branch v6.12 https://github.com/torvalds/linux.git upstream
+          expected=adc218676eef25575469234709c2d87185ca223a
+          actual=$(git -C upstream rev-parse HEAD)
+          test "$actual" = "$expected" || { echo "Linux SHA mismatch ($actual)"; exit 1; }
+      - name: Configure generic ARM64 defconfig and ensure essential built-ins
+        run: |
+          set -euo pipefail
+          make -C upstream O="$GITHUB_WORKSPACE/out" ARCH=arm64 LLVM=1 defconfig
+          cd upstream
+          scripts/config --file "$GITHUB_WORKSPACE/out/.config" \
+            -e SCSI_UFS_QCOM -e PHY_QCOM_QMP_UFS -e PSTORE_RAM \
+            -e PSTORE_CONSOLE -e PSTORE_PMSG
+          make O="$GITHUB_WORKSPACE/out" ARCH=arm64 LLVM=1 olddefconfig
+          for flag in CONFIG_BLK_DEV_INITRD CONFIG_DEVTMPFS CONFIG_DEVTMPFS_MOUNT \
+                      CONFIG_SCSI_UFSHCD CONFIG_SCSI_UFS_QCOM \
+                      CONFIG_REGULATOR_QCOM_RPMH CONFIG_QCOM_RPMH; do
+            grep -Fx "$flag=y" "$GITHUB_WORKSPACE/out/.config" ||
+            { echo "Missing essential ARM64 built-in: $flag"; exit 1; }
+          done
+          echo "Build is GENERIC mainline, not a bootable umi image." >> "$GITHUB_STEP_SUMMARY"
+      - name: Actually compile Linux v6.12 Image (ARM64)
+        run: |
+          set -euo pipefail
+          make -C upstream O="$GITHUB_WORKSPACE/out" ARCH=arm64 LLVM=1 -j 2 Image
+          test -s out/arch/arm64/boot/Image
+          mkdir -p dist
+          cp out/arch/arm64/boot/Image dist/Image.generic-arm64.NOT-FLASHABLE
+          cp out/.config dist/config.generic-arm64
+          sha256sum dist/* > dist/SHA256SUMS
+      - name: Compile umi P1m DTB for syntax/phandle validation only
+        run: |
+          set -euo pipefail
+          for stage in p0c p1a p1c p1m; do
+            cp "research/mainline/sm8250-xiaomi-umi-$stage.dts" \
+               "upstream/arch/arm64/boot/dts/qcom/"
+          done
+          soc=upstream/arch/arm64/boot/dts/qcom
+          cpp -nostdinc -I upstream/include -I "$soc" -undef -D__DTS__ \
+              -x assembler-with-cpp "$soc/sm8250-xiaomi-umi-p1m.dts" \
+              /tmp/umi-research-preprocessed.dts
+          dtc -@ -I dts -O dtb -o dist/umi-P1m-OFFLINE-NOT-BOOTABLE.dtb \
+              /tmp/umi-research-preprocessed.dts
+          dtb=dist/umi-P1m-OFFLINE-NOT-BOOTABLE.dtb
+          provider=/soc@0/rsc@18200000/regulators-umi-reference
+          host=/soc@0/ufshc@1d84000
+          phy=/soc@0/phy@1d87000
+          test "$(fdtget -t s "$dtb" "$provider" status)" = disabled
+          for row in \
+            "$host vcc-supply ldo17" \
+            "$host vccq-supply ldo6" \
+            "$host vccq2-supply smps4" \
+            "$phy vdda-phy-supply ldo5" \
+            "$phy vdda-pll-supply ldo9"; do
+            read -r consumer property regulator <<< "$row"
+            test "$(fdtget -t x "$dtb" "$consumer" "$property")" = \
+                 "$(fdtget -t x "$dtb" "$provider/$regulator" phandle)"
+          done
+          for node in "$host" "$phy" \
+                      /soc@0/usb@a6f8800 /soc@0/usb@a6f8800/usb@a600000 \
+                      /soc@0/phy@88e3000 /soc@0/phy@88e8000; do
+            test "$(fdtget -t s "$dtb" "$node" status)" = disabled
+          done
+          sha256sum "$dtb" >> dist/SHA256SUMS
+          echo 'P1m DTS is disabled: this DTB is not for installation or boot.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload research-only build evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: generic-linux612-umi-P1m-NOT-FLASHABLE
+          path: dist/
+          retention-days: 3
+          if-no-files-found: error
+      - name: Always show boundary
+        if: always()
+        run: |
+          echo 'NO boot.img, dtbo.img, vbmeta, initramfs, flash script or boot command created. No phone connected.' >> "$GITHUB_STEP_SUMMARY"

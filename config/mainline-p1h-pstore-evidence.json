@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "stage": "P1h",
+  "device": "umi",
+  "locked": {
+    "vendor": "71b13e62f057a649b77fe4062feb73ee72ad609c",
+    "upstream": "adc218676eef25575469234709c2d87185ca223a"
+  },
+  "evidence": {
+    "origin": "user-shared P1g CLI summary",
+    "full_local_p1g_json_inspected": false,
+    "current_kernel_family": "4.19",
+    "pstore_directory_present": true,
+    "pstore_filesystem_mounted": true,
+    "record_classes_seen": [
+      "console",
+      "pmsg"
+    ],
+    "record_classes_not_seen": [
+      "dmesg",
+      "ftrace"
+    ],
+    "record_names_from_p1g_probe": "*-ramoops",
+    "record_contents_inspected": false,
+    "pstore_backend_name_confirmed_from_platform_device": false,
+    "underlying_reserved_ram_physical_range_verified": false,
+    "source_of_pstore_records_unequivocally_identified": false,
+    "crash_survival_tested": false
+  },
+  "interpretation": {
+    "console_and_pmsg_are_distinct_buffers": true,
+    "absence_of_dmesg_file_proves_unsupported_backend": false,
+    "legacy_pstore_layout_safe_for_mainline": false,
+    "source_inspection_proves_umi_hardware": false
+  },
+  "mainline_ramoops_requirements": {
+    "binding": "Documentation/devicetree/bindings/reserved-memory/ramoops.yaml",
+    "implementation": "fs/pstore/ram.c",
+    "requires_reserved_reg_and_compatible": true,
+    "configuration_kinds": [
+      "record-size",
+      "console-size",
+      "pmsg-size",
+      "ftrace-size"
+    ],
+    "umi_reserved_phandle": null,
+    "umi_buffer_sizes": null,
+    "mainline_612_boot_verified": false
+  },
+  "gates": {
+    "safe_to_flash": false,
+    "safe_to_attempt_mainline_boot": false,
+    "known_good_recovery_verified": false,
+    "pstore_crash_survival_verified": false,
+    "uart_earlycon_verified": false,
+    "ufs_parent_wiring_verified": false
+  }
+}

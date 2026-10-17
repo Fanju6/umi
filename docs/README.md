@@ -13,6 +13,13 @@
 | 测试 | [首次自动安装验收协议](V331_FIRST_INSTALL_TEST_PROTOCOL.md) | 无预装 ksud 的安全测试与回滚 |
 | 深入 | [SELinux 4.19 移植](SELINUX_419_PORT.md) | 特定 API 和安全风险 |
 | 维护 | [工作流维护](CI_WORKFLOW_MAINTENANCE.md) | CI 触发条件、文档检查与优化路线 |
+| 研究 | [SM8250 Linux 6.12 / 7.0 P0 对照](mainline-port/README.md) | 固定源码、驱动差异、风险与只读验证工具 |
+| 研究 | [umi Linux 6.12 P0c DTS 草案](mainline-port/P0C_DTS_DRAFT.md) | 非刷机设备树草稿和 34 节点数据采集说明 |
+| 研究 | [P0c 全 34 节点内存与真实 DTS 编译](mainline-port/P0C_FULL_MEMORY_AND_DTC.md) | 22 固定区间、12 动态池、6.12 DTS 实际编译与安全边界 |
+| 研究 | [P1a UFS/USB/PMIC 板级依赖](mainline-port/P1A_BOARD_DEPENDENCIES.md) | 固定源码对照、禁用态 DTS、供电与内存消费者门禁 |
+| 研究 | [P1b PM8150 供电与 Type-C 核验](mainline-port/P1B_POWER_TYPEC.md) | 旧 UFS/USB 供电到 6.12 的候选映射和非 Root 只读实机采集 |
+| 研究 | [P1c RPMh regulator 输入拓扑](mainline-port/P1C_RPMH_TOPOLOGY.md) | 七条 PM8150 输出、六组父供电属性与禁用态参考 DTS |
+| 研究 | [P1d RPMh 资源 ID 与 UFS parent 输入](mainline-port/P1D_VRM_EVIDENCE.md) | 七轨 VRM resource 证据、两条额外厂商供电依赖与安全门禁 |
 | 历史 | [开发历史与故障档案](history/README.md) | TEST2、首版启动失败、Manager 原型 |
 
 **文档状态标记：**“命令回显”有真实设备或 CI 输出，“测试者确认”代表已经报告成功但未必提供原始全流程日志，“静态审计 BLOCK”表示代码安全分析尚未签收。这三类证据不能互相代替。

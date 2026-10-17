@@ -1,0 +1,11 @@
+// SPDX-License-Identifier: BSD-3-Clause
+/*
+ * P1p successor to P1n after real black-screen boot attempts.
+ * Preserve known RAM log region, UFS/USB disabled, avoid guessing UART.
+ * Diagnostics are enabled by the new kernel config and Boot v2 cmdline.
+ */
+#include "sm8250-xiaomi-umi-p1n.dts"
+
+/ {
+    model = "Xiaomi Mi 10 (umi) - P1p early diagnostic lab";
+};

@@ -1,0 +1,249 @@
+name: umi Linux 6.12 DTS 离线编译验证
+
+on:
+  pull_request:
+    paths:
+      - 'research/mainline/**'
+      - 'config/mainline-p1a-dependencies.json'
+      - 'config/mainline-p1b-power.json'
+      - 'config/mainline-p1b-observed.json'
+      - 'config/mainline-p1c-rpmh-topology.json'
+      - 'config/mainline-p1m-ufs-runtime-links.json'
+      - 'tests/test_mainline_p1m.py'
+      - 'tests/test_mainline_p1n_ramconsole.py'
+      - 'scripts/mainline_p1a_audit.py'
+      - 'scripts/mainline_p1b_sources.py'
+      - 'scripts/mainline_p1b_probe.py'
+      - 'scripts/mainline_p1b_observations.py'
+      - 'scripts/mainline_p1c_topology.py'
+      - 'tests/test_mainline_p1a.py'
+      - 'tests/test_mainline_p1b.py'
+      - 'tests/test_mainline_p1b_observations.py'
+      - 'tests/test_mainline_p1c.py'
+      - 'config/mainline-umi-p0c-memory.json'
+      - 'scripts/mainline_validate_p0c.py'
+      - 'tests/test_mainline_validate_p0c.py'
+      - '.github/workflows/mainline-dts-compile.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compile:
+    name: Linux v6.12 固定源码 / cpp + dtc（不生成 boot.img）
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify umi P0c safety and map
+        run: |
+          python3 scripts/mainline_validate_p0c.py
+          python3 -m unittest discover -s tests -p test_mainline_validate_p0c.py -v
+          python3 scripts/mainline_p1a_audit.py
+          python3 -m unittest discover -s tests -p test_mainline_p1a.py -v
+          python3 scripts/mainline_p1b_sources.py
+          python3 scripts/mainline_p1b_observations.py
+          python3 scripts/mainline_p1c_topology.py
+          python3 -m unittest discover -s tests -p test_mainline_p1c.py -v
+          python3 -m unittest discover -s tests -p test_mainline_p1m.py -v
+          python3 -m unittest discover -s tests -p test_mainline_p1n_ramconsole.py -v
+          python3 -m unittest discover -s tests -p test_mainline_p1b.py -v
+      - name: Install Device Tree Compiler
+        run: sudo apt-get update && sudo apt-get install -y device-tree-compiler
+      - name: Fetch locked Torvalds Linux v6.12 DTS headers only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --quiet --no-checkout --sparse --filter=blob:none --depth=1 --branch v6.12 https://github.com/torvalds/linux.git upstream
+          git -C upstream sparse-checkout set arch/arm64/boot/dts/qcom include/dt-bindings Documentation/devicetree/bindings/reserved-memory
+          git -C upstream checkout --quiet --detach v6.12
+          actual=$(git -C upstream rev-parse HEAD)
+          expected=adc218676eef25575469234709c2d87185ca223a
+          test "$actual" = "$expected" || { echo "Upstream SHA mismatch $actual"; exit 1; }
+      - name: Compile offline research DTS
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp research/mainline/sm8250-xiaomi-umi-p0c.dts upstream/arch/arm64/boot/dts/qcom/
+          cpp -nostdinc -I upstream/include -I upstream/arch/arm64/boot/dts/qcom -undef -D__DTS__ -x assembler-with-cpp upstream/arch/arm64/boot/dts/qcom/sm8250-xiaomi-umi-p0c.dts /tmp/umi-p0c-preprocessed.dts
+          dtc -@ -I dts -O dtb -o /tmp/umi-p0c-offline.dtb /tmp/umi-p0c-preprocessed.dts
+          test -s /tmp/umi-p0c-offline.dtb
+          for node in xbl-aop@80600000 slpi@88c00000 adsp@8bb00000 spss@8e000000 cdsp-secure-heap@8e100000; do
+            fdtget -t x /tmp/umi-p0c-offline.dtb "/reserved-memory/$node" reg
+          done
+          echo 'Only DTS syntax and selected reg values checked. NOT BOOTABLE.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Verify pinned umi source dependencies (UFS, USB, PMIC, memory-region)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/umi-vendor
+          pinned=71b13e62f057a649b77fe4062feb73ee72ad609c
+          for file in xiaomi-sm8250-common.dtsi kona-usb.dtsi umi-sm8250.dtsi; do
+            curl --fail --location --silent --show-error --retry 3 \
+              "https://raw.githubusercontent.com/LineageOS/android_kernel_xiaomi_sm8250/${pinned}/arch/arm64/boot/dts/vendor/qcom/${file}" \
+              --output "/tmp/umi-vendor/${file}"
+            test -s "/tmp/umi-vendor/${file}"
+          done
+          python3 scripts/mainline_p1a_audit.py \
+            --upstream upstream/arch/arm64/boot/dts/qcom/sm8250.dtsi \
+            --vendor-root /tmp/umi-vendor
+      - name: Compile P1a offline-only board DTS; forbid enabled hardware
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp research/mainline/sm8250-xiaomi-umi-p1a.dts upstream/arch/arm64/boot/dts/qcom/
+          cpp -nostdinc -I upstream/include -I upstream/arch/arm64/boot/dts/qcom -undef -D__DTS__ -x assembler-with-cpp \
+            upstream/arch/arm64/boot/dts/qcom/sm8250-xiaomi-umi-p1a.dts /tmp/umi-p1a-preprocessed.dts
+          dtc -@ -I dts -O dtb -o /tmp/umi-p1a-offline.dtb /tmp/umi-p1a-preprocessed.dts
+          test -s /tmp/umi-p1a-offline.dtb
+          for node in /soc@0/ufshc@1d84000 /soc@0/phy@1d87000 \
+                      /soc@0/usb@a6f8800 /soc@0/usb@a6f8800/usb@a600000 \
+                      /soc@0/phy@88e3000 /soc@0/phy@88e8000; do
+            state=$(fdtget -t s /tmp/umi-p1a-offline.dtb "$node" status)
+            if [ "$state" != disabled ]; then
+              echo "Unexpected enabled P1a controller: $node ($state)"
+              exit 1
+            fi
+          done
+          echo 'P1a DTS compiles, 6 hardware nodes disabled; safe_to_flash=false' >> "$GITHUB_STEP_SUMMARY"
+      - name: P1b pinned PM8150B Type-C/VBUS source audit (never enable)
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error --retry 3 \
+            "https://raw.githubusercontent.com/torvalds/linux/adc218676eef25575469234709c2d87185ca223a/arch/arm64/boot/dts/qcom/pm8150b.dtsi" \
+            --output /tmp/umi-upstream-pm8150b.dtsi
+          test -s /tmp/umi-upstream-pm8150b.dtsi
+          python3 scripts/mainline_p1b_sources.py \
+            --upstream-soc upstream/arch/arm64/boot/dts/qcom/sm8250.dtsi \
+            --upstream-pmicb /tmp/umi-upstream-pm8150b.dtsi \
+            --vendor-common /tmp/umi-vendor/xiaomi-sm8250-common.dtsi \
+            --vendor-usb /tmp/umi-vendor/kona-usb.dtsi \
+            --vendor-umi /tmp/umi-vendor/umi-sm8250.dtsi
+          echo 'P1b rail mapping static only; live voltages / Type-C roles are unverified.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Audit P1c source-pinned RPMh supply groups
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/umi-rpmh-sources
+          source_sha=adc218676eef25575469234709c2d87185ca223a
+          curl --fail --silent --show-error --location --retry 3 \
+            "https://raw.githubusercontent.com/torvalds/linux/${source_sha}/Documentation/devicetree/bindings/regulator/qcom,rpmh-regulator.yaml" \
+            --output /tmp/umi-rpmh-sources/qcom,rpmh-regulator.yaml
+          curl --fail --silent --show-error --location --retry 3 \
+            "https://raw.githubusercontent.com/torvalds/linux/${source_sha}/arch/arm64/boot/dts/qcom/sm8250-xiaomi-elish-common.dtsi" \
+            --output /tmp/umi-rpmh-sources/elish.dtsi
+          test -s /tmp/umi-rpmh-sources/qcom,rpmh-regulator.yaml
+          test -s /tmp/umi-rpmh-sources/elish.dtsi
+          python3 scripts/mainline_p1c_topology.py \
+            --binding /tmp/umi-rpmh-sources/qcom,rpmh-regulator.yaml \
+            --soc upstream/arch/arm64/boot/dts/qcom/sm8250.dtsi \
+            --reference-board /tmp/umi-rpmh-sources/elish.dtsi
+      - name: Compile disabled PM8150 RPMh research provider (P1c)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp research/mainline/sm8250-xiaomi-umi-p1c.dts upstream/arch/arm64/boot/dts/qcom/
+          cpp -nostdinc -I upstream/include -I upstream/arch/arm64/boot/dts/qcom \
+            -undef -D__DTS__ -x assembler-with-cpp \
+            upstream/arch/arm64/boot/dts/qcom/sm8250-xiaomi-umi-p1c.dts \
+            /tmp/umi-p1c-preprocessed.dts
+          dtc -@ -I dts -O dtb -o /tmp/umi-p1c-research.dtb /tmp/umi-p1c-preprocessed.dts
+          parent=/soc@0/rsc@18200000/regulators-umi-reference
+          test "$(fdtget -t s /tmp/umi-p1c-research.dtb "$parent" status)" = disabled
+          test "$(fdtget -t s /tmp/umi-p1c-research.dtb "$parent" compatible)" = qcom,pm8150-rpmh-regulators
+          for child in smps4 ldo2 ldo5 ldo6 ldo9 ldo12 ldo17; do
+            fdtget -l /tmp/umi-p1c-research.dtb "$parent" | grep -Fx "$child"
+          done
+          for node in /soc@0/ufshc@1d84000 /soc@0/phy@1d87000 \
+                      /soc@0/usb@a6f8800 /soc@0/usb@a6f8800/usb@a600000 \
+                      /soc@0/phy@88e3000 /soc@0/phy@88e8000; do
+            test "$(fdtget -t s /tmp/umi-p1c-research.dtb "$node" status)" = disabled
+          done
+          echo 'P1c PM8150 provider and all UFS/USB nodes remain disabled; 0 parent supply phandles or voltage constraints.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Compile P1m observed umi UFS links OFFLINE; all 6 UFS/USB targets remain disabled
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp research/mainline/sm8250-xiaomi-umi-p1m.dts upstream/arch/arm64/boot/dts/qcom/
+          cpp -nostdinc -I upstream/include -I upstream/arch/arm64/boot/dts/qcom \
+            -undef -D__DTS__ -x assembler-with-cpp \
+            upstream/arch/arm64/boot/dts/qcom/sm8250-xiaomi-umi-p1m.dts \
+            /tmp/umi-p1m-preprocessed.dts
+          dtc -@ -I dts -O dtb -o /tmp/umi-p1m-research.dtb /tmp/umi-p1m-preprocessed.dts
+          test -s /tmp/umi-p1m-research.dtb
+          dtb=/tmp/umi-p1m-research.dtb
+          provider=/soc@0/rsc@18200000/regulators-umi-reference
+          host=/soc@0/ufshc@1d84000
+          phy=/soc@0/phy@1d87000
+          test "$(fdtget -t s "$dtb" "$provider" status)" = disabled
+          for row in \
+            "$host vcc-supply ldo17" \
+            "$host vccq-supply ldo6" \
+            "$host vccq2-supply smps4" \
+            "$phy vdda-phy-supply ldo5" \
+            "$phy vdda-pll-supply ldo9"; do
+            read -r consumer property regulator <<< "$row"
+            lhs=$(fdtget -t x "$dtb" "$consumer" "$property")
+            rhs=$(fdtget -t x "$dtb" "$provider/$regulator" phandle)
+            test "$lhs" = "$rhs" || { echo "Wrong provider $consumer $property"; exit 1; }
+          done
+          # The old vendor vdd-hba regulator API is not a valid replacement
+          # for the GCC UFS PHY power domain in mainline.
+          test -n "$(fdtget -t x "$dtb" "$host" power-domains)"
+          for forbidden in vdd-hba-supply qcom,vddp-ref-clk-supply qcom,vccq-parent-supply; do
+            if fdtget "$dtb" "$host" "$forbidden" >/dev/null 2>&1; then
+              echo "Unsupported legacy UFS vote leaked into mainline: $forbidden"
+              exit 1
+            fi
+          done
+          for node in "$host" "$phy" \
+                      /soc@0/usb@a6f8800 /soc@0/usb@a6f8800/usb@a600000 \
+                      /soc@0/phy@88e3000 /soc@0/phy@88e8000; do
+            test "$(fdtget -t s "$dtb" "$node" status)" = disabled
+          done
+          echo 'P1m: five observed standard UFS supply links compiled and resolved; PM8150 provider + UFS/USB remain disabled. No parent wiring, vendor vote equivalence or boot readiness claimed.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Validate optional umi P1n persistent-console lab DTB (NO UFS/USB)
+        shell: bash
+        run: |
+          set -euo pipefail
+          soc=upstream/arch/arm64/boot/dts/qcom
+          cp research/mainline/sm8250-xiaomi-umi-p1n.dts "$soc/"
+          cpp -nostdinc -I upstream/include -I "$soc" -undef -D__DTS__ \
+            -x assembler-with-cpp "$soc/sm8250-xiaomi-umi-p1n.dts" \
+            /tmp/umi-p1n-preprocessed.dts
+          dtc -@ -I dts -O dtb -o /tmp/umi-p1n-not-bootable.dtb \
+            /tmp/umi-p1n-preprocessed.dts
+          dtb=/tmp/umi-p1n-not-bootable.dtb
+          region=/reserved-memory/ramoops@b0000000
+          test "$(fdtget -t s "$dtb" "$region" compatible)" = ramoops
+          test "$(fdtget -t x "$dtb" "$region" reg)" = "0 b0000000 0 400000"
+          test "$(fdtget -t x "$dtb" "$region" console-size)" = 200000
+          test "$(fdtget -t x "$dtb" "$region" pmsg-size)" = 200000
+          test "$(fdtget -t s "$dtb" /soc@0/rsc@18200000/regulators-umi-reference status)" = disabled
+          for node in /soc@0/ufshc@1d84000 /soc@0/phy@1d87000 \
+                      /soc@0/usb@a6f8800 /soc@0/usb@a6f8800/usb@a600000 \
+                      /soc@0/phy@88e3000 /soc@0/phy@88e8000; do
+            test "$(fdtget -t s "$dtb" "$node" status)" = disabled
+          done
+          echo 'P1n console lab DTS builds. Persistent log survival over TWRP reboot is NOT verified; cannot flash.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Publish P1n RAM-console research DTB (NOT FLASHABLE)
+        uses: actions/upload-artifact@v4
+        with:
+          name: umi-P1n-ramoops-DTB-NOT-FLASHABLE
+          path: /tmp/umi-p1n-not-bootable.dtb
+          retention-days: 5
+          if-no-files-found: error
+      - name: Optional reserved-memory schema diagnostics
+        if: success()
+        continue-on-error: true
+        run: |
+          python3 -m pip install --disable-pip-version-check dtschema==2026.9
+          export PATH="$HOME/.local/bin:$PATH"
+          dt-mk-schema -j upstream/Documentation/devicetree/bindings/reserved-memory/ > /tmp/umi-reserved-schema.json
+          dt-validate -l reserved-memory -s /tmp/umi-reserved-schema.json /tmp/umi-p0c-offline.dtb
+      - name: Research safety summary
+        if: always()
+        run: |
+          echo 'safe_to_flash=false; no boot.img or firmware generated; Linux 6.12 not tested on device' >> "$GITHUB_STEP_SUMMARY"

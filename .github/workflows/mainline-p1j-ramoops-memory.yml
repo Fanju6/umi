@@ -1,0 +1,60 @@
+name: umi P1j legacy ramoops physical metadata and reserved range audit
+
+on:
+  pull_request:
+    paths:
+      - 'config/mainline-p1j-ramoops-memory.json'
+      - 'scripts/mainline_p1j_ramoops_memory_audit.py'
+      - 'scripts/mainline_p1j_ramoops_params_probe.py'
+      - 'tests/test_mainline_p1j.py'
+      - 'docs/mainline-port/P1J_RAMOOPS_MEMORY.md'
+      - 'docs/mainline-port/README.md'
+      - '.github/workflows/mainline-p1j-ramoops-memory.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ramoops-memory-gate:
+    name: P1j P0c collision guard and pinned 4.19 source crosscheck
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Offline P1j and preceding-stage safety regression
+        run: |
+          set -euo pipefail
+          python3 scripts/mainline_p1j_ramoops_memory_audit.py
+          python3 -m unittest discover -s tests -p test_mainline_p1j.py -v
+          python3 scripts/mainline_p1i_ramoops_audit.py
+          python3 -m unittest discover -s tests -p test_mainline_p1i.py -v
+          python3 scripts/mainline_p1h_pstore_audit.py
+      - name: Fetch only locked vendor 4.19 and Torvalds 6.12 sources
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/p1j
+          vendor=71b13e62f057a649b77fe4062feb73ee72ad609c
+          upstream=adc218676eef25575469234709c2d87185ca223a
+          gh api --header 'Accept: application/vnd.github.raw+json' \
+            "repos/LineageOS/android_kernel_xiaomi_sm8250/contents/fs/pstore/ram.c?ref=$vendor" \
+            > /tmp/p1j/vendor-ram.c
+          gh api --header 'Accept: application/vnd.github.raw+json' \
+            "repos/LineageOS/android_kernel_xiaomi_sm8250/contents/arch/arm64/configs/vendor/xiaomi/sm8250-common.config?ref=$vendor" \
+            > /tmp/p1j/vendor-sm8250.config
+          gh api --header 'Accept: application/vnd.github.raw+json' \
+            "repos/torvalds/linux/contents/fs/pstore/ram.c?ref=$upstream" \
+            > /tmp/p1j/upstream-ram.c
+          test -s /tmp/p1j/vendor-ram.c
+          test -s /tmp/p1j/vendor-sm8250.config
+          test -s /tmp/p1j/upstream-ram.c
+      - name: Crosscheck 4MiB candidate and no hardware readiness
+        run: |
+          set -euo pipefail
+          python3 scripts/mainline_p1j_ramoops_memory_audit.py \
+            --vendor-driver /tmp/p1j/vendor-ram.c \
+            --vendor-config /tmp/p1j/vendor-sm8250.config \
+            --upstream-driver /tmp/p1j/upstream-ram.c
+          echo 'Only source candidate / P0c fixed intervals were checked. Dynamic regions and actual sysfs/firmware ownership unverified; safe_to_flash=false.' >> "$GITHUB_STEP_SUMMARY"

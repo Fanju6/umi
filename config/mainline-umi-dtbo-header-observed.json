@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "device": "umi",
+  "phase": "root-targeted-followup",
+  "source": "user-shared sanitized Root JSON, 2026-10-17",
+  "debugfs": {
+    "already_mounted": false,
+    "paths": {
+      "sys_kernel_debug": "unavailable",
+      "d": "unavailable"
+    }
+  },
+  "dtbo_header": {
+    "readable": true,
+    "format": "android_dt_table",
+    "magic_hex": "d7b7ab1e",
+    "dt_table": {
+      "total_size_bytes": 5514578,
+      "header_size_bytes": 32,
+      "entry_size_bytes": 32,
+      "entry_count": 12,
+      "entries_offset_bytes": 32,
+      "version": 0,
+      "basic_structure_plausible": true
+    }
+  },
+  "recovery_boot_tested": false,
+  "mainline_board_wiring_proven": false,
+  "safe_to_attempt_mainline_boot": false,
+  "safe_to_flash": false,
+  "writes_to_device": false
+}

@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "stage": "P1l",
+  "device": "umi",
+  "locked": {
+    "vendor": "71b13e62f057a649b77fe4062feb73ee72ad609c",
+    "upstream": "adc218676eef25575469234709c2d87185ca223a"
+  },
+  "binding": {
+    "path": "Documentation/devicetree/bindings/regulator/qcom,rpmh-regulator.yaml",
+    "required_properties": [
+      "compatible",
+      "qcom,pmic-id"
+    ],
+    "listed_parent_properties_are_top_level_required": false,
+    "parent_properties_schema_allowed": true,
+    "schema_acceptance_proves_wiring": false
+  },
+  "driver": {
+    "path": "drivers/regulator/qcom-rpmh-regulator.c",
+    "regulator_descriptor_uses_supply_name": true,
+    "resource_lookup_uses_cmd_db": true,
+    "mainline_hardware_probe_verified": false
+  },
+  "parent_groups": [
+    {
+      "property": "vdd-s4-supply",
+      "legacy_rails": [
+        "pm8150_s4"
+      ],
+      "consumer_ids": [
+        "smps4"
+      ],
+      "umi_parent_phandle": null
+    },
+    {
+      "property": "vdd-l2-l10-supply",
+      "legacy_rails": [
+        "pm8150_l2"
+      ],
+      "consumer_ids": [
+        "ldo2"
+      ],
+      "umi_parent_phandle": null
+    },
+    {
+      "property": "vdd-l3-l4-l5-l18-supply",
+      "legacy_rails": [
+        "pm8150_l5"
+      ],
+      "consumer_ids": [
+        "ldo5"
+      ],
+      "umi_parent_phandle": null
+    },
+    {
+      "property": "vdd-l6-l9-supply",
+      "legacy_rails": [
+        "pm8150_l6",
+        "pm8150_l9"
+      ],
+      "consumer_ids": [
+        "ldo6",
+        "ldo9"
+      ],
+      "umi_parent_phandle": null
+    },
+    {
+      "property": "vdd-l7-l12-l14-l15-supply",
+      "legacy_rails": [
+        "pm8150_l12"
+      ],
+      "consumer_ids": [
+        "ldo12"
+      ],
+      "umi_parent_phandle": null
+    },
+    {
+      "property": "vdd-l13-l16-l17-supply",
+      "legacy_rails": [
+        "pm8150_l17"
+      ],
+      "consumer_ids": [
+        "ldo17"
+      ],
+      "umi_parent_phandle": null
+    }
+  ],
+  "vendor_only_votes": [
+    {
+      "property": "qcom,vddp-ref-clk-supply",
+      "legacy_rail": "pm8150_l6",
+      "mainline_replacement": null
+    },
+    {
+      "property": "qcom,vccq-parent-supply",
+      "legacy_rail": "pm8150a_s8",
+      "mainline_replacement": null
+    }
+  ],
+  "confidence": {
+    "vendor_4_19_rail_resource_ids_source_verified": true,
+    "mainline_612_supply_group_names_source_verified": true,
+    "actual_umi_board_parent_phandles_verified": false,
+    "real_ufs_power_sequence_verified": false,
+    "mainline_pmic_probed": false
+  },
+  "safety": {
+    "research_only": true,
+    "mainline_regulator_providers_enabled": false,
+    "mainline_ufs_enabled": false,
+    "mainline_usb_enabled": false,
+    "voltage_guessed": false,
+    "parent_phandles_guessed": false,
+    "boot_image_created": false,
+    "safe_to_attempt_mainline_boot": false,
+    "safe_to_flash": false
+  }
+}

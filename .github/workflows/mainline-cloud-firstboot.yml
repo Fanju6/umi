@@ -1,0 +1,175 @@
+name: umi Linux 6.12 P1p early-boot diagnostics (TWRP LAB)
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/mainline-cloud-firstboot.yml'
+      - 'scripts/mainline_cloud_pack_umi.py'
+      - 'scripts/mainline_pack_boot_v2_local.py'
+      - 'tests/test_mainline_pack_boot_v2_local.py'
+      - 'research/mainline/mini-init.c'
+      - 'research/mainline/sm8250-xiaomi-umi-p1n.dts'
+      - 'research/mainline/sm8250-xiaomi-umi-p1p.dts'
+      - 'tests/test_mainline_cloud_pack_umi.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  kernel:
+    name: Compile pinned Linux 6.12 debug Image and umi P1p DTB
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ARM64 Linux build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends clang lld llvm make bc flex bison libssl-dev libelf-dev device-tree-compiler
+      - name: Checkout exact Linux v6.12 mainline source
+        run: |
+          set -euo pipefail
+          git clone --quiet --depth 1 --filter=blob:none --branch v6.12 https://github.com/torvalds/linux.git upstream
+          test "$(git -C upstream rev-parse HEAD)" = adc218676eef25575469234709c2d87185ca223a
+      - name: Configure Linux ARM64 built-ins and RAM-only first-boot logging
+        run: |
+          set -euo pipefail
+          make -C upstream O="$GITHUB_WORKSPACE/out" ARCH=arm64 LLVM=1 defconfig
+          cd upstream
+          scripts/config --file "$GITHUB_WORKSPACE/out/.config" \
+            -e BLK_DEV_INITRD -e DEVTMPFS -e DEVTMPFS_MOUNT \
+            -e SCSI_UFS_QCOM -e PHY_QCOM_QMP_UFS \
+            -e PSTORE -e PSTORE_RAM -e PSTORE_CONSOLE -e PSTORE_PMSG \
+            -e SERIAL_QCOM_GENI -e SERIAL_QCOM_GENI_CONSOLE \
+            -e PRINTK_TIME -e KALLSYMS -e KALLSYMS_ALL \
+            -e DEBUG_KERNEL -e DEBUG_INFO_NONE \
+            -e PSTORE_DEFAULT_KMSG_BYTES
+          make O="$GITHUB_WORKSPACE/out" ARCH=arm64 LLVM=1 olddefconfig
+          for name in BLK_DEV_INITRD DEVTMPFS DEVTMPFS_MOUNT \
+                      SCSI_UFSHCD SCSI_UFS_QCOM REGULATOR_QCOM_RPMH \
+                      QCOM_RPMH PSTORE_RAM; do
+            grep -Fx "CONFIG_$name=y" "$GITHUB_WORKSPACE/out/.config" || \
+              { echo "required built-in disabled: $name" >&2; exit 1; }
+          done
+      - name: Build the REAL Linux 6.12 ARM64 Image
+        run: |
+          set -euo pipefail
+          make -C upstream O="$GITHUB_WORKSPACE/out" ARCH=arm64 LLVM=1 -j "$(nproc)" Image
+          test -s out/arch/arm64/boot/Image
+          mkdir -p dist
+          cp out/arch/arm64/boot/Image dist/Image
+          cp out/.config dist/kernel.config
+      - name: Build umi P1n DTB and check critical nodes
+        run: |
+          set -euo pipefail
+          soc=upstream/arch/arm64/boot/dts/qcom
+          for stage in p0c p1a p1c p1m p1n p1p; do
+            cp "research/mainline/sm8250-xiaomi-umi-$stage.dts" "$soc/"
+          done
+          cpp -nostdinc -I upstream/include -I "$soc" -undef -D__DTS__ \
+            -x assembler-with-cpp "$soc/sm8250-xiaomi-umi-p1p.dts" /tmp/umi-p1p.dts
+          dtc -@ -I dts -O dtb -o dist/umi-p1p.dtb /tmp/umi-p1p.dts
+          d=dist/umi-p1p.dtb
+          test "$(fdtget -t x "$d" / qcom,msm-id)" = "164 10000"
+          test "$(fdtget -t x "$d" / qcom,board-id)" = "2b 0"
+          test "$(fdtget -t x "$d" /reserved-memory/ramoops@b0000000 reg)" = "0 b0000000 0 400000"
+          test "$(fdtget -t s "$d" /soc@0/rsc@18200000/regulators-umi-reference status)" = disabled
+          for node in /soc@0/ufshc@1d84000 /soc@0/phy@1d87000 \
+                      /soc@0/usb@a6f8800 /soc@0/usb@a6f8800/usb@a600000 \
+                      /soc@0/phy@88e3000 /soc@0/phy@88e8000; do
+            test "$(fdtget -t s "$d" "$node" status)" = disabled
+          done
+          sha256sum dist/Image dist/umi-p1p.dtb > dist/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: umi612-P1p-debug-kernel-dtb
+          path: dist/
+          retention-days: 7
+          compression-level: 1
+          if-no-files-found: error
+
+  boot:
+    name: Build candidate boot.img in CLOUD from pinned OFFICIAL umi boot
+    needs: kernel
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: umi612-P1p-debug-kernel-dtb
+          path: input
+      - name: Install AArch64 static compiler and boot image tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends gcc-aarch64-linux-gnu libc6-dev-arm64-cross binutils-aarch64-linux-gnu cpio gzip curl file
+      - name: Build private-data-free static RAM-only PID 1
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p test_mainline_mininit.py -v
+          python3 -m unittest discover -s tests -p test_mainline_cloud_pack_umi.py -v
+          python3 -m unittest discover -s tests -p test_mainline_pack_boot_v2_local.py -v
+          mkdir -p initroot/{dev,proc,sys} dist
+          aarch64-linux-gnu-gcc -O2 -s -static -Wall -Wextra -Werror \
+            -o initroot/init research/mainline/mini-init.c
+          aarch64-linux-gnu-readelf -h initroot/init | grep -F 'AArch64'
+          if aarch64-linux-gnu-readelf -l initroot/init | grep -q INTERP; then
+            echo 'Static /init has dynamic loader.' >&2; exit 1
+          fi
+          sudo mknod initroot/dev/console c 5 1
+          sudo mknod initroot/dev/null c 1 3
+          (
+            cd initroot
+            find . -print0 | LC_ALL=C sort -z | \
+              cpio -o --null -H newc --reproducible --owner=0:0 2>/dev/null | \
+              gzip -n -9 > ../dist/umi612-initramfs.cpio.gz
+          )
+          test -s dist/umi612-initramfs.cpio.gz
+      - name: Download exact official umi baseline (NOT user's modified Boot)
+        run: |
+          set -euo pipefail
+          mkdir -p upstream-tools vendor
+          curl -fL --retry 3 --connect-timeout 30 --max-time 1800 \
+            'https://mirrorbits.lineageos.org/full/umi/20261004/boot.img' -o vendor/official-umi-20261004-boot.img
+          echo 'ce4a917a9233921b03e748b1fffc7b5ecea613c7ddf72208f26c77189f31a693  vendor/official-umi-20261004-boot.img' | sha256sum -c -
+          git clone -q --depth 1 --branch lineage-23.0 https://github.com/LineageOS/android_system_tools_mkbootimg.git upstream-tools/mkbootimg
+          git clone -q --depth 1 --branch lineage-23.0 https://github.com/LineageOS/android_external_avb.git upstream-tools/avb
+      - name: Repack COMPLETE boot.img + AVB using pinned public boot
+        run: |
+          set -euo pipefail
+          python3 scripts/mainline_cloud_pack_umi.py \
+            --stock vendor/official-umi-20261004-boot.img \
+            --kernel input/Image \
+            --ramdisk dist/umi612-initramfs.cpio.gz \
+            --dtb input/umi-p1p.dtb \
+            --mkbootimg-dir upstream-tools/mkbootimg \
+            --avbtool upstream-tools/avb/avbtool.py \
+            --output dist/umi-Linux612-RAM-ONLY-CLOUD-CANDIDATE.img \
+            --report dist/boot-validation.json
+          sha256sum dist/umi-Linux612-RAM-ONLY-CLOUD-CANDIDATE.img \
+                    dist/umi612-initramfs.cpio.gz > dist/SHA256SUMS
+          cat > dist/README-FIRST.txt <<'EOF'
+          umi Linux 6.12 RAM-only first-boot experiment.
+          Cloud assembled Android boot v2 candidate, with AVB hash footer.
+          Public official LineageOS 2026-10-04 boot baseline was used.
+          IMPORTANT: public baseline SHA != user's current privately backed-up boot SHA.
+          All UFS / USB and research PMIC regulators remain DISABLED.
+          Passing CI means boot IMAGE STRUCTURE validated, NOT that hardware boot works.
+          No ROM, no Android, no reliable storage, no automatic reboot.
+          Recovery TWRP can be the rollback path, but independent rollback remains untested.
+          Never flash recovery, dtbo, vbmeta, super or userdata for this experiment.
+          EOF
+          echo 'Cloud Boot v2 image assembled; unsigned AVB hash layout preserved, hardware boot not tested.' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: umi-Linux612-P1p-EARLY-DIAGNOSTIC-Boot-v2
+          path: |
+            dist/umi-Linux612-RAM-ONLY-CLOUD-CANDIDATE.img
+            dist/umi612-initramfs.cpio.gz
+            dist/boot-validation.json
+            dist/SHA256SUMS
+            dist/README-FIRST.txt
+          retention-days: 7
+          compression-level: 1
+          if-no-files-found: error

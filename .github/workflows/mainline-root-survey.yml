@@ -1,0 +1,49 @@
+name: umi Root metadata survey safety tests
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/mainline_root_hardware_survey.py'
+      - 'scripts/mainline_root_targeted_followup.py'
+      - 'scripts/mainline_dtbo_offline_inspect.py'
+      - 'scripts/mainline_merged_fdt_ufs_links.py'
+      - 'scripts/mainline_umi_preflight_bundle.py'
+      - 'scripts/mainline_recovery_postmortem.py'
+      - 'scripts/mainline_pack_boot_v2_local.py'
+      - 'tests/test_mainline_pack_boot_v2_local.py'
+      - 'tests/test_mainline_recovery_postmortem.py'
+      - 'tests/test_mainline_umi_preflight_bundle.py'
+      - 'docs/mainline-port/ONE_SHOT_PREFLIGHT.md'
+      - 'tests/test_mainline_merged_fdt_ufs_links.py'
+      - 'tests/test_mainline_dtbo_inspect.py'
+      - 'config/mainline-umi-dtbo-header-observed.json'
+      - 'tests/test_mainline_root_targeted_followup.py'
+      - 'docs/mainline-port/ROOT_BASELINE_FINDINGS.md'
+      - 'config/mainline-umi-root-baseline-observed.json'
+      - 'tests/test_mainline_root_survey.py'
+      - 'docs/mainline-port/ROOT_HARDWARE_SURVEY.md'
+      - '.github/workflows/mainline-root-survey.yml'
+      - 'docs/mainline-port/README.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  simulate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify root survey parse, privacy and safety without device access
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p 'test_mainline_root_survey.py' -v
+          python3 -m unittest discover -s tests -p 'test_mainline_root_targeted_followup.py' -v
+          python3 -m unittest discover -s tests -p 'test_mainline_dtbo_inspect.py' -v
+          python3 -m unittest discover -s tests -p 'test_mainline_merged_fdt_ufs_links.py' -v
+          python3 -m unittest discover -s tests -p 'test_mainline_umi_preflight_bundle.py' -v
+          python3 -m unittest discover -s tests -p 'test_mainline_recovery_postmortem.py' -v
+          python3 -m unittest discover -s tests -p 'test_mainline_pack_boot_v2_local.py' -v
+          python3 scripts/mainline_p1l_regulator_parent_audit.py
+          echo 'No device accessed. su would only be used on an explicitly opted-in local umi. No writes/boots/flashes.' >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,57 @@
+name: umi P1k observed ramoops parameter attestation and Linux 6.12 migration gate
+
+on:
+  pull_request:
+    paths:
+      - 'config/mainline-p1k-ramoops-migration-evidence.json'
+      - 'scripts/mainline_p1k_ramoops_bridge_audit.py'
+      - 'scripts/mainline_p1j_ramoops_memory_audit.py'
+      - 'tests/test_mainline_p1k.py'
+      - 'tests/test_mainline_p1j.py'
+      - 'docs/mainline-port/P1K_RAMOOPS_MIGRATION.md'
+      - 'docs/mainline-port/P1J_RAMOOPS_MEMORY.md'
+      - 'docs/mainline-port/README.md'
+      - '.github/workflows/mainline-p1k-ramoops.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: P1k observed metadata, memory fence and pinned v6.12 ABI
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate no-device P1k/P1j regression and safe gate
+        run: |
+          set -euo pipefail
+          python3 scripts/mainline_p1k_ramoops_bridge_audit.py
+          python3 -m unittest discover -s tests -p test_mainline_p1k.py -v
+          python3 scripts/mainline_p1j_ramoops_memory_audit.py
+          python3 -m unittest discover -s tests -p test_mainline_p1j.py -v
+          python3 scripts/mainline_p1i_ramoops_audit.py
+          python3 scripts/mainline_p1h_pstore_audit.py
+      - name: Fetch pinned Torvalds 6.12 memory parser and binding
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/p1k-ramoops
+          commit=adc218676eef25575469234709c2d87185ca223a
+          gh api --header 'Accept: application/vnd.github.raw+json' \
+            "repos/torvalds/linux/contents/fs/pstore/ram.c?ref=$commit" \
+            > /tmp/p1k-ramoops/ram.c
+          gh api --header 'Accept: application/vnd.github.raw+json' \
+            "repos/torvalds/linux/contents/Documentation/devicetree/bindings/reserved-memory/ramoops.yaml?ref=$commit" \
+            > /tmp/p1k-ramoops/ramoops.yaml
+          test -s /tmp/p1k-ramoops/ram.c
+          test -s /tmp/p1k-ramoops/ramoops.yaml
+      - name: Validate Linux 6.12 RAM resource API without DTS modifications
+        run: |
+          set -euo pipefail
+          python3 scripts/mainline_p1k_ramoops_bridge_audit.py \
+            --mainline-driver /tmp/p1k-ramoops/ram.c \
+            --mainline-binding /tmp/p1k-ramoops/ramoops.yaml
+          echo 'P1k documents four user-observed 4.19 sysfs values only; Linux 6.12 ramoops remains blocked, physical ownership unverified, safe_to_flash=false.' >> "$GITHUB_STEP_SUMMARY"

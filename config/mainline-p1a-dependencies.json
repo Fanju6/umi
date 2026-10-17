@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "stage": "P1a",
+  "device": "umi",
+  "target_kernel": "torvalds-linux-v6.12",
+  "upstream": {
+    "repo": "torvalds/linux",
+    "sha": "adc218676eef25575469234709c2d87185ca223a",
+    "file": "arch/arm64/boot/dts/qcom/sm8250.dtsi"
+  },
+  "downstream": {
+    "repo": "LineageOS/android_kernel_xiaomi_sm8250",
+    "sha": "71b13e62f057a649b77fe4062feb73ee72ad609c"
+  },
+  "hardware": [
+    {
+      "id": "ufs",
+      "upstream_label": "ufs_mem_hc",
+      "address": "0x01d84000",
+      "irq": 265,
+      "vendor_label": "ufshc_mem",
+      "vendor_file": "xiaomi-sm8250-common.dtsi",
+      "vendor_pins": [
+        "vcc-supply = <&pm8150_l17>;",
+        "vccq-supply = <&pm8150_l6>;",
+        "vccq2-supply = <&pm8150_s4>;"
+      ],
+      "action": "keep disabled until RPMh regulator definitions and UFS probe path validated"
+    },
+    {
+      "id": "ufs_phy",
+      "upstream_label": "ufs_mem_phy",
+      "address": "0x01d87000",
+      "vendor_label": "ufsphy_mem",
+      "vendor_file": "xiaomi-sm8250-common.dtsi",
+      "vendor_pins": [
+        "vdda-phy-supply = <&pm8150_l5>;",
+        "vdda-pll-supply = <&pm8150_l9>;"
+      ],
+      "action": "keep disabled until regulator min/max and SMMU/IOMMU checked"
+    },
+    {
+      "id": "usb",
+      "upstream_label": "usb_1",
+      "address": "0x0a6f8800",
+      "vendor_label": "usb0",
+      "vendor_file": "kona-usb.dtsi",
+      "vendor_pins": [
+        "ssusb@a600000"
+      ],
+      "action": "keep disabled; board GPIO/VBUS/PD owner unresolved"
+    },
+    {
+      "id": "usb_core",
+      "upstream_label": "usb_1_dwc3",
+      "address": "0x0a600000",
+      "irq": 133,
+      "vendor_label": "dwc3@a600000",
+      "vendor_file": "xiaomi-sm8250-common.dtsi",
+      "vendor_pins": [
+        "maximum-speed = \"high-speed\";"
+      ],
+      "action": "keep disabled; older Android vendor restricts high-speed"
+    },
+    {
+      "id": "usb_hsphy",
+      "upstream_label": "usb_1_hsphy",
+      "address": "0x088e3000",
+      "vendor_label": "usb2_phy0",
+      "vendor_file": "kona-usb.dtsi",
+      "vendor_pins": [
+        "hsphy@88e3000"
+      ],
+      "action": "keep disabled; verify PM8150 L5/L12/L2 and umi-specific PHY override"
+    },
+    {
+      "id": "usb_ssphy",
+      "upstream_label": "usb_1_qmpphy",
+      "address": "0x088e8000",
+      "vendor_label": "usb_qmp_dp_phy",
+      "vendor_file": "xiaomi-sm8250-common.dtsi",
+      "vendor_pins": [
+        "status = \"disabled\";"
+      ],
+      "action": "keep disabled; vendor disables USB3/QMP port by default"
+    }
+  ],
+  "pmic": {
+    "legacy_family": [
+      "pm8150",
+      "pm8150b",
+      "pm8150l"
+    ],
+    "reference_only": "sm8250-xiaomi-elish-common.dtsi",
+    "blocked": [
+      "regulator_name_mapping",
+      "voltage_limits",
+      "usb_vbus_typec",
+      "battery_charging",
+      "panel_supply"
+    ]
+  },
+  "upstream_memory_consumers": [
+    "smem_mem",
+    "gpu_mem",
+    "slpi_mem",
+    "cdsp_mem",
+    "video_mem",
+    "adsp_mem"
+  ],
+  "safety": {
+    "safe_to_flash": false,
+    "boot_image_available": false,
+    "ufs_enabled": false,
+    "usb_enabled": false,
+    "regulators_verified": false,
+    "android_boot_verified": false
+  }
+}

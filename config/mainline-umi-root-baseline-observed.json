@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "device": "umi",
+  "evidence_name": "root-hardware-one-shot",
+  "legacy_kernel": "4.19.325-cip131-st15-perf-g71b13e62f057-dirty",
+  "provenance": "user-supplied sanitized umi-root-hardware.json (metadata only)",
+  "root_uid_confirmed": true,
+  "target_regulators": [
+    {
+      "name": "pm8150_s4",
+      "microvolts": 1800000,
+      "state": "enabled",
+      "num_users": 5,
+      "resource": "smpa4"
+    },
+    {
+      "name": "pm8150_l2",
+      "microvolts": 3072000,
+      "state": "enabled",
+      "num_users": 2,
+      "resource": "ldoa2"
+    },
+    {
+      "name": "pm8150_l5",
+      "microvolts": 880000,
+      "state": "enabled",
+      "num_users": 5,
+      "resource": "ldoa5"
+    },
+    {
+      "name": "pm8150_l6",
+      "microvolts": 1200000,
+      "state": "enabled",
+      "num_users": 2,
+      "resource": "ldoa6"
+    },
+    {
+      "name": "pm8150_l9",
+      "microvolts": 1200000,
+      "state": "enabled",
+      "num_users": 4,
+      "resource": "ldoa9"
+    },
+    {
+      "name": "pm8150_l12",
+      "microvolts": 1800000,
+      "state": "enabled",
+      "num_users": 1,
+      "resource": "ldoa12"
+    },
+    {
+      "name": "pm8150_l17",
+      "microvolts": 2504000,
+      "state": "enabled",
+      "num_users": 1,
+      "resource": "ldoa17"
+    },
+    {
+      "name": "pm8150a_s8",
+      "microvolts": 1200000,
+      "state": "enabled",
+      "num_users": 2,
+      "resource": "smpc8"
+    },
+    {
+      "name": "pm8150a_bob",
+      "microvolts": 3296000,
+      "state": "enabled",
+      "num_users": 1,
+      "resource": "bobc1"
+    }
+  ],
+  "ramoops": {
+    "locked_source_base": "0xB0000000",
+    "locked_source_end_exclusive": "0xB0400000",
+    "iomem_entries": [
+      {
+        "base": "0x92700000",
+        "end_exclusive": "0xB0400000",
+        "resource": "System RAM"
+      },
+      {
+        "base": "0xB0000000",
+        "end_exclusive": "0xB0400000",
+        "resource": "reserved"
+      }
+    ],
+    "reserved_range_matches_source_candidate": true,
+    "ownership_proven": false,
+    "mainline_612_reuse_safe": false
+  },
+  "ufs": [
+    {
+      "node": "1d84000.ufshc",
+      "runtime_status": "active",
+      "control": "auto"
+    },
+    {
+      "node": "1d87000.ufsphy_mem",
+      "runtime_status": "unsupported",
+      "control": "auto"
+    }
+  ],
+  "regulator_debug_summary_available": false,
+  "boot_headers": {
+    "boot": {
+      "kind": "android_boot",
+      "header_version": 2
+    },
+    "recovery": {
+      "kind": "android_boot",
+      "header_version": 2
+    },
+    "dtbo": {
+      "kind": "unidentified",
+      "header_version": null
+    }
+  },
+  "unverified": {
+    "dtbo_header_format": true,
+    "regulator_parent_actual_wiring": true,
+    "recovery_restoration": true,
+    "ufs_power_cycle_mainline": true,
+    "ramoops_crash_survival": true
+  },
+  "safety": {
+    "mainline_boot_attempted": false,
+    "mainline_flash_attempted": false,
+    "boot_image_created": false,
+    "safe_to_attempt_mainline_boot": false,
+    "safe_to_flash": false
+  }
+}

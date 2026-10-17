@@ -1,0 +1,38 @@
+// SPDX-License-Identifier: BSD-3-Clause
+/*
+ * Xiaomi Mi 10 (umi), P1m: offline-only Linux v6.12 UFS regulator wiring.
+ *
+ * Inputs:
+ * - umi live 4.19 merged FDT reports eight UFS phandles, of which seven
+ *   resolve to known PM8150/PM8150A regulators.
+ * - Linux v6.12 SM8250 SoC DTS already describes GCC UFS_PHY_GDSC via
+ *   power-domains. Do not copy the vendor vdd-hba-supply regulator API.
+ * - Two vendor-only supply votes still lack validated mainline lifecycle
+ *   equivalents. Do not claim they are implemented.
+ *
+ * This inherits a DISABLED PM8150 provider from P1c and DISABLED UFS
+ * host/PHY and USB controllers from P1a. NO ROOTFS, NO BOOT IMG, NO FLASH.
+ * No physical input parent supplies, voltage constraints, or rail enable.
+ */
+#include "sm8250-xiaomi-umi-p1c.dts"
+
+/* L17 VCC, L6 VCCQ, S4 VCCQ2: live 4.19 phandles resolved to these rails. */
+&ufs_mem_hc {
+	vcc-supply = <&umi_p1c_l17>;
+	vccq-supply = <&umi_p1c_l6>;
+	vccq2-supply = <&umi_p1c_s4>;
+
+	/* The live 4.19 vdd-hba = ufs_phy_gdsc source mapping must NOT
+	 * be transplanted: Linux 6.12 uses &gcc UFS_PHY_GDSC in sm8250.dtsi.
+	 * Legacy qcom,vddp-ref-clk and qcom,vccq-parent vote lifecycles
+	 * remain unresolved; do NOT add these vendor-only properties here.
+	 */
+	status = "disabled";
+};
+
+/* L5 powers legacy UFS PHY, L9 legacy PLL. */
+&ufs_mem_phy {
+	vdda-phy-supply = <&umi_p1c_l5>;
+	vdda-pll-supply = <&umi_p1c_l9>;
+	status = "disabled";
+};
