@@ -163,9 +163,17 @@ def main():
                 getattr(a, "mkbootimg_dir"), a.avbtool, a.output, a.report)
         print(json.dumps(r, indent=2))
         return 0
-    except (OSError, ValueError, subprocess.SubprocessError, EOFError):
-        print("Cloud experimental boot packaging failed closed. "
-              "No unverified boot produced.", file=sys.stderr)
+    except ValueError as exc:
+        # Inputs are pinned public ROM and build artifacts, not private data.
+        # Print the specific guard that refused the image, to unblock CI triage.
+        print("Cloud boot validation refused: " + str(exc), file=sys.stderr)
+        return 1
+    except subprocess.CalledProcessError as exc:
+        step = Path(str(exc.cmd[1])).name if isinstance(exc.cmd, list) and len(exc.cmd) > 1 else "tool"
+        print("Cloud boot tool failed: " + step + " (exit " + str(exc.returncode) + ")", file=sys.stderr)
+        return 1
+    except (OSError, subprocess.SubprocessError, EOFError) as exc:
+        print("Cloud boot packaging failed closed: " + type(exc).__name__, file=sys.stderr)
         return 1
 
 if __name__ == "__main__":
