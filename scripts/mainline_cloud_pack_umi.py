@@ -25,7 +25,7 @@ def require(cond, message):
     if not cond:
         raise ValueError(message)
 
-def validate_data(stock, kernel, initrd, dtb):
+def validate_data(stock, kernel, initrd, dtb, dtb_kind="mainline"):
     require(sha256(stock) == PUBLIC_ROM_SHA256, "wrong pinned public umi boot image")
     orig = audit_boot(stock)
     require(orig["boot_header_version"] == 2 and orig["page_size"] == 4096,
@@ -49,20 +49,28 @@ def validate_data(stock, kernel, initrd, dtb):
     d = dtb.read_bytes()
     require(40 <= len(d) < 8 * 1024 * 1024
             and d[:4] == bytes.fromhex("d00dfeed")
-            and 40 <= int.from_bytes(d[4:8], "big") <= len(d)
-            and b"Xiaomi Mi 10 (umi) - P1p early diagnostic lab" in d
-            and b"ramoops@b0000000" in d,
-            "not approved umi P1n DTB")
+            and 40 <= int.from_bytes(d[4:8], "big") <= len(d),
+            "not an FDT device tree")
+    if dtb_kind == "mainline":
+        require(b"Xiaomi Mi 10 (umi) - P1p early diagnostic lab" in d
+                and b"ramoops@b0000000" in d,
+                "not approved experimental P1p mainline DTB")
+    elif dtb_kind == "official_vendor":
+        require(b"Qualcomm Technologies, Inc. xiaomi umi" in d,
+                "official vendor baseline is not the umi DTB")
+    else:
+        raise ValueError("unrecognized DTB source mode")
     return orig
 
-def run(stock, kernel, initrd, dtb, mktools, avbtool, output, report):
+def run(stock, kernel, initrd, dtb, mktools, avbtool, output, report,
+        dtb_kind="mainline", public_dtbo=None):
     require(not output.exists() and not report.exists(),
             "output already exists: refusing overwrite")
     require(output.resolve() != stock.resolve(), "cannot overwrite original boot")
     require((mktools / "unpack_bootimg.py").is_file() and
             (mktools / "mkbootimg.py").is_file() and avbtool.is_file(),
             "missing pinned mkbootimg/avbtool files")
-    original = validate_data(stock, kernel, initrd, dtb)
+    original = validate_data(stock, kernel, initrd, dtb, dtb_kind)
     require(original["avb_footer_magic_at_file_end"],
             "public baseline missing expected AVB footer")
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -71,6 +79,26 @@ def run(stock, kernel, initrd, dtb, mktools, avbtool, output, report):
         work = Path(tmp)
         raw_args, pairs = mkboot_args(
             mktools / "unpack_bootimg.py", mktools, stock, work / "unpacked")
+        vendor_overlay_compatible = None
+        if dtb_kind == "official_vendor":
+            # The vendor DTB must come BYTE-FOR-BYTE from the exact pinned
+            # official boot image, not from an arbitrary community source.
+            require(sha256(Path(pairs["--dtb"])) == sha256(dtb),
+                    "vendor base DTB differs from pinned original Boot")
+            require(public_dtbo is not None and public_dtbo.is_file(),
+                    "official DTBO table is required for vendor control")
+            from mainline_abl_dtbo_audit import parse_dtbo, merge_probe
+            import tempfile as _temporary
+            entries, info = parse_dtbo(public_dtbo.read_bytes())
+            with _temporary.TemporaryDirectory(dir=work) as location:
+                temp = Path(location)
+                overlay = temp / "umi-index11.dtbo"
+                overlay.write_bytes(entries[11]["data"])
+                merged = merge_probe(dtb.read_bytes(), overlay, temp,
+                                     "official-vendor-control")
+            require(merged["offline_merge_success"],
+                    "pinned official DTBO[11] does not merge with vendor base DTB")
+            vendor_overlay_compatible = True
         # This is NOT Android. Do not append to the long stock Android
         # cmdline (which may be split/truncated between v2 header fields).
         # Use a short, explicit, reproducible kernel-only command line.
@@ -140,6 +168,8 @@ def run(stock, kernel, initrd, dtb, mktools, avbtool, output, report):
         "baseline_sha256": PUBLIC_ROM_SHA256,
         "actual_user_device_boot_sha256": PRIVATE_DEVICE_SHA256,
         "baseline_matches_user_current_boot": False,
+        "dtb_source": dtb_kind,
+        "official_vendor_dtbo11_offline_merge": vendor_overlay_compatible,
         "difference_disclosed": True,
         "image_file": output.name,
         "image_bytes": output.stat().st_size,
@@ -162,10 +192,14 @@ def main():
     for name in ("stock", "kernel", "ramdisk", "dtb", "mkbootimg-dir",
                  "avbtool", "output", "report"):
         p.add_argument("--" + name, type=Path, required=True)
+    p.add_argument("--dtb-kind", choices=("mainline", "official_vendor"),
+                   default="mainline")
+    p.add_argument("--public-dtbo", type=Path)
     a = p.parse_args()
     try:
         r = run(a.stock, a.kernel, a.ramdisk, a.dtb,
-                getattr(a, "mkbootimg_dir"), a.avbtool, a.output, a.report)
+                getattr(a, "mkbootimg_dir"), a.avbtool, a.output, a.report,
+                a.dtb_kind, a.public_dtbo)
         print(json.dumps(r, indent=2))
         return 0
     except ValueError as exc:

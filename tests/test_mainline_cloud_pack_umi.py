@@ -20,6 +20,31 @@ class CloudPackerTests(unittest.TestCase):
         self.assertEqual(len(m.PRIVATE_DEVICE_SHA256), 64)
         self.assertNotEqual(m.PUBLIC_ROM_SHA256, m.PRIVATE_DEVICE_SHA256)
 
+    def test_vendor_control_requires_verbatim_official_baseline(self):
+        import inspect
+        source = inspect.getsource(m.run)
+        self.assertIn('sha256(Path(pairs["--dtb"])) == sha256(dtb)', source)
+        self.assertIn('parse_dtbo(public_dtbo.read_bytes())', source)
+        self.assertIn('merged["offline_merge_success"]', source)
+        self.assertIn('"dtb_source": dtb_kind', source)
+
+    def test_mainline_and_vendor_dtb_identity_are_explicitly_distinct(self):
+        import inspect
+        source = inspect.getsource(m.validate_data)
+        self.assertIn('dtb_kind == "mainline"', source)
+        self.assertIn('dtb_kind == "official_vendor"', source)
+        self.assertIn('Qualcomm Technologies, Inc. xiaomi umi', source)
+        self.assertIn('P1p early diagnostic lab', source)
+
+    def test_vendor_control_workflow_only_repackages_locked_image(self):
+        text = (ROOT / ".github/workflows/mainline-abl-vendor-control.yml").read_text()
+        self.assertIn("39006200229", text)
+        self.assertIn("--dtb-kind official_vendor", text)
+        self.assertIn("--public-dtbo", text)
+        self.assertIn("sha256sum -c -", text)
+        self.assertIn("umi-Linux612-OFFICIAL-FDT-CONTROL-Boot.img", text)
+        self.assertNotIn("fastboot flash", text)
+
     def test_wrong_public_baseline_refused(self):
         with tempfile.TemporaryDirectory() as td:
             p = Path(td) / "wrong.img"

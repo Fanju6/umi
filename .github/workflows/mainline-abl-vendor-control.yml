@@ -1,0 +1,123 @@
+name: umi Linux 6.12 official-DTB Boot control (ABL differential test)
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/mainline-abl-vendor-control.yml'
+      - 'scripts/mainline_cloud_pack_umi.py'
+      - 'tests/test_mainline_cloud_pack_umi.py'
+      - 'tests/test_mainline_pack_boot_v2_local.py'
+      - 'scripts/mainline_pack_boot_v2_local.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  vendor_control:
+    name: Isolate ABL DTBO incompatibility with official base FDT and Linux 6.12
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: umi612-cloud-kernel-dtb-COMPILE-ONLY
+          run-id: 39006200229
+          repository: Fanju6/umi
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: input
+      - name: Verify reused GitHub Actions kernel/DTB checksums
+        run: |
+          set -euo pipefail
+          test -s input/Image && test -s input/umi-p1n.dtb
+          (cd input && sed 's#dist/##g' SHA256SUMS | sha256sum -c -)
+      - name: Install AArch64 static compiler and boot image tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends gcc-aarch64-linux-gnu libc6-dev-arm64-cross binutils-aarch64-linux-gnu cpio gzip curl file
+      - name: Build private-data-free static RAM-only PID 1
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p test_mainline_mininit.py -v
+          python3 -m unittest discover -s tests -p test_mainline_cloud_pack_umi.py -v
+          python3 -m unittest discover -s tests -p test_mainline_pack_boot_v2_local.py -v
+          mkdir -p initroot/{dev,proc,sys} dist
+          aarch64-linux-gnu-gcc -O2 -s -static -Wall -Wextra -Werror \
+            -o initroot/init research/mainline/mini-init.c
+          aarch64-linux-gnu-readelf -h initroot/init | grep -F 'AArch64'
+          if aarch64-linux-gnu-readelf -l initroot/init | grep -q INTERP; then
+            echo 'Static /init has dynamic loader.' >&2; exit 1
+          fi
+          sudo mknod initroot/dev/console c 5 1
+          sudo mknod initroot/dev/null c 1 3
+          (
+            cd initroot
+            find . -print0 | LC_ALL=C sort -z | \
+              cpio -o --null -H newc --reproducible --owner=0:0 2>/dev/null | \
+              gzip -n -9 > ../dist/umi612-initramfs.cpio.gz
+          )
+          test -s dist/umi612-initramfs.cpio.gz
+      - name: Download exact official umi baseline (NOT user's modified Boot)
+        run: |
+          set -euo pipefail
+          mkdir -p upstream-tools vendor
+          curl -fL --retry 3 --connect-timeout 30 --max-time 1800 \
+            'https://mirrorbits.lineageos.org/full/umi/20261004/boot.img' -o vendor/official-umi-20261004-boot.img
+          echo 'ce4a917a9233921b03e748b1fffc7b5ecea613c7ddf72208f26c77189f31a693  vendor/official-umi-20261004-boot.img' | sha256sum -c -
+          git clone -q --depth 1 --branch lineage-23.0 https://github.com/LineageOS/android_system_tools_mkbootimg.git upstream-tools/mkbootimg
+          git clone -q --depth 1 --branch lineage-23.0 https://github.com/LineageOS/android_external_avb.git upstream-tools/avb
+      - name: Extract pinned official base DTB and fetch umi DTBO[11]
+        run: |
+          set -euo pipefail
+          mkdir -p vendor/unpacked
+          python3 upstream-tools/mkbootimg/unpack_bootimg.py \
+            --boot_img vendor/official-umi-20261004-boot.img \
+            --out vendor/unpacked --format mkbootimg --null >/dev/null
+          test -s vendor/unpacked/dtb
+          curl -fLSs --retry 3 --connect-timeout 20 --max-time 600 \
+            https://mirrorbits.lineageos.org/full/umi/20261004/dtbo.img \
+            -o vendor/official-umi-20261004-dtbo.img
+          test -s vendor/official-umi-20261004-dtbo.img
+      - name: Repack COMPLETE boot.img + AVB using pinned public boot
+        run: |
+          set -euo pipefail
+          python3 scripts/mainline_cloud_pack_umi.py \
+            --stock vendor/official-umi-20261004-boot.img \
+            --kernel input/Image \
+            --ramdisk dist/umi612-initramfs.cpio.gz \
+            --dtb vendor/unpacked/dtb \
+            --dtb-kind official_vendor \
+            --public-dtbo vendor/official-umi-20261004-dtbo.img \
+            --mkbootimg-dir upstream-tools/mkbootimg \
+            --avbtool upstream-tools/avb/avbtool.py \
+            --output dist/umi-Linux612-OFFICIAL-FDT-CONTROL-Boot.img \
+            --report dist/boot-validation.json
+          sha256sum dist/umi-Linux612-OFFICIAL-FDT-CONTROL-Boot.img \
+                    dist/umi612-initramfs.cpio.gz > dist/SHA256SUMS
+          cat > dist/README-FIRST.txt <<'EOF'
+          umi Linux 6.12 RAM-only first-boot experiment.
+          Cloud assembled Android boot v2 candidate, with AVB hash footer.
+          Public official LineageOS 2026-10-04 boot baseline was used.
+          IMPORTANT: public baseline SHA != user's current privately backed-up boot SHA.
+          CAUTION: Official vendor DTB exposes vendor nodes; Linux 6.12 drivers differ.
+          This is solely an ABL DTBO[11] differential diagnostic, not an Android ROM.
+          Passing CI means boot IMAGE STRUCTURE validated, NOT that hardware boot works.
+          No ROM, no Android, no reliable storage, no automatic reboot.
+          Recovery TWRP can be the rollback path, but independent rollback remains untested.
+          Never flash recovery, dtbo, vbmeta, super or userdata for this experiment.
+          EOF
+          echo 'Official umi base FDT plus Linux 6.12 Image: DTBO[11] offline merge passed. Bootloader handoff untested.' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: umi-Linux612-OFFICIAL-FDT-ABL-CONTROL-NOT-BOOT-VERIFIED
+          path: |
+            dist/umi-Linux612-OFFICIAL-FDT-CONTROL-Boot.img
+            dist/umi612-initramfs.cpio.gz
+            dist/boot-validation.json
+            dist/SHA256SUMS
+            dist/README-FIRST.txt
+          retention-days: 7
+          compression-level: 1
+          if-no-files-found: error
