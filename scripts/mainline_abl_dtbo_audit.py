@@ -125,10 +125,15 @@ def find_dtb_segments(blob):
     at = 0
     while at + 40 <= len(blob):
         if blob[at:at + 4] != b"\xd0\x0d\xfe\xed":
-            if all(b == 0 for b in blob[at:]):
+            # Android boot DTB section may align successive FDTs to a
+            # 4KiB boundary or include a non-FDT suffix after a valid FDT.
+            # Never pass unvalidated tail bytes to fdtoverlay.
+            next_at = (at + 4095) & ~4095
+            if (next_at > at and next_at + 40 <= len(blob) and
+                    blob[next_at:next_at + 4] == b"\xd0\x0d\xfe\xed"):
+                at = next_at
+            else:
                 break
-            raise ValueError("boot DTB has unexpected bytes at offset " +
-                             str(at) + " after an FDT")
         size = int.from_bytes(blob[at + 4:at + 8], "big")
         need(40 <= size <= len(blob) - at, "invalid boot FDT segment size")
         segments.append(blob[at:at + size])

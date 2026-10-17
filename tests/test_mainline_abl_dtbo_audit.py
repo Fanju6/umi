@@ -80,6 +80,19 @@ class ABLDTBOTests(unittest.TestCase):
         parts = m.find_dtb_segments(buf)
         self.assertEqual(parts, [first, second])
 
+    def test_original_boot_fdt_with_non_fdt_suffix(self):
+        base = synthetic_fdt(b"original")
+        self.assertEqual(m.find_dtb_segments(base + b"vendor-suffix"),
+                         [base])
+
+    def test_original_boot_page_aligned_fdt_sequence(self):
+        first = synthetic_fdt(b"base")
+        second = synthetic_fdt(b"other")
+        pad = 4096 - len(first)
+        self.assertGreater(pad, 0)
+        data = first + b"\xff" * pad + second
+        self.assertEqual(m.find_dtb_segments(data), [first, second])
+
     def test_original_boot_android_dtb_table_is_supported(self):
         data = synthetic_dtbo()
         parts = m.find_dtb_segments(data)
