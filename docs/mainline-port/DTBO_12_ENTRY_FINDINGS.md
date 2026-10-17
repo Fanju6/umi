@@ -56,3 +56,7 @@ Remaining blockers before any hardware enablement: **the final merged UFS/PMIC p
 The data do not prove which Bootloader overlay was selected. Model umi is a strong unique candidate, not a logged selection result.
 
 Keep research/sm8250-mainline-p0 and PR #8 independent of stable main. Do not attempt an experimental Linux 6.12 boot, flash, partition write or regulator voltage/enable change. safe_to_attempt_mainline_boot=false, safe_to_flash=false.
+
+## 实际供电 phandle 的下一步验证
+
+现在已找到索引 11 作为 xiaomi umi 唯一板级候选，无需再重复解析 12 个 DTBO。由于旧数据仅导出供电属性名而没有解析数值和 target，新增[合成 FDT UFS 供电关系探针](MERGED_FDT_UFS_LINKS.md)：Root 只读 /sys/firmware/fdt，电脑内存中筛选 UFS→PMIC 目标 phandle；未确认 6.12 电气安全或可恢复性。

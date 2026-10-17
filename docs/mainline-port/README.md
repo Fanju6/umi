@@ -49,6 +49,8 @@
 
 **12 个 DTBO Overlay 的实测内容（2026-10-17）：** [12 项索引与 umi 唯一候选、共用 UFS 供电属性](DTBO_12_ENTRY_FINDINGS.md) 已核对：索引 0–10 分别对应 alioth、apollo、cas、cmi、dagu、elish、enuma、lmi、munch、psyche、thyme，**索引 11 为 umi**（460,783 字节）。12 项 id/rev/custom 全为 0；每项都含同样 8 个 UFS/PMIC 属性，96 条命中不代表 96 条独立电源轨。旧 DTS 的 `qcom,board-id=<43 0>` 与 DTBO 外层 id 不可混为一谈。尚未还原 phandle 所指目标和 Bootloader 最终选择，硬件门禁保持关闭。
 
+**运行时 UFS 供电 phandle 对照（2026-10-17）：** 为避免继续重复 DTBO 静态扫描，新建[只读的旧系统合成 FDT UFS Host/PHY→regulator 解析器](MERGED_FDT_UFS_LINKS.md)，仅从 Root /sys/firmware/fdt 内存分析中输出已筛选的根模型、board-id 和供电 phandle→目标旧 regulator 关系。是否可在这台机访问 /sys/firmware/fdt 尚待本地执行；不允许将旧系统供电图自动视为主线 6.12 的电气验证。
+
 ## 已直接核对的源码
 
 | 轨道 | 固定来源 | 可证事实 |
