@@ -51,6 +51,8 @@
 
 **运行时 UFS 供电 phandle 对照（2026-10-17）：** 为避免继续重复 DTBO 静态扫描，新建[只读的旧系统合成 FDT UFS Host/PHY→regulator 解析器](MERGED_FDT_UFS_LINKS.md)，仅从 Root /sys/firmware/fdt 内存分析中输出已筛选的根模型、board-id 和供电 phandle→目标旧 regulator 关系。是否可在这台机访问 /sys/firmware/fdt 尚待本地执行；不允许将旧系统供电图自动视为主线 6.12 的电气验证。
 
+**P1m 实测 UFS 供电草案（2026-10-17）：** 已读取 umi 真机运行时合成 FDT，8/8 条 UFS 供电 phandle 均存在，其中 7 条直接指向已知 PM8150/PM8150A regulator；`vdd-hba` 的 0x76 已解析到某节点，锁定厂商源码将该旧接口映射到 `ufs_phy_gdsc`。固定主线 6.12 则使用 GCC UFS_PHY_GDSC power-domain。详见 [P1m 运行 FDT→主线 DTS 映射](P1M_RUNTIME_UFS_DTS.md)。新增离线-only P1m DTS 连接 5 个主线标准 UFS/PHY supply 到 P1c 的 disabled regulator 输出，实际 cpp/dtc/fdtget 检查在 CI 中执行。两个额外厂商 UFS 电流/时序投票仍未迁移，六组 PM8150 parent 未核实，所有 UFS/USB 状态继续 disabled；**不能启动或刷机**。
+
 ## 已直接核对的源码
 
 | 轨道 | 固定来源 | 可证事实 |
