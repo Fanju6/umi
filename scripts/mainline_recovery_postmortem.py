@@ -30,7 +30,22 @@ def need(ok, msg):
     if not ok:
         raise ValueError(msg)
 
+def adb_transport_state(adb):
+    """ADB transport advertises recovery even when ro.bootmode is 'unknown'."""
+    result = subprocess.run(
+        [adb, "devices"], capture_output=True, text=True,
+        errors="replace", timeout=20, check=True)
+    transports = []
+    for line in result.stdout.replace("\r", "").splitlines():
+        fields = line.split()
+        if len(fields) >= 2 and fields[0] != "List":
+            transports.append(fields[1])
+    need(len(transports) == 1, "expected exactly one attached ADB device")
+    return transports[0]
+
+
 def check_recovery(adb):
+    transport = adb_transport_state(adb)
     probe = subprocess.run(
         [adb, "shell", "sh", "-c",
          "printf 'MODE='; getprop ro.bootmode; "
@@ -45,9 +60,11 @@ def check_recovery(adb):
         if sep and name in ("MODE", "TWRP", "UID") and name not in values:
             values[name] = val.strip()
     need(values.get("UID") == "0", "recovery ADB is not root")
-    need(values.get("MODE") == "recovery" or bool(values.get("TWRP")),
-         "not confirmed recovery/TWRP; refusing to capture")
-    return {"mode": values.get("MODE", ""), "twrp_version_present": bool(values.get("TWRP"))}
+    need(transport == "recovery" or values.get("MODE") == "recovery"
+         or bool(values.get("TWRP")),
+         "ADB transport, ro.bootmode and TWRP property do not confirm recovery")
+    return {"mode": values.get("MODE", ""), "adb_transport": transport,
+            "twrp_version_present": bool(values.get("TWRP"))}
 
 def enumerate_pstore(adb):
     cmd = ('for f in /sys/fs/pstore/*; do [ -f "$f" ] || continue; '
@@ -161,9 +178,13 @@ def main():
             "keep_raw_logs_private": str(a.raw_log_dir)
         }, ensure_ascii=False, indent=2))
         return 0
-    except (ValueError, OSError, subprocess.SubprocessError):
-        print("Recovery log capture refused/failed; no device writes.",
-              file=sys.stderr)
+    except ValueError as exc:
+        print("Recovery log capture refused: " + str(exc) +
+              ". No device writes.", file=sys.stderr)
+        return 1
+    except (OSError, subprocess.SubprocessError) as exc:
+        print("Recovery log capture could not use ADB (" +
+              type(exc).__name__ + "). No device writes.", file=sys.stderr)
         return 1
 
 if __name__ == "__main__":

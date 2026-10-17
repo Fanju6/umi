@@ -16,27 +16,55 @@ def result(text):
 
 class RecoveryPostmortemTests(unittest.TestCase):
     def test_twrp_mode_and_root(self):
-        with mock.patch.object(m.subprocess, "run",
-                               return_value=result("MODE=recovery\nTWRP=3.7.1\nUID=0\n")):
+        responses = [result("List of devices attached\nexampledevice\trecovery\n\n"),
+                     result("MODE=recovery\nTWRP=3.7.1\nUID=0\n")]
+        with mock.patch.object(m.subprocess, "run", side_effect=responses) as run:
             o = m.check_recovery("adb")
         self.assertEqual(o["mode"], "recovery")
+        self.assertEqual(o["adb_transport"], "recovery")
         self.assertTrue(o["twrp_version_present"])
+        self.assertEqual(run.call_count, 2)
 
     def test_twrp_version_accepts_missing_bootmode(self):
-        with mock.patch.object(m.subprocess, "run",
-                               return_value=result("MODE=\nTWRP=3.7.1\nUID=0\n")):
+        responses = [result("List of devices attached\nexampledevice\tdevice\n"),
+                     result("MODE=\nTWRP=3.7.1\nUID=0\n")]
+        with mock.patch.object(m.subprocess, "run", side_effect=responses):
             self.assertTrue(m.check_recovery("adb")["twrp_version_present"])
 
+    def test_unknown_bootmode_accepted_when_adb_reports_recovery(self):
+        responses = [result("List of devices attached\r\nexampledevice\trecovery\r\n\r\n"),
+                     result("MODE=unknown\nTWRP=\nUID=0\n")]
+        with mock.patch.object(m.subprocess, "run", side_effect=responses):
+            check = m.check_recovery("adb")
+        self.assertEqual(check["mode"], "unknown")
+        self.assertEqual(check["adb_transport"], "recovery")
+        self.assertFalse(check["twrp_version_present"])
+
     def test_regular_android_rejected(self):
-        with mock.patch.object(m.subprocess, "run",
-                               return_value=result("MODE=normal\nTWRP=\nUID=0\n")):
-            with self.assertRaisesRegex(ValueError, "not confirmed"):
+        responses = [result("List of devices attached\nexampledevice\tdevice\n"),
+                     result("MODE=normal\nTWRP=\nUID=0\n")]
+        with mock.patch.object(m.subprocess, "run", side_effect=responses):
+            with self.assertRaisesRegex(ValueError, "do not confirm recovery"):
                 m.check_recovery("adb")
 
     def test_non_root_rejected(self):
-        with mock.patch.object(m.subprocess, "run",
-                               return_value=result("MODE=recovery\nTWRP=\nUID=2000\n")):
+        responses = [result("List of devices attached\nexampledevice\trecovery\n"),
+                     result("MODE=unknown\nTWRP=\nUID=2000\n")]
+        with mock.patch.object(m.subprocess, "run", side_effect=responses):
             with self.assertRaisesRegex(ValueError, "not root"):
+                m.check_recovery("adb")
+
+    def test_multiple_transports_rejected(self):
+        listing = "List of devices attached\nexampledevice\trecovery\notherdevice\tdevice\n"
+        with mock.patch.object(m.subprocess, "run", return_value=result(listing)) as run:
+            with self.assertRaisesRegex(ValueError, "exactly one"):
+                m.check_recovery("adb")
+            run.assert_called_once()
+
+    def test_no_adb_device_rejected(self):
+        with mock.patch.object(m.subprocess, "run",
+                               return_value=result("List of devices attached\n\n")):
+            with self.assertRaisesRegex(ValueError, "exactly one"):
                 m.check_recovery("adb")
 
     def test_whitelist_not_private_filenames(self):
