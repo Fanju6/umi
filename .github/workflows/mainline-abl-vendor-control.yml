@@ -36,7 +36,7 @@ jobs:
       - name: Install AArch64 static compiler and boot image tools
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends gcc-aarch64-linux-gnu libc6-dev-arm64-cross binutils-aarch64-linux-gnu cpio gzip curl file
+          sudo apt-get install -y --no-install-recommends gcc-aarch64-linux-gnu libc6-dev-arm64-cross binutils-aarch64-linux-gnu cpio gzip curl file device-tree-compiler
       - name: Build private-data-free static RAM-only PID 1
         run: |
           set -euo pipefail
