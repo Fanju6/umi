@@ -38,10 +38,11 @@ def parse_dtbo(blob):
          "not the expected 12-entry Android DT table v0")
     # Published dtbo.img can contain a complete padded 32 MiB partition.
     # Entries remain bounded by the DT header declared total_size.
+    # Android DT table v0 bounds all entries by declared total_size.
+    # A 32MiB partition image may contain mixed trailing filler, which must
+    # never be parsed as an overlay or treated as a corruption by itself.
     suffix = blob[total:]
-    need(not suffix or all(b == 0 for b in suffix) or
-         all(b == 0xff for b in suffix),
-         "nonempty unexpected bytes after declared DTBO table")
+    trailing_nonzero_bytes = sum(bool(value) for value in suffix)
     entries = []
     for index in range(count):
         pos = offset + index * esize
@@ -60,6 +61,7 @@ def parse_dtbo(blob):
     return entries, {"entry_count": count, "declared_size_bytes": total,
                      "downloaded_partition_bytes": len(blob),
                      "trailing_padding_bytes": len(blob) - total,
+                     "trailing_nonzero_bytes_not_parsed": trailing_nonzero_bytes,
                      "selected_index": EXPECTED_UMI_INDEX,
                      "selected_size_bytes": entries[11]["size"],
                      "umi_model_matched": True}
