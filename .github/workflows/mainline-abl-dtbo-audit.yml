@@ -10,7 +10,6 @@ on:
 
 permissions:
   contents: read
-  actions: read
 
 jobs:
   audit:
@@ -25,19 +24,24 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends device-tree-compiler curl git
-      - name: Download proven kernel and DTB from successful Image build
-        uses: actions/download-artifact@v4
-        with:
-          name: umi612-cloud-kernel-dtb-COMPILE-ONLY
-          run-id: 39006200229
-          repository: Fanju6/umi
-          github-token: \${{ secrets.GITHUB_TOKEN }}
-          path: input
-      - name: Check original compiled Mainline DTB SHA
+      - name: Build locked Linux v6.12 Mainline P1n DTB from source (no artifact token needed)
         run: |
           set -euo pipefail
-          test -s input/Image && test -s input/umi-p1n.dtb
-          (cd input && sed 's#dist/##g' SHA256SUMS | sha256sum -c -)
+          git clone --quiet --no-checkout --sparse --filter=blob:none --depth=1 --branch v6.12 \
+            https://github.com/torvalds/linux.git upstream
+          git -C upstream sparse-checkout set arch/arm64/boot/dts/qcom include/dt-bindings
+          git -C upstream checkout --quiet --detach v6.12
+          test "$(git -C upstream rev-parse HEAD)" = adc218676eef25575469234709c2d87185ca223a
+          mkdir -p input
+          soc=upstream/arch/arm64/boot/dts/qcom
+          for stage in p0c p1a p1c p1m p1n; do
+            cp "research/mainline/sm8250-xiaomi-umi-$stage.dts" "$soc/"
+          done
+          cpp -nostdinc -I upstream/include -I "$soc" -undef -D__DTS__ \
+            -x assembler-with-cpp "$soc/sm8250-xiaomi-umi-p1n.dts" /tmp/umi-p1n.dts
+          dtc -@ -I dts -O dtb -o input/umi-p1n.dtb /tmp/umi-p1n.dts
+          test "$(fdtget -t x input/umi-p1n.dtb / qcom,board-id)" = "2b 0"
+          test "$(fdtget -t x input/umi-p1n.dtb / qcom,msm-id)" = "164 10000"
       - name: Fetch official original base Boot and public DTBO
         run: |
           set -euo pipefail
