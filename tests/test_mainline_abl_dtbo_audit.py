@@ -14,8 +14,8 @@ spec.loader.exec_module(m)
 
 def synthetic_fdt(model=b"synthetic"):
     payload = bytearray(64)
-    struct.pack_into(">II", payload, 0, m.MAGIC_FDT, len(payload))
     payload.extend(model)
+    struct.pack_into(">II", payload, 0, m.MAGIC_FDT, len(payload))
     return bytes(payload)
 
 
