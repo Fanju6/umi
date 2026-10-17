@@ -80,6 +80,27 @@ class ABLDTBOTests(unittest.TestCase):
         parts = m.find_dtb_segments(buf)
         self.assertEqual(parts, [first, second])
 
+    def test_original_boot_android_dtb_table_is_supported(self):
+        data = synthetic_dtbo()
+        parts = m.find_dtb_segments(data)
+        self.assertEqual(len(parts), 12)
+        self.assertTrue(all(x[:4] == b"\xd0\x0d\xfe\xed" for x in parts))
+
+    def test_original_boot_qcdt_v3_is_supported(self):
+        fdt = synthetic_fdt(b"VENDOR BASE")
+        header = b"QCDT" + struct.pack("<II", 3, 1)
+        offset = 4096
+        entry = struct.pack("<10I", 356, 43, 0, 0, 0, 0, 0, 0, offset, len(fdt))
+        image = header + entry + bytes(offset - len(header) - len(entry)) + fdt
+        self.assertEqual(m.find_dtb_segments(image), [fdt])
+
+    def test_qcdt_bad_record_rejected(self):
+        header = b"QCDT" + struct.pack("<II", 3, 1)
+        entry = struct.pack("<10I", 356, 43, 0, 0, 0, 0, 0, 0, 99999, 60)
+        data = header + entry + bytes(100)
+        with self.assertRaisesRegex(ValueError, "out of image bounds"):
+            m.find_dtb_segments(data)
+
     def test_invalid_dtb_magic_rejected(self):
         with self.assertRaises(ValueError):
             m.find_dtb_segments(b"NOT-FDT" * 12)

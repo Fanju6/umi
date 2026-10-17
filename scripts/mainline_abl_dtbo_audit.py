@@ -68,20 +68,72 @@ def parse_dtbo(blob):
 
 
 def find_dtb_segments(blob):
-    """Support one FDT or a concatenated original Android boot v2 DTB pack."""
-    need(40 <= len(blob) < MAX_IMAGE, "unexpected boot DTB length")
+    """Parse AOSP concatenated FDTs OR Qualcomm legacy QCDT table (read only).
+
+    A Boot v2 DTB section need not contain one bare FDT. The official
+    LineageOS original is used as control: do not assume a single FDT when
+    creating later experimental boot images.
+    """
+    need(40 <= len(blob) < MAX_IMAGE, "unexpected boot DTB section length")
+    if blob[:4] == b"\xd7\xb7\xab\x1e":
+        # Android DT-table (often used for a Boot v2 DTB section too).
+        magic, total, hsize, esize, count, offset, page_size, version = (
+            struct.unpack_from(">8I", blob))
+        need(magic == MAGIC_DTBO and hsize == 32 and esize == 32
+             and version == 0 and 1 <= count <= 128
+             and 32 <= total <= len(blob) and
+             offset >= 32 and offset + count * esize <= total,
+             "unexpected Android boot DTB table layout")
+        result = []
+        for i in range(count):
+            entry = struct.unpack_from(">8I", blob, offset + i * esize)
+            length, pos = entry[:2]
+            need(40 <= length and pos >= offset + count * esize
+                 and pos + length <= total, "Android DTB table range invalid")
+            fdt = blob[pos:pos + length]
+            need(fdt[:4] == b"\xd0\x0d\xfe\xed" and
+                 40 <= int.from_bytes(fdt[4:8], "big") <= len(fdt),
+                 "Android DTB table contains a non-FDT entry")
+            result.append(fdt[:int.from_bytes(fdt[4:8], "big")])
+        return result
+
+    if blob[:4] == b"QCDT":
+        version, count = struct.unpack_from("<II", blob, 4)
+        stride = {1: 20, 2: 24, 3: 40}.get(version)
+        need(stride is not None and 1 <= count <= 128 and
+             12 + stride * count <= len(blob),
+             "unsupported or truncated Qualcomm QCDT header")
+        segments = []
+        for i in range(count):
+            fields = struct.unpack_from("<" + "I" * (stride // 4), blob,
+                                        12 + i * stride)
+            pos, length = fields[-2:]
+            need(pos >= 12 + stride * count and
+                 length >= 40 and pos + length <= len(blob),
+                 "QCDT FDT entry out of image bounds")
+            data = blob[pos:pos + length]
+            need(data[:4] == b"\xd0\x0d\xfe\xed" and
+                 40 <= int.from_bytes(data[4:8], "big") <= len(data),
+                 "QCDT entry lacks a valid FDT payload")
+            segments.append(data[:int.from_bytes(data[4:8], "big")])
+        return segments
+
+    need(blob[:4] == b"\xd0\x0d\xfe\xed",
+         "original Boot DTB header not FDT/QCDT (magic=" +
+         blob[:4].hex() + ")")
     segments = []
     at = 0
     while at + 40 <= len(blob):
         if blob[at:at + 4] != b"\xd0\x0d\xfe\xed":
             if all(b == 0 for b in blob[at:]):
                 break
-            raise ValueError("boot DTB isn't a concatenated FDT sequence")
+            raise ValueError("boot DTB has unexpected bytes at offset " +
+                             str(at) + " after an FDT")
         size = int.from_bytes(blob[at + 4:at + 8], "big")
         need(40 <= size <= len(blob) - at, "invalid boot FDT segment size")
         segments.append(blob[at:at + size])
         at = (at + size + 3) & ~3
-    need(1 <= len(segments) <= 32, "unexpected number of boot DTB entries")
+    need(1 <= len(segments) <= 128, "unexpected number of boot DTB entries")
     return segments
 
 
@@ -122,6 +174,8 @@ def audit(public_dtbo, public_boot_dtb, mainline_dtb, compatibility_dtb=None):
         "dtbo": dtbo,
         "boot_source": "public pinned LineageOS boot; not user's private KernelSU boot",
         "original_boot_dtb_fdt_count": len(boot_sources),
+        "original_boot_dtb_prefix_hex": public_boot_dtb.read_bytes()[:4].hex(),
+        "original_dtb_candidate_probed_limit": 16,
         "results": {},
         "device_boot_proven": False,
         "safe_to_flash": False,
@@ -131,7 +185,7 @@ def audit(public_dtbo, public_boot_dtb, mainline_dtb, compatibility_dtb=None):
         work = Path(temporary)
         overlay = work / "vendor-umi-index11.dtbo"
         overlay.write_bytes(entries[EXPECTED_UMI_INDEX]["data"])
-        for i, base in enumerate(boot_sources):
+        for i, base in enumerate(boot_sources[:16]):
             report["results"][f"official_base_{i}"] = merge_probe(
                 base, overlay, work, f"official_{i}")
         report["results"]["mainline_p1n"] = merge_probe(
