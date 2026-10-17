@@ -33,7 +33,7 @@ class CloudPackerTests(unittest.TestCase):
         source = inspect.getsource(m.validate_data)
         self.assertIn('dtb_kind == "mainline"', source)
         self.assertIn('dtb_kind == "official_vendor"', source)
-        self.assertIn('Qualcomm Technologies, Inc. xiaomi umi', source)
+        self.assertIn('official base DTB lacks model property', source)
         self.assertIn('P1p early diagnostic lab', source)
 
     def test_vendor_control_workflow_only_repackages_locked_image(self):

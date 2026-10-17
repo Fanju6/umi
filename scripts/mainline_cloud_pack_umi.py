@@ -56,8 +56,11 @@ def validate_data(stock, kernel, initrd, dtb, dtb_kind="mainline"):
                 and b"ramoops@b0000000" in d,
                 "not approved experimental P1p mainline DTB")
     elif dtb_kind == "official_vendor":
-        require(b"Qualcomm Technologies, Inc. xiaomi umi" in d,
-                "official vendor baseline is not the umi DTB")
+        # The official boot base can be a generic Kona SoC FDT. The umi
+        # board identity lives in DTBO[11], not necessarily base /model.
+        # Trust only a byte-for-byte match to the pinned official boot
+        # and successful overlay[11] merge (both verified in run()).
+        require(b"model\x00" in d, "official base DTB lacks model property")
     else:
         raise ValueError("unrecognized DTB source mode")
     return orig
