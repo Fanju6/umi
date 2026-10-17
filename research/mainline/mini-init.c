@@ -23,16 +23,16 @@
 static void log_message(const char *message) {
     int fd = open("/dev/kmsg", O_WRONLY | O_CLOEXEC);
     if (fd >= 0) {
-        (void)write(fd, "<6>" MARKER ": ", sizeof("<6>" MARKER ": ") - 1);
-        (void)write(fd, message, strlen(message));
-        (void)write(fd, "\n", 1);
+        if (dprintf(fd, "<6>" MARKER ": %s\n", message) < 0) {
+            /* A missing/closed log channel must not terminate PID 1. */
+        }
         (void)close(fd);
     }
     fd = open("/dev/console", O_WRONLY | O_CLOEXEC | O_NOCTTY);
     if (fd >= 0) {
-        (void)write(fd, MARKER ": ", sizeof(MARKER ": ") - 1);
-        (void)write(fd, message, strlen(message));
-        (void)write(fd, "\n", 1);
+        if (dprintf(fd, MARKER ": %s\n", message) < 0) {
+            /* Recovery is the fallback; avoid rebooting when logging fails. */
+        }
         (void)close(fd);
     }
 }
