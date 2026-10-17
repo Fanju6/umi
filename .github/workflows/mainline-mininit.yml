@@ -21,7 +21,7 @@ jobs:
       - name: Install AArch64 GCC and initramfs tools
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu cpio gzip file
+          sudo apt-get install -y --no-install-recommends gcc-aarch64-linux-gnu libc6-dev-arm64-cross binutils-aarch64-linux-gnu cpio gzip file
       - name: Validate ROM-independent initramfs safety contract
         run: python3 -m unittest discover -s tests -p test_mainline_mininit.py -v
       - name: Compile standalone static ARM64 PID1
