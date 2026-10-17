@@ -7,6 +7,9 @@ on:
       - 'scripts/mainline_root_targeted_followup.py'
       - 'scripts/mainline_dtbo_offline_inspect.py'
       - 'scripts/mainline_merged_fdt_ufs_links.py'
+      - 'scripts/mainline_umi_preflight_bundle.py'
+      - 'tests/test_mainline_umi_preflight_bundle.py'
+      - 'docs/mainline-port/ONE_SHOT_PREFLIGHT.md'
       - 'tests/test_mainline_merged_fdt_ufs_links.py'
       - 'tests/test_mainline_dtbo_inspect.py'
       - 'config/mainline-umi-dtbo-header-observed.json'
@@ -35,5 +38,6 @@ jobs:
           python3 -m unittest discover -s tests -p 'test_mainline_root_targeted_followup.py' -v
           python3 -m unittest discover -s tests -p 'test_mainline_dtbo_inspect.py' -v
           python3 -m unittest discover -s tests -p 'test_mainline_merged_fdt_ufs_links.py' -v
+          python3 -m unittest discover -s tests -p 'test_mainline_umi_preflight_bundle.py' -v
           python3 scripts/mainline_p1l_regulator_parent_audit.py
           echo 'No device accessed. su would only be used on an explicitly opted-in local umi. No writes/boots/flashes.' >> "$GITHUB_STEP_SUMMARY"

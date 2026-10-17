@@ -53,6 +53,8 @@
 
 **P1m 实测 UFS 供电草案（2026-10-17）：** 已读取 umi 真机运行时合成 FDT，8/8 条 UFS 供电 phandle 均存在，其中 7 条直接指向已知 PM8150/PM8150A regulator；`vdd-hba` 的 0x76 已解析到某节点，锁定厂商源码将该旧接口映射到 `ufs_phy_gdsc`。固定主线 6.12 则使用 GCC UFS_PHY_GDSC power-domain。详见 [P1m 运行 FDT→主线 DTS 映射](P1M_RUNTIME_UFS_DTS.md)。新增离线-only P1m DTS 连接 5 个主线标准 UFS/PHY supply 到 P1c 的 disabled regulator 输出，实际 cpp/dtc/fdtget 检查在 CI 中执行。两个额外厂商 UFS 电流/时序投票仍未迁移，六组 PM8150 parent 未核实，所有 UFS/USB 状态继续 disabled；**不能启动或刷机**。
 
+**一次性启动前取证（2026-10-17）：** [Root 集中式采集 + 本地 Boot/Recovery/DTBO 只读备份](ONE_SHOT_PREFLIGHT.md) 已准备，避免重复 P1a~P1m 已采集的 DTBO 和 UFS phandle。一次用户命令获取分区大小、Kernel config/pstore/boot security 等可读资料，并把原始镜像仅存到电脑私有目录、SHA-256 校验；不能自动证明恢复可启动或 Linux 6.12 已可安全刷入。任何研究门禁不变。
+
 ## 已直接核对的源码
 
 | 轨道 | 固定来源 | 可证事实 |
